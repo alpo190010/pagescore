@@ -9,6 +9,13 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: "/blog/what-is-a-good-landing-page-conversion-rate",
+    title: "What Is a Good Landing Page Conversion Rate? (2026 Benchmarks)",
+    excerpt: "Average landing page conversion rates by industry, traffic source, and page type. See where you stand and what to aim for based on real data.",
+    date: "March 22, 2026",
+    readTime: "7 min",
+  },
+  {
     slug: "/blog/landing-page-checklist-before-launch",
     title: "Landing Page Checklist: 15 Things to Check Before You Launch",
     excerpt: "A practical pre-launch checklist covering copy, design, SEO, mobile, speed, and trust signals. The small things that kill your conversion rate.",
