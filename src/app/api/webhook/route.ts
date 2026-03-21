@@ -97,14 +97,14 @@ URL: ${url}
 HTML:
 ${truncated}`;
 
-  const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+  const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "openai/gpt-4o",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4,
       max_tokens: 4000,
