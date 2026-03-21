@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import posthog from "posthog-js";
 
 interface FreeResult {
   score: number;
@@ -32,6 +33,7 @@ export default function Home() {
       }
       const data = await res.json();
       setResult(data);
+      posthog.capture("scan_completed", { url, score: data.score });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -124,6 +126,7 @@ export default function Home() {
             </p>
             <a
               href={`/report?url=${encodeURIComponent(url)}`}
+              onClick={() => posthog.capture("report_cta_clicked", { url })}
               className="inline-block px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-semibold transition"
             >
               Get Full Report — $7

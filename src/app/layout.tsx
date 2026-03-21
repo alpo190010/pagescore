@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { PHProvider } from "./providers";
 
 export const metadata: Metadata = {
   title: "PageScore — AI Landing Page Analyzer",
@@ -14,7 +15,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <PHProvider>{children}</PHProvider>
+      </body>
     </html>
   );
 }
