@@ -9,17 +9,192 @@ interface FreeResult {
   tips: string[];
 }
 
+interface CategoryScores {
+  title: number;
+  images: number;
+  pricing: number;
+  socialProof: number;
+  cta: number;
+  description: number;
+  trust: number;
+}
+
+interface CompetitorData {
+  yourPage: {
+    score: number;
+    summary: string;
+    tips: string[];
+    categories: CategoryScores;
+    url: string;
+  };
+  competitors: {
+    name: string;
+    url: string;
+    score: number;
+    summary: string;
+    categories: CategoryScores;
+  }[];
+}
+
+const CATEGORY_LABELS: Record<keyof CategoryScores, string> = {
+  title: "Title",
+  images: "Images",
+  pricing: "Pricing",
+  socialProof: "Social Proof",
+  cta: "CTA",
+  description: "Description",
+  trust: "Trust",
+};
+
+function scoreColor(score: number): string {
+  if (score >= 7) return "text-green-400";
+  if (score >= 4) return "text-yellow-400";
+  return "text-red-400";
+}
+
+function scoreBg(score: number): string {
+  if (score >= 7) return "bg-green-400/10";
+  if (score >= 4) return "bg-yellow-400/10";
+  return "bg-red-400/10";
+}
+
+function CompetitorAnalysis({
+  data,
+  url,
+}: {
+  data: CompetitorData;
+  url: string;
+}) {
+  const { yourPage, competitors } = data;
+  const allPages = [
+    { label: "Your Page", ...yourPage },
+    ...competitors.map((c) => ({ label: c.name, ...c })),
+  ];
+  const categories = Object.keys(CATEGORY_LABELS) as (keyof CategoryScores)[];
+
+  return (
+    <div className="w-full">
+      {/* Overall scores */}
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: `repeat(${allPages.length}, 1fr)` }}>
+        {allPages.map((page, i) => (
+          <div
+            key={i}
+            className={`p-4 rounded-lg border text-center ${
+              i === 0
+                ? "bg-indigo-500/10 border-indigo-500/30"
+                : "bg-[var(--card)] border-[var(--border)]"
+            }`}
+          >
+            <div className="text-xs text-[var(--muted)] mb-1 truncate">
+              {page.label}
+            </div>
+            <div className={`text-2xl font-bold ${
+              page.score >= 70
+                ? "text-green-400"
+                : page.score >= 40
+                ? "text-yellow-400"
+                : "text-red-400"
+            }`}>
+              {i === 0 ? page.score : (
+                <span className="blur-[6px] select-none">{page.score}</span>
+              )}
+            </div>
+            <div className="text-xs text-[var(--muted)]">/100</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Category comparison table */}
+      <div className="rounded-lg border border-[var(--border)] overflow-hidden">
+        {/* Header */}
+        <div
+          className="grid gap-0 bg-[var(--card)] border-b border-[var(--border)]"
+          style={{ gridTemplateColumns: `140px repeat(${allPages.length}, 1fr)` }}
+        >
+          <div className="p-3 text-xs font-semibold text-[var(--muted)]">
+            Category
+          </div>
+          {allPages.map((page, i) => (
+            <div
+              key={i}
+              className={`p-3 text-xs font-semibold text-center truncate ${
+                i === 0 ? "text-indigo-400" : "text-[var(--muted)]"
+              }`}
+            >
+              {i === 0 ? "You" : page.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {categories.map((cat) => (
+          <div
+            key={cat}
+            className="grid gap-0 border-b border-[var(--border)] last:border-b-0"
+            style={{ gridTemplateColumns: `140px repeat(${allPages.length}, 1fr)` }}
+          >
+            <div className="p-3 text-sm font-medium">
+              {CATEGORY_LABELS[cat]}
+            </div>
+            {allPages.map((page, i) => {
+              const val = page.categories[cat] ?? 0;
+              return (
+                <div key={i} className="p-3 text-center">
+                  {i === 0 ? (
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-sm font-bold ${scoreColor(val)} ${scoreBg(val)}`}
+                    >
+                      {val}/10
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-sm font-bold blur-[5px] select-none ${scoreColor(val)} ${scoreBg(val)}`}
+                    >
+                      {val}/10
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Locked overlay CTA */}
+      <div className="mt-4 p-5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-center relative">
+        <div className="text-sm text-[var(--muted)] mb-2">
+          Competitor scores are blurred. Unlock to see exactly where you beat them and where you're behind.
+        </div>
+        <a
+          href={`/report?url=${encodeURIComponent(url)}`}
+          className="inline-block px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold transition text-sm"
+        >
+          Unlock Full Report — $7
+        </a>
+        <p className="text-xs text-[var(--muted)] mt-2">
+          Includes full competitor breakdown + your action plan
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FreeResult | null>(null);
   const [error, setError] = useState("");
+  const [compLoading, setCompLoading] = useState(false);
+  const [compData, setCompData] = useState<CompetitorData | null>(null);
+  const [compError, setCompError] = useState("");
 
   async function analyze(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     setResult(null);
+    setCompData(null);
+    setCompError("");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -38,6 +213,29 @@ export default function Home() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchCompetitors() {
+    setCompLoading(true);
+    setCompError("");
+    try {
+      const res = await fetch("/api/analyze-competitors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Competitor analysis failed");
+      }
+      const data = await res.json();
+      setCompData(data);
+      posthog.capture("competitor_analysis_completed", { url, competitors: data.competitors?.length });
+    } catch (err: unknown) {
+      setCompError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setCompLoading(false);
     }
   }
 
@@ -136,6 +334,36 @@ export default function Home() {
             >
               📋 Copy
             </button>
+          </div>
+
+          {/* Competitor Analysis */}
+          <div className="mt-6">
+            {!compData && !compLoading && (
+              <button
+                onClick={fetchCompetitors}
+                className="w-full py-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-semibold transition text-sm"
+              >
+                See how you compare to competitors
+              </button>
+            )}
+            {compLoading && (
+              <div className="p-6 rounded-lg bg-[var(--card)] border border-[var(--border)] text-center">
+                <div className="text-sm text-[var(--muted)] animate-pulse">
+                  Finding competitors and scoring their pages... this takes ~30 seconds
+                </div>
+              </div>
+            )}
+            {compError && (
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {compError}
+              </div>
+            )}
+            {compData && (
+              <div>
+                <h3 className="text-lg font-bold mb-3">Competitor Comparison</h3>
+                <CompetitorAnalysis data={compData} url={url} />
+              </div>
+            )}
           </div>
 
           {/* Locked Section Previews */}
