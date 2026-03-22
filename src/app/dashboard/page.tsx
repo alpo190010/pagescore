@@ -53,7 +53,10 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">PageScore — Founder Dashboard</h1>
         <span className="text-xs text-[var(--muted)]">Day {data.day}</span>
       </div>
-      <p className="text-xs text-[var(--muted)] mb-8">Last updated: {data.lastUpdated} · Auto-refreshes every 15s</p>
+      <p className="text-xs text-[var(--muted)] mb-2">Last updated: {data.lastUpdated} · Auto-refreshes every 15s</p>
+      <div className="flex gap-3 mb-8">
+        <a href="/dashboard/virality" className="text-xs px-3 py-1 rounded bg-orange-500/20 text-orange-400 hover:bg-orange-500/30">🔥 Virality Research</a>
+      </div>
 
       {/* Metrics */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
