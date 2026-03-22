@@ -81,6 +81,14 @@ export default function HormoziPage() {
       </div>
       <p className="text-xs text-[var(--muted)] mb-8">$100M Offers + $100M Leads + $100M Money Models · Chief Marketing Officer · All marketing decisions run through him</p>
 
+      {/* TOS Rule — always visible */}
+      <section className="mb-6">
+        <div className="rounded-lg bg-red-500/15 border-2 border-red-500/50 px-5 py-4">
+          <div className="text-sm font-bold text-red-400 mb-1">⛔ RULE #0 — NON-NEGOTIABLE</div>
+          <p className="text-sm text-red-300">Check <a href="/dashboard/tos" className="underline font-bold">TOS Guardian</a> BEFORE any public action. RED = hard stop. Don't draft, don't post, don't think about it. No exceptions. Ever.</p>
+        </div>
+      </section>
+
       {/* Current Bottleneck */}
       <section className="mb-10">
         <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-5 py-4">
