@@ -37,12 +37,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = `You are a landing page conversion expert. Analyze this HTML and return a JSON object with:
-- "score": number 0-100 (overall landing page effectiveness)
+    const prompt = `You are an e-commerce conversion expert specializing in Shopify product pages. Analyze this HTML and return a JSON object with:
+- "score": number 0-100 (overall product page conversion effectiveness)
 - "summary": one-sentence assessment (max 30 words)
 - "tips": array of exactly 3 specific, actionable improvement tips (each max 25 words)
+- "categories": object with scores 0-10 for each: { "title", "images", "pricing", "socialProof", "cta", "description", "trust" }
 
-Be specific and reference actual content from the page. Be honest — don't inflate scores.
+Score these e-commerce specific criteria:
+- Title: Does it include product name, key benefit, and relevant keywords?
+- Images: Are there multiple high-quality images? Lifestyle shots? Zoom capability?
+- Pricing: Is there price anchoring? Original price shown? Savings highlighted?
+- Social proof: Reviews count, star ratings, UGC, testimonials visible?
+- CTA: Is "Add to Cart" prominent, above the fold, with urgency signals?
+- Description: Does it lead with benefits over features? Scannable format?
+- Trust: Are there badges, guarantees, secure checkout signals, return policy?
+
+Be specific and reference actual content from the page. Be honest — don't inflate scores. If the page is a 404 or error page, score it 0 and say so.
 
 HTML:
 ${truncated}
@@ -89,6 +99,7 @@ Return ONLY valid JSON, no markdown.`;
       score: Math.min(100, Math.max(0, Number(result.score) || 50)),
       summary: result.summary || "Analysis complete.",
       tips: (result.tips || []).slice(0, 3),
+      categories: result.categories || {},
     });
   } catch (err) {
     console.error("Analyze error:", err);

@@ -49,22 +49,21 @@ export default function Home() {
           AI-Powered Analysis
         </div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-          Your landing page is{" "}
-          <span className="text-indigo-400">leaving money on the table</span>
+          Your Shopify product page is{" "}
+          <span className="text-indigo-400">losing sales every day</span>
         </h1>
         <p className="text-lg text-[var(--muted)] mb-3 max-w-lg mx-auto">
-          Get an AI-powered score with 3 specific fixes in 30 seconds.
-          No signup. No email. Completely free.
+          AI scores your product page on 7 conversion factors — title, images, pricing, reviews, CTA, and more. 30 seconds. Free.
         </p>
         <p className="text-sm text-[var(--muted)] mb-10 max-w-lg mx-auto">
-          Join 100+ founders who improved their conversion rates after scanning.
+          Paste any Shopify product URL and see exactly what's costing you sales.
         </p>
 
         <form onSubmit={analyze} className="flex gap-3 max-w-lg mx-auto">
           <input
             type="url"
             required
-            placeholder="https://your-landing-page.com"
+            placeholder="https://yourstore.myshopify.com/products/..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1 px-4 py-3 rounded-lg bg-[var(--card)] border border-[var(--border)] text-white placeholder:text-[var(--muted)] focus:outline-none focus:border-indigo-500 transition"
@@ -130,7 +129,7 @@ export default function Home() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(
-                  `My landing page scored ${result.score}/100 on PageScore 📊\n\nGet your free score: https://pagescore-tau.vercel.app`
+                  `My Shopify product page scored ${result.score}/100 on PageScore 📊\n\nFind out what's costing you sales: https://pagescore-tau.vercel.app`
                 );
               }}
               className="px-3 py-1 text-xs rounded-md bg-[var(--border)] hover:bg-[var(--muted)] transition"
@@ -145,16 +144,16 @@ export default function Home() {
             <p className="text-[var(--muted)] text-sm mb-4">Here&apos;s what the deep-dive covers — unlock all 10 sections:</p>
             
             {[
-              { icon: "📝", title: "Copy Teardown", teaser: "Your headline scores a 6/10. The subhead is too vague and your CTA..." },
-              { icon: "🔍", title: "SEO Audit", teaser: "Missing 3 critical meta tags. Title tag is 12 characters too long..." },
-              { icon: "🎯", title: "CRO Opportunities", teaser: "Found 4 conversion blockers above the fold. Your form has..." },
-              { icon: "🎨", title: "Design & Visual Hierarchy", teaser: "Primary CTA doesn't have enough contrast. Visual flow breaks at..." },
-              { icon: "♿", title: "Accessibility", teaser: "2 WCAG AA violations found. Alt text missing on hero image..." },
-              { icon: "⚡", title: "Performance", teaser: "Largest Contentful Paint is slow. 3 render-blocking resources..." },
-              { icon: "📱", title: "Mobile UX", teaser: "Tap targets too small on mobile. Text overflows viewport at..." },
-              { icon: "🤝", title: "Trust Signals", teaser: "No social proof above the fold. Missing trust badges near..." },
-              { icon: "🏆", title: "Competitor Positioning", teaser: "Your value prop overlaps with 2 major competitors. Differentiate by..." },
-              { icon: "📋", title: "Action Plan", teaser: "Priority #1: Fix your CTA copy (est. +15% conversion). Priority #2..." },
+              { icon: "📝", title: "Product Title Score", teaser: "Your title is missing the key benefit. Add size/variant info and a power word..." },
+              { icon: "🖼️", title: "Image Analysis", teaser: "Only 2 images detected. Top converting stores use 6-8 with lifestyle shots..." },
+              { icon: "💰", title: "Pricing & Anchoring", teaser: "No compare-at price shown. Adding original price can increase conversion 15%..." },
+              { icon: "⭐", title: "Social Proof", teaser: "No review count visible above the fold. 94% of buyers read reviews before..." },
+              { icon: "🎯", title: "CTA Strength", teaser: "Add to Cart button lacks urgency. 'Only 3 left' or 'Ships today' adds..." },
+              { icon: "📄", title: "Description Quality", teaser: "Description is feature-heavy. Lead with the transformation, not the specs..." },
+              { icon: "🛡️", title: "Trust Signals", teaser: "Missing money-back guarantee badge and secure checkout icon above fold..." },
+              { icon: "📱", title: "Mobile Experience", teaser: "CTA button too small on mobile. 67% of Shopify traffic is mobile..." },
+              { icon: "🔍", title: "SEO & Discoverability", teaser: "Meta title missing target keyword. Missing structured data for rich snippets..." },
+              { icon: "📋", title: "Action Plan", teaser: "Priority #1: Add lifestyle images (+23% CVR est). Priority #2: Show review count..." },
             ].map((section) => (
               <div
                 key={section.title}
@@ -192,7 +191,7 @@ export default function Home() {
                 <div className="text-sm text-[var(--muted)] mb-1 flex-1">
                   Complete teardown — all 10 sections scored, every fix prioritized, estimated revenue impact per change
                 </div>
-                <p className="text-xs text-[var(--muted)] mb-4">Most founders pay $300/hr for this. Yours for $7.</p>
+                <p className="text-xs text-[var(--muted)] mb-4">Most Shopify agencies charge $500 for a CRO audit. Yours for $7.</p>
                 <a
                   href={`/report?url=${encodeURIComponent(url)}`}
                   onClick={() => posthog.capture("report_cta_clicked", { url, score: result.score })}
@@ -213,7 +212,7 @@ export default function Home() {
           {[
             {
               icon: "⚡",
-              title: "30-Second Scan",
+              title: "30-Second Product Audit",
               desc: "AI analyzes your page instantly. No signup required for the free scan.",
             },
             {
