@@ -3,31 +3,32 @@ import "./globals.css";
 import { PHProvider } from "./providers";
 
 export const metadata: Metadata = {
-  title: "PageScore — AI Landing Page Analyzer | Free Score in 30 Seconds",
+  title: "PageScore — Shopify Product Page Analyzer | Free Score in 30 Seconds",
   description:
-    "Paste any URL. Get an AI-powered landing page score (0-100) with 3 actionable fixes in 30 seconds. Free. No signup. Used by 100+ founders.",
+    "Paste any Shopify product URL. Get an AI-powered score (0-100) on 7 conversion factors with actionable fixes in 30 seconds. Free. No signup.",
   openGraph: {
-    title: "PageScore — Is Your Landing Page Losing You Money?",
+    title: "PageScore — Is Your Shopify Product Page Losing You Sales?",
     description:
-      "AI scores your landing page and tells you exactly what to fix. Free scan in 30 seconds.",
+      "AI scores your Shopify product page on title, images, pricing, reviews, CTA and more. Free scan in 30 seconds.",
     url: "https://pagescore-tau.vercel.app",
     siteName: "PageScore",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PageScore — AI Landing Page Analyzer",
+    title: "PageScore — Shopify Product Page Analyzer",
     description:
-      "Paste any URL. Get a score + 3 actionable fixes in 30 seconds. Free.",
+      "Paste your Shopify product URL. Get a score + fixes in 30 seconds. Free.",
   },
   keywords: [
-    "landing page analyzer",
-    "landing page score",
-    "AI landing page audit",
-    "website analyzer",
-    "conversion optimization",
-    "landing page checker",
-    "free landing page tool",
+    "shopify product page analyzer",
+    "shopify conversion rate optimization",
+    "shopify product page score",
+    "AI product page audit",
+    "ecommerce conversion optimizer",
+    "shopify store optimizer",
+    "product page checker",
+    "free shopify tool",
   ],
 };
 
