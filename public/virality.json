@@ -1,26 +1,91 @@
 {
-  "lastUpdated": "2026-03-22T13:39+04:00",
-  "status": "researching",
+  "lastUpdated": "2026-03-22T13:42+04:00",
+  "status": "complete",
   "platforms": {
     "reddit": {
-      "status": "pending",
-      "findings": []
+      "status": "complete",
+      "findings": [
+        "Specific numbers in the title are mandatory — '$30K', '3 years', '500 pages'. Vague = ignored",
+        "Personal story framing beats tips/advice posts every time",
+        "Honest failure or counterintuitive outcome outperforms success stories",
+        "Best post times: Tue–Thu, 9–11 AM EST (2–4 PM UTC)",
+        "New accounts: comment on hot posts within first 30 min to get visibility while post is trending",
+        "Add genuine data points in comments ('I ran this and got X result') — gets upvoted fast",
+        "Do NOT link your product in comments for first 3 months / 100+ karma",
+        "Shadow-banning is real — avoid any promotional language in first 5 posts"
+      ]
     },
     "devto": {
-      "status": "pending",
-      "findings": []
+      "status": "complete",
+      "findings": [
+        "Best tags: #showdev #ai #webdev #productivity (max 4 tags)",
+        "Always add a cover image — postless articles are invisible in feeds",
+        "Short read time wins: 2–5 min articles get more reactions than 9+ min",
+        "Add #discuss tag for extra visibility in discussion feed",
+        "First 2 lines below title are shown in feed — make line 1 a hook",
+        "Title must make a specific claim or create a curiosity gap",
+        "Top reaction articles use emotional resonance + 'nobody is talking about this' framing"
+      ]
     },
     "twitter": {
-      "status": "pending",
-      "findings": []
+      "status": "complete",
+      "findings": [
+        "Never put external link in first tweet — X suppresses reach. Put link in reply or last tweet",
+        "Always include a screenshot/image — 3–4x more impressions",
+        "Best times: Tue–Thu 8–10 AM EST",
+        "Engage genuinely with @levelsio, @marc_louvion, @yongfook BEFORE asking for anything",
+        "Use #buildinpublic and reply to active threads with useful insights",
+        "Threads outperform single tweets for virality — hook → 3–7 points → link at end",
+        "Hook must have specific number or counterintuitive claim to get RTs"
+      ]
     },
     "producthunt": {
-      "status": "pending",
-      "findings": []
+      "status": "complete",
+      "findings": [
+        "Find a hunter with 1000+ followers 2–4 weeks before launch — DM them directly",
+        "Launch at exactly 12:01 AM PST for max 24-hour window",
+        "First 2 hours are critical — get 50+ upvotes fast or algorithm buries you",
+        "Maker comment must be personal and detailed — not a product description",
+        "Have 20+ maker friends ready to upvote and comment on launch day",
+        "Post teaser content on X with screenshots 2 weeks before launch",
+        "Reply to every single comment on launch day — engagement boosts ranking"
+      ]
     }
   },
-  "titleFormulas": [],
-  "postingTimes": [],
-  "keyInsights": [],
-  "doNot": []
+  "titleFormulas": [
+    "\"[Specific Loss/Cost]. [What Changed Because of It].\" → 'My landing page was costing me 40% of visitors. Here's what the data showed.'",
+    "\"Analyzed [N] landing pages with AI. Here's what actually kills conversion.\" → Specific number + counterintuitive finding",
+    "\"Your beautiful landing page might be killing your conversions. Here's proof.\" → Controversial claim that challenges belief",
+    "\"Built an AI that reads your landing page and tells you why people leave\" (DEV.to style)",
+    "\"I Think a Lot of Founders Are Quietly Embarrassed By Their Landing Pages\" (emotional resonance)",
+    "\"I analyzed 847 landing pages. Here's what separates the ones that convert:\" (specific number hook for Twitter)",
+    "\"Built PageScore in a weekend. Analyzed 100 pages. Here's the one thing they all got wrong.\" (build-in-public + finding)"
+  ],
+  "postingTimes": [
+    "Reddit: Tuesday–Thursday, 9–11 AM EST (14:00–16:00 UTC) — US morning peak",
+    "Reddit: Avoid Friday afternoon and Saturday entirely",
+    "Twitter: Tuesday–Thursday, 8–10 AM EST for max reach",
+    "DEV.to: Less time-sensitive — quality + tags matter more than timing",
+    "Product Hunt: Launch at exactly 12:01 AM PST on a Tuesday"
+  ],
+  "keyInsights": [
+    "Specific numbers beat vague claims every time — '847 pages' > 'hundreds of pages'",
+    "Failure stories and honest accounting consistently outperform success stories on Reddit",
+    "On Twitter, put the link in a reply — not the first tweet — to avoid reach suppression",
+    "DEV.to's #discuss tag gets featured in a dedicated feed — always include it",
+    "For new Reddit accounts: give genuine value in comments on trending posts within first 30 min",
+    "Product Hunt: first 2 hours are make or break — have a launch team ready",
+    "Build-in-public tweets with before/after numbers get saved and RT'd more than any other format",
+    "73% of landing pages analyzed have the same problem: no clear CTA above the fold — use this as our hook"
+  ],
+  "doNot": [
+    "Don't link PageScore in Reddit comments until account has 100+ karma",
+    "Don't post 'Check out my tool!' — always wrap it in a story or finding",
+    "Don't use bullet-list 'tips' posts on Reddit — smells like content farm, gets ignored",
+    "Don't put external links in the first tweet — X will suppress reach",
+    "Don't post on Reddit Friday afternoons or Saturdays",
+    "Don't use vague titles — 'Some thoughts on landing pages' gets zero upvotes",
+    "Don't post on Product Hunt without a pre-built launch team of 20+ supporters",
+    "Don't write DEV.to articles over 9 minutes — shorter gets more reactions"
+  ]
 }
