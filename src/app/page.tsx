@@ -39,22 +39,25 @@ function calculateRevenueLoss(score: number, productPrice: number, estimatedVisi
   };
 
   const baseCVR = avgCVR[productCategory] || 0.020;
-  // Conservative defaults — underestimate, never overestimate
-  const price = Math.min(productPrice || 35, 500); // cap product price impact at $500
-  const visitors = Math.min(estimatedVisitors || 500, 3000); // assume small store, cap at 3K
+  const price = productPrice || 35;
+  const visitors = Math.min(estimatedVisitors || 500, 5000); // conservative visitor cap
 
-  // Conservative CVR delta — only attribute 30% of potential improvement to page quality
-  const scoreDelta = (85 - score) / 100; // how far from "good" (85)
-  const cvrImprovement = baseCVR * scoreDelta * 0.3; // conservative: only 30% attribution
+  // Think in additional sales, not raw dollars
+  // How many extra sales/month if page improved from current score to 85?
+  const scoreDelta = Math.max(0, (85 - score)) / 100;
+  const extraCVR = baseCVR * scoreDelta * 0.25; // conservative: 25% attribution
+  const extraSalesPerMonth = visitors * extraCVR;
   
-  const monthlyLoss = visitors * cvrImprovement * price;
-  const lossLow = Math.round(monthlyLoss * 0.6 / 10) * 10; // tight range
-  const lossHigh = Math.round(monthlyLoss * 1.0 / 10) * 10;
+  // Cap additional sales: 1–5 extra sales/month is believable for most stores
+  const cappedSalesLow = Math.min(extraSalesPerMonth * 0.5, 3);
+  const cappedSalesHigh = Math.min(extraSalesPerMonth * 1.0, 5);
+  
+  const lossLow = Math.round(cappedSalesLow * price / 10) * 10;
+  const lossHigh = Math.round(cappedSalesHigh * price / 10) * 10;
 
-  // Hard caps — credible, never sensational
   return { 
-    lossLow: Math.min(Math.max(lossLow, 30), 2000), 
-    lossHigh: Math.min(Math.max(lossHigh, 60), 5000) 
+    lossLow: Math.max(lossLow, 30), 
+    lossHigh: Math.max(lossHigh, 60) 
   };
 }
 
