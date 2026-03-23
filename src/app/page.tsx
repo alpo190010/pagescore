@@ -50,7 +50,11 @@ function calculateRevenueLoss(score: number, productPrice: number, estimatedVisi
   const lossLow = Math.round((potentialRevenue - currentRevenue) * 0.7 / 10) * 10;
   const lossHigh = Math.round((potentialRevenue - currentRevenue) * 1.3 / 10) * 10;
 
-  return { lossLow: Math.max(lossLow, 20), lossHigh: Math.max(lossHigh, 50) };
+  // Cap at reasonable range — nobody believes $500K/month loss
+  return { 
+    lossLow: Math.min(Math.max(lossLow, 20), 15000), 
+    lossHigh: Math.min(Math.max(lossHigh, 50), 30000) 
+  };
 }
 
 /* ── Score color helper ── */
