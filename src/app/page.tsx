@@ -58,6 +58,71 @@ function scoreBg(score: number): string {
   return "bg-red-400/10";
 }
 
+const PRICING_TIERS = [
+  {
+    name: "Free",
+    price: "$0",
+    period: "",
+    description: "Try it out",
+    features: [
+      "3 scans per month",
+      "Overall score",
+      "Top 3 issues only",
+    ],
+    cta: "Start Free",
+    ctaStyle: "border border-[var(--border)] hover:border-indigo-500/50 text-white",
+    highlight: false,
+  },
+  {
+    name: "Starter",
+    price: "$29",
+    period: "/mo",
+    description: "For growing stores",
+    features: [
+      "Full 10-section reports",
+      "AI fix suggestions",
+      "Up to 10 products",
+      "Competitor comparison",
+      "Email support",
+    ],
+    cta: "Start Free Trial",
+    ctaStyle: "bg-indigo-500 hover:bg-indigo-400 text-white",
+    highlight: true,
+  },
+  {
+    name: "Growth",
+    price: "$79",
+    period: "/mo",
+    description: "Scale with confidence",
+    features: [
+      "Weekly monitoring + alerts",
+      "AI rewrites for titles & descriptions",
+      "Up to 100 products",
+      "Competitive benchmarking",
+      "Score history & trends",
+    ],
+    cta: "Start Free Trial",
+    ctaStyle: "bg-indigo-500 hover:bg-indigo-400 text-white",
+    highlight: false,
+  },
+  {
+    name: "Agency",
+    price: "$199",
+    period: "/mo",
+    description: "For teams & agencies",
+    features: [
+      "Unlimited products",
+      "Multiple stores",
+      "White-label PDF reports",
+      "Team seats",
+      "Priority support",
+    ],
+    cta: "Contact Us",
+    ctaStyle: "border border-[var(--border)] hover:border-indigo-500/50 text-white",
+    highlight: false,
+  },
+];
+
 function CompetitorAnalysis({
   data,
   url,
@@ -163,13 +228,13 @@ function CompetitorAnalysis({
       {/* Locked overlay CTA */}
       <div className="mt-4 p-5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-center relative">
         <div className="text-sm text-[var(--muted)] mb-2">
-          Competitor scores are blurred. Unlock to see exactly where you beat them and where you're behind.
+          Competitor scores are blurred. Unlock to see exactly where you beat them and where you&apos;re behind.
         </div>
         <a
           href={`/report?url=${encodeURIComponent(url)}`}
           className="inline-block px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold transition text-sm"
         >
-          Unlock Full Report — $7
+          Unlock Full Report — Start Free Trial
         </a>
         <p className="text-xs text-[var(--muted)] mt-2">
           Includes full competitor breakdown + your action plan
@@ -254,7 +319,7 @@ export default function Home() {
           AI scores your product page on 7 conversion factors — title, images, pricing, reviews, CTA, and more. 30 seconds. Free.
         </p>
         <p className="text-sm text-[var(--muted)] mb-10 max-w-lg mx-auto">
-          Paste any Shopify product URL and see exactly what's costing you sales.
+          Paste any Shopify product URL and see exactly what&apos;s costing you sales.
         </p>
 
         <form onSubmit={analyze} className="flex gap-3 max-w-lg mx-auto">
@@ -286,6 +351,7 @@ export default function Home() {
       {/* Free Result */}
       {result && (
         <section className="max-w-2xl w-full mb-16">
+          {/* Score + Top 3 Issues */}
           <div className="p-6 rounded-xl bg-[var(--card)] border border-[var(--border)]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Quick Score</h2>
@@ -302,7 +368,7 @@ export default function Home() {
               </div>
             </div>
             <p className="text-[var(--muted)] mb-4">{result.summary}</p>
-            <h3 className="font-semibold mb-2">Top 3 Quick Fixes:</h3>
+            <h3 className="font-semibold mb-2">Top 3 Issues:</h3>
             <ul className="space-y-2">
               {result.tips.map((tip, i) => (
                 <li key={i} className="flex gap-2 text-sm">
@@ -366,11 +432,11 @@ export default function Home() {
             )}
           </div>
 
-          {/* Locked Section Previews */}
+          {/* Locked Full Report Preview (blurred sections) */}
           <div className="mt-6 space-y-3">
             <h3 className="text-lg font-bold mb-1">Full report preview</h3>
             <p className="text-[var(--muted)] text-sm mb-4">Here&apos;s what the deep-dive covers — unlock all 10 sections:</p>
-            
+
             {[
               { icon: "📝", title: "Product Title Score", teaser: "Your title is missing the key benefit. Add size/variant info and a power word..." },
               { icon: "🖼️", title: "Image Analysis", teaser: "Only 2 images detected. Top converting stores use 6-8 with lifestyle shots..." },
@@ -401,40 +467,176 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Upsell CTA — Menu Upsell (Hormozi) */}
+          {/* Unlock Full Report CTA */}
+          <div className="mt-6 p-6 rounded-xl bg-indigo-500/5 border border-indigo-500/20 text-center">
+            <h3 className="text-xl font-bold mb-2">Unlock your full report</h3>
+            <p className="text-sm text-[var(--muted)] mb-4">
+              All 10 sections scored, every fix prioritized, estimated revenue impact per change.
+              <br />
+              <span className="text-indigo-400">Most Shopify agencies charge $500 for a CRO audit.</span>
+            </p>
+            <a
+              href={`/report?url=${encodeURIComponent(url)}`}
+              onClick={() => posthog.capture("report_cta_clicked", { url, score: result.score })}
+              className="inline-block px-8 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold transition"
+            >
+              Unlock Full Report — Start Free Trial
+            </a>
+            <p className="text-xs text-[var(--muted)] mt-2">Starter plan · $29/mo · Cancel anytime</p>
+          </div>
+
+          {/* PRIORITY 4 — AI-Generated Rewrites Upsell */}
           <div className="mt-6 rounded-xl border border-[var(--border)] overflow-hidden">
-            <div className="p-4 border-b border-[var(--border)] bg-[var(--card)]">
-              <p className="text-sm font-semibold text-center text-[var(--muted)]">What do you want next?</p>
-            </div>
-            <div className="grid md:grid-cols-2">
-              {/* Option A — Free */}
-              <div className="p-6 border-r border-[var(--border)] text-center flex flex-col">
-                <div className="text-2xl font-bold mb-1">Free</div>
-                <div className="text-sm text-[var(--muted)] mb-4 flex-1">Keep your 3 tips above and fix them yourself</div>
-                <div className="text-xs text-[var(--muted)] py-2 border border-[var(--border)] rounded-lg">You're done ✓</div>
+            <div className="p-5 bg-[var(--card)] border-b border-[var(--border)]">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">✨</span>
+                <h3 className="text-lg font-bold">AI-Generated Rewrites</h3>
               </div>
-              {/* Option B — $7 */}
-              <div className="p-6 bg-indigo-500/5 text-center flex flex-col">
-                <div className="text-2xl font-bold mb-1 text-indigo-400">$7</div>
-                <div className="text-sm text-[var(--muted)] mb-1 flex-1">
-                  Complete teardown — all 10 sections scored, every fix prioritized, estimated revenue impact per change
+              <p className="text-sm text-[var(--muted)]">
+                See what your product title and description would look like rewritten by AI for maximum conversions.
+              </p>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Blurred title rewrite preview */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wide">Optimized Title</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">🔒 Locked</span>
                 </div>
-                <p className="text-xs text-[var(--muted)] mb-4">Most Shopify agencies charge $500 for a CRO audit. Yours for $7.</p>
+                <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+                  <p className="text-sm blur-[6px] select-none pointer-events-none">
+                    Premium Organic Cotton T-Shirt — Ultra-Soft, Ethically Made | Free Shipping Over $50
+                  </p>
+                </div>
+              </div>
+              {/* Blurred description rewrite preview */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wide">Optimized Description</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">🔒 Locked</span>
+                </div>
+                <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+                  <p className="text-sm blur-[6px] select-none pointer-events-none">
+                    Transform your everyday wardrobe with our best-selling organic cotton tee. Crafted from 100% GOTS-certified organic cotton, this shirt feels impossibly soft against your skin while lasting wash after wash. Over 2,400 five-star reviews from customers who switched and never looked back.
+                  </p>
+                </div>
+              </div>
+              {/* CTA */}
+              <div className="text-center pt-2">
                 <a
-                  href={`/report?url=${encodeURIComponent(url)}`}
-                  onClick={() => posthog.capture("report_cta_clicked", { url, score: result.score })}
+                  href={`/report?url=${encodeURIComponent(url)}&feature=rewrites`}
+                  onClick={() => posthog.capture("ai_rewrite_cta_clicked", { url, score: result.score })}
                   className="inline-block px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold transition text-sm"
                 >
-                  Get the Complete Teardown — $7
+                  Get AI Rewrites — $29/mo
                 </a>
-                <p className="text-xs text-[var(--muted)] mt-2">One-time · Instant · No subscription</p>
+                <p className="text-xs text-[var(--muted)] mt-2">Included with Starter plan</p>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* Social Proof / Features */}
+      {/* PRIORITY 2 — Never Miss a Score Drop (monitoring teaser) */}
+      <section className="max-w-2xl w-full mb-16">
+        <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+          <div className="p-6 bg-[var(--card)]">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">📉</span>
+              <h2 className="text-xl font-bold">Never Miss a Score Drop</h2>
+            </div>
+            <p className="text-sm text-[var(--muted)] mb-6">
+              Your product pages change. Competitors update theirs. Theme updates break things. Stay on top of it automatically.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  icon: "🔄",
+                  title: "Weekly Re-Scans",
+                  desc: "Every product page re-analyzed automatically, every week.",
+                },
+                {
+                  icon: "🔔",
+                  title: "Email Alerts",
+                  desc: "Get notified the moment your score drops below your threshold.",
+                },
+                {
+                  icon: "📈",
+                  title: "Track Improvements",
+                  desc: "See your score history over time. Know what changes moved the needle.",
+                },
+                {
+                  icon: "🏆",
+                  title: "Competitive Benchmarking",
+                  desc: "Weekly competitor tracking so you always know where you stand.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="p-4 rounded-lg bg-[#0a0a0a] border border-[var(--border)]">
+                  <div className="text-lg mb-2">{item.icon}</div>
+                  <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                  <p className="text-xs text-[var(--muted)]">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <span className="inline-block px-4 py-2 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                Available on Starter plan and above — $29/mo
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRIORITY 1 — Subscription Pricing Tiers */}
+      <section className="max-w-5xl w-full mb-16" id="pricing">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold mb-3">Simple, transparent pricing</h2>
+          <p className="text-[var(--muted)]">Start free. Upgrade when you need more.</p>
+        </div>
+        <div className="grid md:grid-cols-4 gap-4">
+          {PRICING_TIERS.map((tier) => (
+            <div
+              key={tier.name}
+              className={`p-6 rounded-xl border flex flex-col ${
+                tier.highlight
+                  ? "bg-indigo-500/5 border-indigo-500/30 relative"
+                  : "bg-[var(--card)] border-[var(--border)]"
+              }`}
+            >
+              {tier.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold bg-indigo-500 text-white">
+                  Most Popular
+                </div>
+              )}
+              <div className="mb-4">
+                <h3 className="font-bold text-lg">{tier.name}</h3>
+                <p className="text-xs text-[var(--muted)]">{tier.description}</p>
+              </div>
+              <div className="mb-4">
+                <span className="text-3xl font-bold">{tier.price}</span>
+                {tier.period && <span className="text-[var(--muted)]">{tier.period}</span>}
+              </div>
+              <ul className="space-y-2 mb-6 flex-1">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex gap-2 text-sm">
+                    <span className="text-indigo-400 shrink-0">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* TODO: Replace href with actual Lemon Squeezy subscription checkout URLs per tier */}
+              <a
+                href={tier.name === "Agency" ? "mailto:hello@pagescore.app" : "#pricing"}
+                className={`block text-center px-4 py-3 rounded-lg font-semibold transition text-sm ${tier.ctaStyle}`}
+              >
+                {tier.cta}
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social Proof / Features — shown when no results */}
       {!result && (
         <section className="max-w-3xl w-full grid md:grid-cols-3 gap-6 pb-24">
           {[
