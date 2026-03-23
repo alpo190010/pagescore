@@ -71,10 +71,10 @@ ${truncated}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-preview",
+        model: "minimax/minimax-m2.7",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
-        max_tokens: 800,
+        max_tokens: 4000,
       }),
     });
 
@@ -87,7 +87,9 @@ ${truncated}`;
     }
 
     const aiData = await aiRes.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
+    // minimax-m2.7 is a reasoning model — content may be null while reasoning is populated
+    const msg = aiData.choices?.[0]?.message || {};
+    const content = msg.content || msg.reasoning || "";
 
     // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
