@@ -84,28 +84,28 @@ function getExplanation(key: string, score: number): string {
     },
     cta: {
       high: "Your call-to-action is clear, prominent, and compelling. Good use of urgency or benefit-driven button copy.",
-      mid: "Your CTA could be stronger. Consider more compelling button text, better visual prominence, or adding urgency.",
-      low: "Your CTA is weak or hard to find. This is directly costing you sales. Make the buy button unmissable and use action-oriented copy.",
+      mid: "Your CTA could be stronger. Consider more compelling button text (not just 'Add to Cart'), better visual prominence, or adding urgency.",
+      low: "Your CTA is weak or hard to find. This is directly costing you sales. Make the buy button unmissable, use action-oriented copy, and reduce friction.",
     },
     description: {
       high: "Well-written description with clear benefits, scannable formatting, and persuasive copy that addresses buyer concerns.",
       mid: "Description is adequate but could convert better. Break into scannable sections, lead with benefits over features, and address common objections.",
-      low: "Product description needs a complete rewrite. Lead with benefits and use bullet points.",
+      low: "Product description needs a complete rewrite. It's either too thin, feature-only, wall-of-text, or missing entirely. Lead with benefits and use bullet points.",
     },
     trust: {
       high: "Good trust signals including shipping info, return policy, secure payment badges, and brand credibility indicators.",
       mid: "Some trust signals present but gaps remain. Add visible return policy, shipping timeline, payment security badges, and guarantee info near the buy button.",
-      low: "Missing critical trust signals. Add return policy, shipping info, security badges, and guarantees immediately.",
+      low: "Missing critical trust signals. Buyers don't feel safe purchasing. Add return policy, shipping info, security badges, and guarantees immediately.",
     },
     mobile: {
       high: "Mobile experience is well-optimized with touch-friendly elements, readable text, and fast-loading images.",
-      mid: "Mobile experience has issues. Buttons may be too small, text hard to read, or layout breaks on smaller screens.",
-      low: "Serious mobile issues detected. With 60%+ of Shopify traffic on mobile, this is critically hurting conversions.",
+      mid: "Mobile experience has issues. Buttons may be too small, text hard to read, or layout breaks on smaller screens. Test on actual devices.",
+      low: "Serious mobile issues detected. With 60%+ of Shopify traffic on mobile, this is critically hurting conversions. Fix touch targets, readability, and layout.",
     },
     seo: {
       high: "Good SEO foundation with optimized title, proper meta tags, and structured data that helps search visibility.",
       mid: "SEO could be improved. Title may lack target keywords, meta description may be generic, or structured data may be missing.",
-      low: "Poor SEO setup means you're invisible in search results. Optimize your title tag and add a compelling meta description.",
+      low: "Poor SEO setup means you're invisible in search results. Optimize your title tag, add a compelling meta description, and implement product schema markup.",
     },
   };
 
@@ -140,13 +140,13 @@ export default async function ReportTokenPage({
 
   if (!report) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: "#F8F7F4", color: "#111111" }}>
+      <main className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "#F8F7F4", color: "#111111" }}>
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-3 text-[#111111]">Report not found or expired</h1>
-          <p className="text-[#6B6B6B] mb-6">This report link may have expired or is invalid. Try scanning your page again.</p>
+          <h1 className="text-2xl font-bold mb-3" style={{ color: "#111111", letterSpacing: "-0.02em" }}>Report not found or expired</h1>
+          <p className="text-[15px] mb-6" style={{ color: "#6B6B6B" }}>This report link may have expired or is invalid. Try scanning your page again.</p>
           <a
             href="/"
-            className="inline-block px-6 py-3 rounded-lg text-white font-semibold transition no-underline"
+            className="inline-block px-6 py-3 rounded-lg text-white font-semibold transition hover:opacity-90"
             style={{ backgroundColor: "#2563EB" }}
           >
             Scan a New Page
@@ -168,29 +168,27 @@ export default async function ReportTokenPage({
     return { priority: i + 1, category: cat.key, score: cat.score, tip };
   });
 
-  let domain = "";
-  try { domain = new URL(url).hostname; } catch { domain = url; }
-
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-12" style={{ backgroundColor: "#F8F7F4", color: "#111111" }}>
+    <main className="min-h-screen flex flex-col items-center px-4 py-12" style={{ background: "#F8F7F4", color: "#111111" }}>
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <a href="/" className="inline-block mb-6 text-lg font-bold text-[#111111] no-underline" style={{ letterSpacing: "-0.02em" }}>
+          <a href="/" className="inline-block mb-6 text-lg font-bold tracking-[-0.02em] no-underline" style={{ color: "#111111" }}>
             PageScore
           </a>
-          <h1 className="text-2xl font-bold mb-2 text-[#111111]" style={{ letterSpacing: "-0.02em" }}>Full Conversion Report</h1>
-          <p className="text-sm text-[#9E9E9E]">{domain}</p>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "#111111", letterSpacing: "-0.02em" }}>Full Conversion Report</h1>
+          <p className="text-sm break-all" style={{ color: "#6B6B6B" }}>{url}</p>
         </div>
 
-        {/* Score hero */}
+        {/* Score card */}
         <div
-          className="rounded-2xl p-8 text-center mb-8"
+          className="text-center mb-8"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "1.5px solid #E5E7EB",
+            background: "#FFFFFF",
             borderRadius: "16px",
+            padding: "48px",
             boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
+            border: "1.5px solid #E5E7EB",
           }}
         >
           <div className="mb-2">
@@ -200,19 +198,40 @@ export default async function ReportTokenPage({
             >
               {score}
             </span>
-            <span className="text-2xl font-semibold text-[#9E9E9E]">/100</span>
+            <span className="text-2xl font-semibold" style={{ color: "#9E9E9E" }}>/100</span>
           </div>
-          <p className="text-[15px] text-[#6B6B6B] mb-4">{summary}</p>
+          <p className="text-sm mb-4" style={{ color: "#6B6B6B" }}>{summary}</p>
 
           {/* Revenue impact */}
-          <div className="mt-4 p-5 rounded-xl" style={{ backgroundColor: "#FEF2F2", borderRadius: "12px" }}>
-            <p className="text-sm text-[#6B6B6B]">Estimated monthly revenue loss</p>
-            <p className="text-2xl font-extrabold text-[#DC2626] my-1">${lossLow}&ndash;${lossHigh}/month</p>
+          <div className="mt-6 p-5" style={{ backgroundColor: "#FEF2F2", borderRadius: "12px" }}>
+            <p className="text-sm" style={{ color: "#6B6B6B" }}>Estimated revenue loss</p>
+            <p className="font-extrabold mt-1" style={{ fontSize: "28px", color: "#DC2626" }}>
+              ${lossLow}–${lossHigh}/month
+            </p>
+          </div>
+
+          {/* Score pills */}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <span
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: score >= 70 ? "#F0FDF4" : score >= 40 ? "#FFFBEB" : "#FEF2F2",
+                color: scoreColor(score),
+              }}
+            >
+              Your score: {score}
+            </span>
+            <span
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style={{ backgroundColor: "#F0FDF4", color: "#16A34A" }}
+            >
+              Avg Shopify store: 65
+            </span>
           </div>
         </div>
 
         {/* Sections */}
-        <div className="space-y-4 mb-8">
+        <div style={{ display: "grid", gap: "16px" }} className="mb-8">
           {SECTIONS.map((section) => {
             const sectionScore = section.getScore(categories);
             const explanation = getExplanation(section.key, sectionScore);
@@ -220,22 +239,23 @@ export default async function ReportTokenPage({
             return (
               <div
                 key={section.key}
-                className="rounded-xl p-5"
-                style={{ backgroundColor: "#FFFFFF", border: "1.5px solid #E5E7EB", borderRadius: "12px" }}
+                style={{
+                  background: "#FFFFFF",
+                  border: "1.5px solid #E5E7EB",
+                  borderRadius: "12px",
+                  padding: "24px",
+                }}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <h2 className="font-semibold flex-1 text-[#111111] text-lg">{section.title}</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-semibold text-lg" style={{ color: "#111111" }}>{section.title}</h2>
                   <span
-                    className="px-3 py-1 rounded-full text-sm font-semibold"
+                    className="px-3 py-1 rounded-full text-xs font-semibold"
                     style={{ backgroundColor: sectionScoreBg(sectionScore), color: sectionScoreColor(sectionScore) }}
                   >
-                    {sectionScore}/10
+                    {sectionScore}/10 · {getStatusLabel(sectionScore)}
                   </span>
                 </div>
-                <div className="text-xs font-medium mb-2" style={{ color: sectionScoreColor(sectionScore) }}>
-                  {getStatusLabel(sectionScore)}
-                </div>
-                <p className="text-[15px] leading-relaxed text-[#6B6B6B]">
+                <p className="text-[15px] leading-relaxed" style={{ color: "#6B6B6B" }}>
                   {explanation}
                 </p>
               </div>
@@ -244,14 +264,18 @@ export default async function ReportTokenPage({
 
           {/* Action Plan */}
           <div
-            className="rounded-xl p-5"
-            style={{ backgroundColor: "#FFFFFF", border: "1.5px solid #E5E7EB", borderRadius: "12px" }}
+            style={{
+              background: "#FFFFFF",
+              border: "1.5px solid #E5E7EB",
+              borderRadius: "12px",
+              padding: "24px",
+            }}
           >
-            <h2 className="font-semibold text-[#111111] text-lg mb-1">Action Plan</h2>
+            <h2 className="font-semibold text-lg mb-1" style={{ color: "#111111" }}>Action Plan</h2>
             <p className="text-xs font-medium mb-4" style={{ color: "#2563EB" }}>
               Top 3 prioritized fixes (ordered by lowest score)
             </p>
-            <div className="space-y-3">
+            <div style={{ display: "grid", gap: "12px" }}>
               {actionPlanItems.map((item) => (
                 <div key={item.priority} className="flex gap-3 items-start">
                   <span
@@ -261,9 +285,9 @@ export default async function ReportTokenPage({
                     {item.priority}
                   </span>
                   <div className="flex-1">
-                    <p className="text-[15px] font-medium text-[#111111]">{item.tip}</p>
-                    <p className="text-xs mt-0.5 text-[#6B6B6B]">
-                      {item.category} &mdash; currently {item.score}/10
+                    <p className="text-sm font-medium" style={{ color: "#111111" }}>{item.tip}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#6B6B6B" }}>
+                      {item.category} — currently {item.score}/10
                     </p>
                   </div>
                 </div>
@@ -272,29 +296,34 @@ export default async function ReportTokenPage({
           </div>
         </div>
 
-        {/* Upsell card */}
+        {/* Upsell */}
         <div
-          className="rounded-2xl p-6 text-center mb-8"
-          style={{ backgroundColor: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: "16px" }}
+          className="text-center mb-8"
+          style={{
+            backgroundColor: "#EFF6FF",
+            border: "1.5px solid #BFDBFE",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
         >
-          <h3 className="text-lg font-bold text-[#111111] mb-2">Get weekly monitoring + AI rewrites</h3>
-          <ul className="space-y-2 mb-5 text-[15px] text-[#6B6B6B] list-none p-0">
+          <h3 className="text-lg font-semibold mb-2" style={{ color: "#111111" }}>Get weekly monitoring + AI rewrites</h3>
+          <ul className="space-y-2 mb-5 text-sm" style={{ color: "#6B6B6B" }}>
             <li>Score alerts when something drops</li>
             <li>AI-generated rewrites for every low section</li>
             <li>Track improvements over time</li>
           </ul>
           <a
             href="#upgrade"
-            className="inline-block px-8 py-3 rounded-lg text-white font-bold transition no-underline"
+            className="inline-block px-8 py-3 rounded-lg text-white font-semibold transition hover:opacity-90"
             style={{ backgroundColor: "#2563EB" }}
           >
-            Upgrade &mdash; $49/mo
+            Upgrade — $49/mo
           </a>
         </div>
 
         {/* Footer */}
-        <footer className="text-center text-xs pb-8 text-[#9E9E9E]">
-          PageScore &bull; alpo.ai
+        <footer className="text-center text-xs pb-8" style={{ color: "#9E9E9E" }}>
+          PageScore
         </footer>
       </div>
     </main>

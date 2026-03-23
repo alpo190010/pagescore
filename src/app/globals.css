@@ -23,10 +23,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Loading progress bar */
+/* Loading progress bar — uses transform for compositor-only animation */
 @keyframes progress-bar {
-  from { width: 0%; }
-  to { width: 100%; }
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Fade-up entrance */
@@ -45,8 +54,3 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Arc gauge animation */
-@keyframes arc-fill {
-  from { stroke-dashoffset: var(--arc-length); }
-  to { stroke-dashoffset: var(--arc-target); }
-}
