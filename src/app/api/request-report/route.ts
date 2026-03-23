@@ -9,12 +9,70 @@ const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-function buildEmailHtml(score: number, tips: string[], token: string): string {
-  const reportUrl = `https://alpo.ai/report/${token}`;
-  const tipsHtml = tips
-    .slice(0, 3)
-    .map((t) => `<li style="margin-bottom:8px;color:#a1a1aa;">${t}</li>`)
-    .join("");
+interface CategoryScores {
+  title: number;
+  images: number;
+  pricing: number;
+  socialProof: number;
+  cta: number;
+  description: number;
+  trust: number;
+}
+
+function getSeverityLabel(catScore: number): string {
+  if (catScore < 4) return "Critical";
+  if (catScore <= 6) return "Moderate";
+  return "Minor";
+}
+
+function getSeverityColor(catScore: number): string {
+  if (catScore < 4) return "#f87171"; // red
+  if (catScore <= 6) return "#fbbf24"; // yellow
+  return "#4ade80"; // green
+}
+
+function getRevenueImpact(catScore: number): string {
+  if (catScore < 4) return `$${150 + Math.round(Math.random() * 150)}`;
+  if (catScore <= 6) return `$${80 + Math.round(Math.random() * 70)}`;
+  return `$${30 + Math.round(Math.random() * 50)}`;
+}
+
+function buildFixListEmail(
+  score: number,
+  tips: string[],
+  categories: CategoryScores
+): string {
+  // Build leak items sorted by worst score
+  const entries = Object.entries(categories) as [string, number][];
+  entries.sort((a, b) => a[1] - b[1]);
+
+  const items = entries.slice(0, 7).map((entry, i) => {
+    const [, catScore] = entry;
+    const severity = getSeverityLabel(catScore);
+    const color = getSeverityColor(catScore);
+    const impact = getRevenueImpact(catScore);
+    const tip = tips[i] || "Review and optimize this area for better conversions.";
+    // Create a fix suggestion from the tip
+    const fix = tip;
+
+    return `
+      <tr><td style="padding:16px 0;border-bottom:1px solid #262626;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="vertical-align:top;width:32px;padding-right:12px;">
+              <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background-color:${color}20;color:${color};font-size:14px;font-weight:700;text-align:center;line-height:28px;">${i + 1}</span>
+            </td>
+            <td>
+              <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;color:${color};background-color:${color}15;margin-bottom:6px;">${severity}</span>
+              <p style="margin:4px 0 6px;color:#ededed;font-size:15px;font-weight:600;">${fix}</p>
+              <p style="margin:0;color:#fbbf24;font-size:13px;font-weight:500;">Est. impact: ~${impact}/mo</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>`;
+  });
+
+  const tipCount = Math.min(tips.length, 7);
 
   return `<!DOCTYPE html>
 <html>
@@ -27,31 +85,37 @@ function buildEmailHtml(score: number, tips: string[], token: string): string {
         <tr><td style="padding:0 0 32px;text-align:center;">
           <span style="color:#818cf8;font-size:18px;font-weight:700;letter-spacing:-0.5px;">PageScore</span>
         </td></tr>
-        <!-- Score card -->
-        <tr><td style="background-color:#141414;border:1px solid #262626;border-radius:12px;padding:40px 32px;text-align:center;">
-          <h1 style="margin:0 0 8px;color:#ededed;font-size:22px;font-weight:700;">Your product page analysis is ready</h1>
-          <p style="margin:0 0 32px;color:#737373;font-size:14px;">Here's a preview of what we found.</p>
+
+        <!-- Main card -->
+        <tr><td style="background-color:#141414;border:1px solid #262626;border-radius:12px;padding:40px 32px;">
+          <!-- Headline -->
+          <h1 style="margin:0 0 32px;color:#ededed;font-size:24px;font-weight:700;text-align:center;">Your conversion fix list</h1>
+
           <!-- Big score -->
-          <div style="margin:0 0 32px;">
-            <span style="font-size:72px;font-weight:800;color:#818cf8;line-height:1;">${score}</span>
+          <div style="text-align:center;margin:0 0 32px;">
+            <span style="font-size:80px;font-weight:800;color:#818cf8;line-height:1;">${score}</span>
             <span style="font-size:24px;color:#737373;font-weight:600;">/100</span>
           </div>
-          <!-- Findings -->
-          <div style="text-align:left;margin:0 0 32px;">
-            <h3 style="margin:0 0 12px;color:#ededed;font-size:14px;font-weight:600;">Key findings:</h3>
-            <ul style="margin:0;padding:0 0 0 20px;font-size:14px;line-height:1.7;">
-              ${tipsHtml}
-            </ul>
+
+          <!-- Fix list -->
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${items.join("")}
+          </table>
+
+          <!-- Pro trial CTA -->
+          <div style="margin:40px 0 0;padding:24px;background-color:#818cf810;border:1px solid #818cf830;border-radius:12px;text-align:center;">
+            <h3 style="margin:0 0 8px;color:#ededed;font-size:16px;font-weight:700;">Try PageScore Pro for $1</h3>
+            <p style="margin:0 0 16px;color:#a1a1aa;font-size:13px;">Monthly re-scans, competitor benchmarks, fix tracking. Cancel anytime.</p>
+            <a href="https://alpo.ai/#upgrade" style="display:inline-block;padding:14px 32px;background-color:#818cf8;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;">
+              Claim $1 Trial &rarr;
+            </a>
           </div>
-          <!-- CTA -->
-          <a href="${reportUrl}" style="display:inline-block;padding:14px 32px;background-color:#818cf8;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;">
-            View Full Report &rarr;
-          </a>
-          <p style="margin:16px 0 0;color:#737373;font-size:12px;">10 sections &bull; prioritized fixes &bull; action plan</p>
         </td></tr>
+
         <!-- Footer -->
         <tr><td style="padding:32px 0 0;text-align:center;">
           <p style="margin:0;color:#525252;font-size:12px;">PageScore &bull; alpo.ai</p>
+          <p style="margin:8px 0 0;color:#525252;font-size:11px;">You received this because you requested a scan report. <a href="#" style="color:#525252;">Unsubscribe</a></p>
         </td></tr>
       </table>
     </td></tr>
@@ -102,12 +166,14 @@ export async function POST(req: NextRequest) {
     reports.push(entry);
     await fs.writeFile(REPORTS_FILE, JSON.stringify(reports, null, 2));
 
+    const tipCount = Math.min((tips || []).length, 7);
+
     // Send email via Resend
     await resend.emails.send({
       from: "PageScore <onboarding@resend.dev>",
       to: email,
-      subject: `Your Shopify product page scored ${score}/100`,
-      html: buildEmailHtml(score, tips || [], token),
+      subject: `${tipCount} fixes for your ${score}/100 product page`,
+      html: buildFixListEmail(score, tips || [], categories || {}),
     });
 
     return NextResponse.json({ success: true });

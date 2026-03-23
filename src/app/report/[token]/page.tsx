@@ -248,7 +248,7 @@ export default async function ReportTokenPage({
             className="inline-block px-8 py-3 rounded-lg text-white font-bold transition"
             style={{ backgroundColor: "#818cf8" }}
           >
-            Upgrade — $29/mo
+            Upgrade — $49/mo
           </a>
         </div>
 

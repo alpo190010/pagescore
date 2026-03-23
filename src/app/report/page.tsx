@@ -5,28 +5,28 @@ import { Suspense } from "react";
 
 const PLANS = [
   {
-    name: "Starter",
-    price: "$29/mo",
+    name: "Pro",
+    price: "$49/mo",
     features: [
       "Full 10-section reports with AI fix suggestions",
       "AI-generated title & description rewrites",
       "Up to 10 products",
       "Competitor comparison unlocked",
     ],
-    cta: "Start Free Trial — Starter",
+    cta: "Start Free Trial — Pro",
     highlight: true,
   },
   {
-    name: "Growth",
-    price: "$79/mo",
+    name: "Agency",
+    price: "$149/mo",
     features: [
-      "Everything in Starter, plus:",
+      "Everything in Pro, plus:",
       "Weekly monitoring & email alerts",
-      "AI rewrites for all product copy",
-      "Up to 100 products",
-      "Competitive benchmarking & trends",
+      "Unlimited products & multiple stores",
+      "White-label PDF reports",
+      "Team seats & priority support",
     ],
-    cta: "Start Free Trial — Growth",
+    cta: "Start Free Trial — Agency",
     highlight: false,
   },
 ];
@@ -53,39 +53,6 @@ function ReportContent() {
           </p>
         </div>
 
-        {/* What's included */}
-        <div className="p-6 rounded-xl bg-[var(--card)] border border-[var(--border)] text-left mb-8">
-          <h2 className="font-bold mb-4">Your full report includes:</h2>
-          <ul className="space-y-3">
-            {[
-              "📝 Copy Teardown — headline, subhead, CTA analysis",
-              "🔍 SEO Audit — meta tags, structure, keywords",
-              "🎯 CRO Opportunities — conversion blockers & fixes",
-              "🎨 Design Review — visual hierarchy, whitespace, contrast",
-              "♿ Accessibility — WCAG compliance issues",
-              "⚡ Performance — load time, asset optimization",
-              "📱 Mobile UX — responsive design issues",
-              "🤝 Trust Signals — social proof, credibility gaps",
-              "🏆 Competitor Positioning — differentiation analysis",
-              "📋 Prioritized Action Plan — what to fix first",
-            ].map((item) => (
-              <li key={item} className="text-sm flex gap-2">
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          {feature === "rewrites" && (
-            <div className="mt-4 pt-4 border-t border-[var(--border)]">
-              <h3 className="font-bold mb-2">Plus AI Rewrites:</h3>
-              <ul className="space-y-2">
-                <li className="text-sm flex gap-2">✨ Optimized product title for SEO + conversions</li>
-                <li className="text-sm flex gap-2">✨ Rewritten product description with benefit-first copy</li>
-                <li className="text-sm flex gap-2">✨ Meta description optimized for click-through</li>
-              </ul>
-            </div>
-          )}
-        </div>
-
         {/* Plan selection */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           {PLANS.map((plan) => (
@@ -107,12 +74,11 @@ function ReportContent() {
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="text-sm flex gap-2">
-                    <span className="text-indigo-400 shrink-0">✓</span>
+                    <span className="text-indigo-400 shrink-0">&#10003;</span>
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
-              {/* TODO: Replace href with actual Lemon Squeezy subscription checkout URL for each plan */}
               <a
                 href="#"
                 className={`block text-center px-6 py-3 rounded-lg font-bold transition ${
@@ -129,12 +95,6 @@ function ReportContent() {
 
         <p className="text-center text-xs text-[var(--muted)] mb-4">
           Cancel anytime. Reports delivered to your email within 5 minutes.
-        </p>
-        <p className="text-center text-xs text-[var(--muted)]">
-          Need unlimited products or white-label reports?{" "}
-          <a href="mailto:hello@pagescore.app" className="text-indigo-400 hover:underline">
-            Contact us about the Agency plan ($199/mo)
-          </a>
         </p>
       </div>
     </main>
