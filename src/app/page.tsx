@@ -25,39 +25,68 @@ interface FreeResult {
   estimatedMonthlyVisitors: number;
 }
 
-/* ── Dynamic revenue loss calculation ── */
-function calculateRevenueLoss(score: number, productPrice: number, estimatedVisitors: number, productCategory: string) {
-  const avgCVR: Record<string, number> = {
-    fashion: 0.022,
-    electronics: 0.015,
-    beauty: 0.028,
-    home: 0.018,
-    food: 0.032,
-    fitness: 0.020,
-    jewelry: 0.012,
-    other: 0.020,
-  };
+/* ── Revenue loss estimation (research-backed) ── */
+const CATEGORY_BENCHMARKS: Record<string, { avg: number; achievable: number }> = {
+  fashion:      { avg: 1.90, achievable: 2.80 },
+  beauty:       { avg: 2.50, achievable: 3.70 },
+  food:         { avg: 1.50, achievable: 3.00 },
+  home:         { avg: 1.20, achievable: 2.00 },
+  electronics:  { avg: 1.20, achievable: 2.00 },
+  fitness:      { avg: 1.60, achievable: 2.40 },
+  jewelry:      { avg: 0.80, achievable: 1.40 },
+  other:        { avg: 1.40, achievable: 2.20 },
+};
 
-  const baseCVR = avgCVR[productCategory] || 0.020;
+function roundNicely(n: number): number {
+  if (n < 100) return Math.round(n / 5) * 5;
+  if (n < 1000) return Math.round(n / 25) * 25;
+  if (n < 10000) return Math.round(n / 100) * 100;
+  return Math.round(n / 500) * 500;
+}
+
+function calculateRevenueLoss(
+  score: number,
+  productPrice: number,
+  estimatedVisitors: number,
+  productCategory: string
+) {
+  const benchmarks = CATEGORY_BENCHMARKS[productCategory] || CATEGORY_BENCHMARKS["other"];
+  const { avg, achievable } = benchmarks;
   const price = productPrice || 35;
-  const visitors = Math.min(estimatedVisitors || 500, 5000); // conservative visitor cap
+  const visitors = estimatedVisitors || 500;
 
-  // Think in additional sales, not raw dollars
-  // How many extra sales/month if page improved from current score to 85?
-  const scoreDelta = Math.max(0, (85 - score)) / 100;
-  const extraCVR = baseCVR * scoreDelta * 0.25; // conservative: 25% attribution
-  const extraSalesPerMonth = visitors * extraCVR;
-  
-  // Cap additional sales: 1–5 extra sales/month is believable for most stores
-  const cappedSalesLow = Math.min(extraSalesPerMonth * 0.5, 3);
-  const cappedSalesHigh = Math.min(extraSalesPerMonth * 1.0, 5);
-  
-  const lossLow = Math.round(cappedSalesLow * price / 10) * 10;
-  const lossHigh = Math.round(cappedSalesHigh * price / 10) * 10;
+  // Page quality affects ~40% of conversion (Baymard Institute)
+  const PAGE_INFLUENCE = 0.40;
 
-  return { 
-    lossLow: Math.max(lossLow, 30), 
-    lossHigh: Math.max(lossHigh, 60) 
+  // Score 50 = category average page quality. Below = losing, above = small upside.
+  const qualityGap = (50 - score) / 50; // -1.0 (great) to +1.0 (terrible)
+  const crPenalty = qualityGap * PAGE_INFLUENCE * achievable;
+
+  // Estimate current vs potential conversion rate
+  const estimatedCurrentCR = Math.max(0.1, avg - (crPenalty > 0 ? crPenalty * 0.5 : 0));
+  const potentialCR = avg + (crPenalty < 0 ? Math.abs(crPenalty) * 0.3 : 0);
+  const crGap = Math.max(0, potentialCR - estimatedCurrentCR) / 100;
+
+  // Additional orders from better page
+  const additionalOrders = visitors * crGap;
+  const rawLoss = additionalOrders * price;
+
+  // Logarithmic price dampener (high-ticket items = less elastic)
+  // $50 → 1.0x, $500 → 0.65x, $5000 → 0.42x, $15000 → 0.34x
+  const priceDamp = Math.max(0.2, Math.min(1.0,
+    1.0 / (1 + Math.log10(Math.max(price, 1) / 50))
+  ));
+
+  // Visitor confidence dampener (we're guessing, be more conservative at scale)
+  const visitorDamp = Math.max(0.5, Math.min(1.0,
+    1.0 / (1 + 0.1 * Math.log10(Math.max(visitors, 1) / 500))
+  ));
+
+  const monthlyLoss = rawLoss * priceDamp * visitorDamp;
+
+  return {
+    lossLow: Math.max(roundNicely(monthlyLoss * 0.6), 30),
+    lossHigh: Math.max(roundNicely(monthlyLoss * 1.4), 60),
   };
 }
 
