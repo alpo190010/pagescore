@@ -53,6 +53,7 @@ Before posting ANYTHING, check this file. If the hook, angle, or insight has bee
 ### REDDIT — Available Angles (unused)
 
 **r/shopify:**
+- "organic works, paid traffic is cold — audit your product page like a stranger" (used on "ready for paid ads" thread, Mar 23)
 - Product page teardown with specific scores and fixes
 - "Your product description reads like a spec sheet, not a sales pitch"
 - Mobile product page experience gap (most Shopify traffic is mobile)

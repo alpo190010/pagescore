@@ -1,38 +1,41 @@
 {
-  "lastUpdated": "2026-03-23T00:51+04:00",
+  "lastUpdated": "2026-03-23T11:00+04:00",
   "topIdeas": [
     {
       "name": "AI Chargeback Response Automation",
       "status": "alive",
       "score": "🥇",
-      "pain": "Merchants spend 4+ hrs/week on chargebacks, pay $15/dispute fee, lose 50% of disputes. Half a day of work gone.",
-      "evidence": "224 upvotes, 387 comments — every single comment says 'same here'",
+      "pain": "Merchants spend 4+ hrs/week on chargebacks, pay $15/dispute fee, lose 50% of disputes. $28.1B in projected merchant losses by 2026.",
+      "evidence": "224 upvotes, 387 comments — every comment says 'same here'. Chargeflow has $35M funding proving market.",
       "evidenceUrl": "https://reddit.com/r/shopify/comments/1okb701/",
-      "price": "$99-299/mo",
-      "competition": "Chargebacks911, Midigator (enterprise only). SMB market = wide open.",
-      "tam": "$360M ARR",
-      "aiAdvantage": "⭐⭐⭐⭐⭐ — Auto-compile evidence, generate dispute letters, flag serial abusers",
-      "stressTest": "pending",
+      "price": "$29-99/mo flat (vs Chargeflow's 25% cut)",
+      "competition": "Chargeflow ($35M, 20K installs) but has serious trust issues. ChargePay ($19.99/mo). Disputifier (20% fee). SMB gap exists.",
+      "tam": "$360M ARR. 100-300K Shopify merchants doing $500K+ GMV.",
+      "aiAdvantage": "⭐⭐⭐⭐⭐ — GPT-4 evidence generation per reason code, CE 3.0 compliance, deadline tracking",
+      "stressTest": "survived — competitive but Chargeflow's trust erosion creates opening",
       "solution": {
-        "headline": "DisputeAI — Win chargebacks on autopilot",
-        "description": "Shopify app that automatically detects new chargebacks, pulls all evidence from your store (order timeline, delivery proof, customer emails, refund history), and generates a ready-to-submit dispute response formatted to Visa/Mastercard requirements. Also flags high-risk customers at checkout before they buy.",
+        "headline": "Chargeflow takes 25% of your wins. We take $29/month.",
+        "description": "Shopify app that auto-detects chargebacks, pulls all evidence (order data, tracking, customer emails), generates AI dispute responses per Visa/MC reason codes, lets you review before submitting, and tracks outcomes. Shopify Payments only for MVP.",
         "mvpFeatures": [
-          "Shopify webhook: auto-detect new chargebacks",
-          "Evidence auto-collector: order data, shipping tracking, email logs",
-          "AI dispute letter generator (Visa CE 3.0 + MC format)",
-          "One-click submit to Shopify chargeback response",
-          "Dashboard: win rate tracking, money recovered",
-          "Customer risk score at checkout (flag repeat offenders)"
+          "Auto-detect new disputes via Shopify Payments API",
+          "Auto-compile evidence: order data, shipping, tracking, customer info",
+          "Carrier tracking lookup via Aftership API",
+          "AI evidence generation (GPT-4) customized per reason code",
+          "Mandatory review window before submission (merchant stays in control)",
+          "One-click submit via disputeEvidenceUpdate GraphQL mutation",
+          "Deadline alerts (7 days, 3 days, 1 day before due)",
+          "Win/loss dashboard with money recovered tracking"
         ],
         "userFlow": [
-          "Merchant installs Shopify app, connects store",
-          "Chargeback arrives → app auto-pulls all evidence",
-          "AI generates dispute response (merchant reviews in 30 sec)",
-          "One click to submit response",
-          "Track outcome → AI learns from wins/losses"
+          "Install Shopify app, connect store (15 min setup)",
+          "Chargeback arrives → app auto-pulls all evidence from Shopify",
+          "AI generates dispute response formatted to Visa/MC requirements",
+          "Merchant reviews in 30 seconds, edits if needed",
+          "One click to submit — evidence filed before deadline",
+          "Track outcome → AI learns from wins/losses over time"
         ],
-        "techStack": "Next.js + Shopify App Bridge + Shopify Admin API + OpenAI API + Postgres + Stripe billing",
-        "firstCustomers": "DM merchants in r/shopify chargeback threads (387 commenters). Post in Shopify Community. Cold email Shopify stores with >$100K revenue in high-chargeback verticals (fashion, supplements, electronics)."
+        "techStack": "Next.js + Shopify App Bridge + Shopify Admin GraphQL API + OpenAI API + Aftership (carrier tracking) + Postgres + Shopify Billing API",
+        "firstCustomers": "Target 'Chargeflow refugees' on Trustpilot (publicly complaining March 2026). DM merchants in r/shopify chargeback threads. Post in Shopify Community. Cold email Shopify stores in high-chargeback verticals (fashion, supplements, electronics)."
       }
     },
     {
@@ -48,14 +51,14 @@
       "aiAdvantage": "⭐⭐⭐⭐⭐ — Cross-reference Chinese registries, detect fake certs, model landed costs",
       "stressTest": "pending",
       "solution": {
-        "headline": "SourceCheck — Know your supplier before you wire the money",
+        "headline": "Know your supplier before you wire the money",
         "description": "Paste an Alibaba URL or supplier name → get an instant trust report. AI cross-references Chinese business registries, export records, certificate databases, and 1688 presence. Also includes a tariff calculator showing landed costs from China vs Vietnam vs Mexico vs India for your specific HTS codes.",
         "mvpFeatures": [
           "Supplier lookup: paste Alibaba URL → instant trust score",
           "Business license verification via Chinese registry APIs",
           "Certificate authenticity check (ISO, CE, FDA, etc.)",
-          "1688 cross-reference (is this a real factory or middleman?)",
-          "Export history lookup (how long have they been shipping?)",
+          "1688 cross-reference (real factory or middleman?)",
+          "Export history lookup",
           "Tariff calculator: HTS code → landed cost by country",
           "PDF report for team sharing"
         ],
@@ -68,7 +71,7 @@
           "Download PDF report or share link"
         ],
         "techStack": "Next.js + Python scrapers (Alibaba, 1688, Chinese registries) + OpenAI API for document analysis + HTS tariff database + Stripe billing",
-        "firstCustomers": "DM the 329 upvoters on the supplier verification Reddit thread. Post in r/FulfillmentByAmazon, r/dropship. Cold email Amazon PL sellers with registered brands (findable via Amazon Brand Registry)."
+        "firstCustomers": "DM the 329 upvoters on the supplier verification Reddit thread. Post in r/FulfillmentByAmazon, r/dropship. Cold email Amazon PL sellers with registered brands."
       }
     },
     {
@@ -84,7 +87,7 @@
       "aiAdvantage": "⭐⭐⭐⭐⭐ — AI pre-drafts responses with full order context, Shopify-native",
       "stressTest": "pending",
       "solution": {
-        "headline": "OneDesk — Every customer answer in one screen",
+        "headline": "Every customer answer in one screen",
         "description": "Shopify-native support workspace that shows everything in a single view: full order history, shipping status, email/SMS history, return eligibility, customer LTV, relevant policy, and AI-suggested response. Agent reviews and sends in 30 seconds instead of 5 minutes of tab-switching.",
         "mvpFeatures": [
           "Single-pane customer view: order + shipping + comms + history",
@@ -97,14 +100,14 @@
         ],
         "userFlow": [
           "Customer emails/chats with support request",
-          "Ticket appears in OneDesk with full context pre-loaded",
+          "Ticket appears with full context pre-loaded",
           "AI reads the request + order data → drafts response",
           "Agent reviews draft, tweaks if needed, hits send",
           "If action needed (refund, reship), one-click from same screen",
           "Ticket closed, response time logged"
         ],
         "techStack": "Next.js + Shopify Admin API + email ingestion (SendGrid/Mailgun) + OpenAI API + real-time shipping APIs (EasyPost) + Postgres + WebSocket for live updates",
-        "firstCustomers": "DM the merchant who posted the 8-tab screen recording. Search r/shopify and r/ecommerce for 'Gorgias expensive' or 'customer support tool' threads. Target Shopify stores with 'Contact Us' pages (they have support volume). Offer free 30-day trial to first 10."
+        "firstCustomers": "DM the merchant who posted the 8-tab screen recording. Search r/shopify for 'Gorgias expensive' threads. Target Shopify stores with Contact Us pages. Offer free 30-day trial to first 10."
       }
     }
   ],
@@ -143,29 +146,36 @@
   "killedIdeas": [
     {
       "name": "Construction SaaS",
-      "reason": "Contech graveyard (Katerra burned $2B+), need 10+ years domain expertise, AI estimating is vaporware, 30-40% annual churn, Procore/Buildertrend closing the SMB gap"
+      "reason": "Contech graveyard (Katerra burned $2B+), need 10+ years domain expertise, AI estimating is vaporware, 30-40% annual churn"
     },
     {
       "name": "Home Services SaaS (HVAC/Plumbing)",
-      "reason": "Jobber owns SMB market ($100M+ ARR). ServiceTitan acquired AI quoting company (Conduit Tech). Contractors don't Google for software. Only viable as extreme niche."
+      "reason": "Jobber owns SMB market ($100M+ ARR). ServiceTitan acquired AI quoting company. Contractors don't Google for software."
     },
     {
       "name": "Property Management SaaS (5-50 units)",
-      "reason": "6+ competitors offer full product FREE (backed by CoStar $35B). Cozy tried with 100K+ users and $10M VC — still couldn't monetize. BiggerPockets owned by competitor. 15-25% annual churn from property sales."
+      "reason": "6+ competitors offer full product FREE (backed by CoStar $35B). Cozy tried with 100K+ users and $10M VC — couldn't monetize."
     },
     {
       "name": "AI Product Photography / GenModi B2C",
-      "reason": "AI distorts products — fundamental trust problem. B2C marketplace model = cold-start nightmare. 300 users, nobody paid."
+      "reason": "AI distorts products — fundamental trust problem. B2C marketplace model = cold-start nightmare."
     }
   ],
   "metaPatterns": [
-    "Fraud & bad actors cost e-commerce merchants 2-5% of revenue (chargebacks, fake reviews, return fraud, inventory theft)",
-    "Multi-channel selling = operational chaos. Every platform has different rules, formats, and workflows. Nobody built the sync layer properly.",
-    "Cash flow blindness is universal — processor holds + tariffs + app costs + fees = nobody knows real profit",
-    "Compliance overwhelm — tax (45 US states + 27 EU countries), IOSS, GDPR, ADA accessibility — each simple alone, drowning combined",
-    "The Tab Problem — the market doesn't lack tools, it lacks integration. Context-aware unified interfaces are the gap."
+    "Fraud & bad actors cost e-commerce merchants 2-5% of revenue ($28.1B projected losses by 2026)",
+    "Chargeflow's trust erosion proves: merchants want automation WITH control, not black-box systems",
+    "Flat pricing beats success fees for SMBs — predictable costs win over variable cuts",
+    "Multi-channel selling = operational chaos. Nobody built the sync layer properly.",
+    "The Tab Problem — tools exist, integration doesn't. Context-aware unified interfaces are the gap.",
+    "Every $1 lost to chargebacks costs merchants $4.61 total (LexisNexis 2024)"
   ],
   "researchLog": [
+    {
+      "date": "2026-03-23 11:00",
+      "round": "Deep Dive R1",
+      "focus": "Chargeback Automation — full competitive + feasibility analysis",
+      "findings": "SURVIVED stress test. Chargeflow ($35M, 20K installs) leads but has trust issues. ChargePay & Disputifier are challengers. Shopify API fully supports programmatic dispute submission. Angle: flat pricing + merchant review control vs Chargeflow's 25% black box."
+    },
     {
       "date": "2026-03-23 00:51",
       "round": "Product Spec",
@@ -181,50 +191,14 @@
     {
       "date": "2026-03-21 20:22",
       "round": "Stress Test",
-      "focus": "Property Management SaaS",
-      "findings": "KILLED — 6+ free competitors backed by $35B CoStar. Cozy couldn't monetize with 100K users."
-    },
-    {
-      "date": "2026-03-21 20:22",
-      "round": "Stress Test",
-      "focus": "Home Services SaaS",
-      "findings": "WOUNDED — Jobber dominance ($100M ARR), ServiceTitan bought AI quoting. Only extreme niche viable."
-    },
-    {
-      "date": "2026-03-21 20:22",
-      "round": "Stress Test",
-      "focus": "Construction SaaS",
-      "findings": "KILLED — Contech graveyard, domain expertise required, AI estimating unreliable, 30-40% churn."
+      "focus": "Property Management / Home Services / Construction",
+      "findings": "All 3 killed or wounded. Property mgmt: free competitors. Home services: Jobber dominance. Construction: contech graveyard."
     },
     {
       "date": "2026-03-21 19:23",
       "round": "Broad Research",
-      "focus": "Vertical SaaS — 15 verticals analyzed",
-      "findings": "Top 5: Home Services, Construction, Property Mgmt, Wholesale, Vet Clinics. All stress tested."
-    },
-    {
-      "date": "2026-03-21 18:14",
-      "round": "Deep Dive",
-      "focus": "Daily-use verticals for AI image gen",
-      "findings": "Resellers (#1), used car dealers (#2), dropshippers (#3). Key insight: daily use requires rotating inventory."
-    },
-    {
-      "date": "2026-03-21 18:03",
-      "round": "Deep Dive",
-      "focus": "Real user pain points (jewelry/e-commerce)",
-      "findings": "7 categories: SKU variants, custom visualization, on-model shots, multi-platform, photo quality, returns, service gap."
-    },
-    {
-      "date": "2026-03-21 18:01",
-      "round": "Competition",
-      "focus": "Jewelry AI photography competitive landscape",
-      "findings": "NOT crowded — only 2-3 jewelry-specific tools exist. General space crowded but vertical is open."
-    },
-    {
-      "date": "2026-03-21 17:54",
-      "round": "Initial",
-      "focus": "GenModi B2B pivot research",
-      "findings": "Recommended jewelry AI photo studio SaaS. Later pivoted away from image gen entirely."
+      "focus": "15 verticals analyzed + daily-use verticals + GenModi pivot",
+      "findings": "Pivoted from image gen to e-commerce operational tools. Identified fraud/compliance/integration as key themes."
     }
   ]
 }
