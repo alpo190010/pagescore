@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 60; // Extend Vercel function timeout to 60s for reasoning model
+
 export async function POST(req: NextRequest) {
   try {
     const { url } = await req.json();
