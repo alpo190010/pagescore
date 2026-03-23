@@ -55,38 +55,28 @@ function calculateRevenueLoss(
   const price = productPrice || 35;
   const visitors = estimatedVisitors || 500;
 
-  // Page quality affects ~40% of conversion (Baymard Institute)
-  const PAGE_INFLUENCE = 0.40;
+  // Score maps to estimated CR between bottom (avg×0.4) and achievable (75th pct)
+  const bottomCR = avg * 0.4;
+  const scoreNorm = score / 100;
+  const estimatedCR = bottomCR + scoreNorm * (achievable - bottomCR);
+  const gapVsAchievable = Math.max(0, achievable - estimatedCR) / 100;
 
-  // Score 50 = category average page quality. Below = losing, above = small upside.
-  const qualityGap = (50 - score) / 50; // -1.0 (great) to +1.0 (terrible)
-  const crPenalty = qualityGap * PAGE_INFLUENCE * achievable;
-
-  // Estimate current vs potential conversion rate
-  const estimatedCurrentCR = Math.max(0.1, avg - (crPenalty > 0 ? crPenalty * 0.5 : 0));
-  const potentialCR = avg + (crPenalty < 0 ? Math.abs(crPenalty) * 0.3 : 0);
-  const crGap = Math.max(0, potentialCR - estimatedCurrentCR) / 100;
-
+  // Only 40% of the CR gap is attributable to page quality (Baymard)
+  const pageAttributable = gapVsAchievable * 0.40;
+  
   // Additional orders from better page
-  const additionalOrders = visitors * crGap;
-  const rawLoss = additionalOrders * price;
-
-  // Logarithmic price dampener (high-ticket items = less elastic)
-  // $50 → 1.0x, $500 → 0.65x, $5000 → 0.42x, $15000 → 0.34x
-  const priceDamp = Math.max(0.2, Math.min(1.0,
-    1.0 / (1 + Math.log10(Math.max(price, 1) / 50))
-  ));
-
-  // Visitor confidence dampener (we're guessing, be more conservative at scale)
-  const visitorDamp = Math.max(0.5, Math.min(1.0,
-    1.0 / (1 + 0.1 * Math.log10(Math.max(visitors, 1) / 500))
-  ));
-
-  const monthlyLoss = rawLoss * priceDamp * visitorDamp;
+  const additionalOrders = visitors * pageAttributable;
+  
+  // Dynamic order cap: cheap items can have more extra sales, expensive items fewer
+  // $15 → max 15, $50 → max 10, $200 → max 5, $1000 → max 2, $10000 → max 0.6
+  const maxOrders = Math.max(0.3, 15 / Math.pow(1 + price / 50, 0.6));
+  const cappedOrders = Math.min(additionalOrders, maxOrders);
+  
+  const monthlyLoss = cappedOrders * price;
 
   return {
-    lossLow: Math.max(roundNicely(monthlyLoss * 0.6), 30),
-    lossHigh: Math.max(roundNicely(monthlyLoss * 1.4), 60),
+    lossLow: Math.max(roundNicely(monthlyLoss * 0.7), 20),
+    lossHigh: Math.max(roundNicely(monthlyLoss * 1.3), 50),
   };
 }
 
