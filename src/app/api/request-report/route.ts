@@ -140,15 +140,14 @@ export async function POST(req: NextRequest) {
     const token = crypto.randomUUID();
 
     // Ensure data directory exists
-    await fs.mkdir(DATA_DIR, { recursive: true });
-
-    // Read existing reports
+    // Best-effort directory + file ops — may be read-only on Vercel serverless
     let reports: unknown[] = [];
     try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
       const existing = await fs.readFile(REPORTS_FILE, "utf-8");
       reports = JSON.parse(existing);
     } catch {
-      // File doesn't exist yet
+      // Directory or file doesn't exist, or filesystem is read-only — continue
     }
 
     const entry = {
@@ -164,7 +163,12 @@ export async function POST(req: NextRequest) {
     };
 
     reports.push(entry);
-    await fs.writeFile(REPORTS_FILE, JSON.stringify(reports, null, 2));
+    // Best-effort write — silently skip if filesystem is read-only (e.g. Vercel serverless)
+    try {
+      await fs.writeFile(REPORTS_FILE, JSON.stringify(reports, null, 2));
+    } catch {
+      // Non-fatal — email still sends
+    }
 
     const tipCount = Math.min((tips || []).length, 7);
 
