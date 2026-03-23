@@ -288,7 +288,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [emailSubmitting, setEmailSubmitting] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [reportUnlocked, setReportUnlocked] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   async function analyze(e: React.FormEvent) {
     e.preventDefault();
@@ -297,7 +297,7 @@ export default function Home() {
     setResult(null);
     setCompData(null);
     setCompError("");
-    setReportUnlocked(false);
+    setEmailSent(false);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -364,7 +364,7 @@ export default function Home() {
         throw new Error(data.error || "Failed to submit");
       }
       setShowEmailModal(false);
-      setReportUnlocked(true);
+      setEmailSent(true);
       posthog.capture("report_email_submitted", { url, score: result?.score, email });
     } catch (err: unknown) {
       setEmailError(err instanceof Error ? err.message : "Something went wrong");
@@ -501,8 +501,19 @@ export default function Home() {
             )}
           </div>
 
-          {/* Full Report: locked or unlocked */}
-          {!reportUnlocked ? (
+          {/* Full Report: email gate */}
+          {emailSent ? (
+            <div className="mt-6 p-6 rounded-xl bg-green-500/5 border border-green-500/20 text-center">
+              <div className="text-4xl mb-3">📬</div>
+              <h3 className="text-xl font-bold mb-2">Check your inbox!</h3>
+              <p className="text-sm text-[var(--muted)] mb-1">
+                We sent your full report to <span className="text-white font-medium">{email}</span>
+              </p>
+              <p className="text-xs text-[var(--muted)]">
+                Click the link in the email to view all 10 sections with prioritized fixes.
+              </p>
+            </div>
+          ) : (
             <>
               {/* Locked Full Report Preview (blurred sections) */}
               <div className="mt-6 space-y-3">
@@ -546,76 +557,6 @@ export default function Home() {
                   Get Full Report
                 </button>
                 <p className="text-xs text-[var(--muted)] mt-2">Free — just enter your email</p>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Unlocked Full Report */}
-              <div className="mt-6">
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-lg font-bold">Full Conversion Audit</h3>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
-                    Unlocked
-                  </span>
-                </div>
-                <p className="text-[var(--muted)] text-sm mb-4">10-section breakdown with AI fix suggestions.</p>
-
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm mb-4">
-                  Report unlocked! Check your email for a copy.
-                </div>
-
-                <div className="space-y-3">
-                  {SECTION_META.map((section) => {
-                    const sectionScore = getSectionScore(section.key, result.categories, result.score);
-                    const explanation = getSectionExplanation(section.key, sectionScore, result.tips);
-                    const isActionPlan = section.key === "actionPlan";
-
-                    return (
-                      <div
-                        key={section.title}
-                        className="p-4 rounded-lg bg-[var(--card)] border border-[var(--border)]"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <span>{section.icon}</span>
-                          <span className="font-semibold text-sm">{section.title}</span>
-                          {!isActionPlan && (
-                            <span
-                              className={`ml-auto inline-block px-2 py-0.5 rounded text-sm font-bold ${scoreColor(sectionScore)} ${scoreBg(sectionScore)}`}
-                            >
-                              {sectionScore}/10
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-[var(--muted)]">{explanation}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Upsell card after full report */}
-              <div className="mt-6 p-6 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
-                <h3 className="text-lg font-bold mb-2">Want weekly monitoring + AI rewrites?</h3>
-                <ul className="space-y-2 mb-4 text-sm text-[var(--muted)]">
-                  <li className="flex gap-2">
-                    <span className="text-indigo-400 shrink-0">•</span>
-                    Score alerts when something drops
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-indigo-400 shrink-0">•</span>
-                    AI-generated rewrites for every low section
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-indigo-400 shrink-0">•</span>
-                    Track improvements over time
-                  </li>
-                </ul>
-                <a
-                  href="#pricing"
-                  className="inline-block px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold transition text-sm"
-                >
-                  Upgrade to Starter — $29/mo
-                </a>
               </div>
             </>
           )}
