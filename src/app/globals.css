@@ -1,74 +1,73 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
-   Design Tokens — Luminous Liquid
-   Source of truth: src/tokens/design-tokens.ts
+   Design Tokens — PageLeaks (Violet-Forward)
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Core Palette: Luminous Liquid ── */
-  --primary:            #7000ff;
-  --primary-dim:        #6200e1;
-  --primary-container:  #af8dff;
-  --on-primary:         #f8f1ff;
-  --on-primary-container: #2c006e;
+  /* ── Core Palette ── */
+  --primary:            #7c3aed;
+  --primary-dim:        #6d28d9;
+  --primary-container:  #7c3aed;
+  --on-primary:         #ffffff;
+  --on-primary-container: #e9dfff;
 
-  --secondary:            #b60055;
-  --secondary-dim:        #a0004a;
-  --secondary-container:  #ffc1ce;
-  --on-secondary:         #ffeff1;
+  --secondary:            #7c3aed;
+  --secondary-dim:        #6d28d9;
+  --secondary-container:  #e9dfff;
+  --on-secondary:         #ffffff;
 
-  --tertiary:           #4052b6;
-  --tertiary-dim:       #3346a9;
-  --tertiary-container: #9eabff;
-  --on-tertiary:        #f3f1ff;
+  --tertiary:           #82002e;
+  --tertiary-dim:       #6d0027;
+  --tertiary-container: #ad0040;
+  --on-tertiary:        #ffffff;
 
-  /* ── Surfaces ── */
-  --background:                #f5f6f9;
-  --surface-base:              #f5f6f9;
+  /* ── Surfaces: clean warm neutrals ── */
+  --background:                #fcf9f8;
+  --surface-base:              #fcf9f8;
   --surface-container-lowest:  #ffffff;
-  --surface-container-low:     #eff1f4;
-  --surface-container:         #e6e8ec;
-  --surface-container-high:    #e0e3e6;
-  --surface-container-highest: #dadde1;
-  --surface-variant:           #dadde1;
-  --surface-tint:              #7000ff;
+  --surface-container-low:     #f6f3f2;
+  --surface-container:         #f0edec;
+  --surface-container-high:    #ebe7e7;
+  --surface-container-highest: #e5e2e1;
+  --surface-variant:           #e5e2e1;
+  --surface-tint:              #7c3aed;
 
   /* ── Text / On-colors ── */
-  --on-surface:         #2c2f31;
-  --on-surface-variant: #595c5e;
-  --on-background:      #2c2f31;
+  --on-surface:         #1c1b1b;
+  --on-surface-variant: #454556;
+  --on-background:      #1c1b1b;
 
   /* ── Outline & Borders ── */
-  --outline:         #75777a;
-  --outline-variant: #abadb0;
+  --outline:         #767588;
+  --outline-variant: #c6c5d9;
 
   /* ── Error ── */
-  --error-base:         #b41340;
-  --error-dim:          #a70138;
-  --error-container:    #f74b6d;
-  --on-error:           #ffefef;
-  --on-error-container: #510017;
+  --error-base:         #ba1a1a;
+  --error-dim:          #a01515;
+  --error-container:    #ffdad6;
+  --on-error:           #ffffff;
+  --on-error-container: #93000a;
 
   /* ── Inverse ── */
-  --inverse-surface:    #0c0f11;
-  --inverse-on-surface: #9b9da0;
-  --inverse-primary:    #a178ff;
+  --inverse-surface:    #313030;
+  --inverse-on-surface: #f3f0ef;
+  --inverse-primary:    #cdbdff;
 
   /* ── Gradients ── */
-  --gradient-liquid: linear-gradient(135deg, #7000ff, #b60055);
-  --gradient-liquid-text: linear-gradient(to right, #7000ff, #b60055);
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  --gradient-liquid-text: linear-gradient(to right, #7c3aed, #6d28d9);
 
   /* ── Glass ── */
-  --glass-bg:           rgba(245, 246, 249, 0.7);
-  --glass-blur:         24px;
-  --glass-blur-hover:   32px;
-  --glass-border:       rgba(171, 173, 176, 0.15);
-  --glass-border-hover: rgba(112, 0, 255, 0.3);
+  --glass-bg:           rgba(255, 255, 255, 0.4);
+  --glass-blur:         20px;
+  --glass-blur-hover:   28px;
+  --glass-border:       rgba(255, 255, 255, 0.4);
+  --glass-border-hover: rgba(124, 58, 237, 0.3);
 
   /* ── Elevation ── */
-  --shadow-ambient:  0 20px 40px rgba(0, 0, 0, 0.04), 0 10px 20px rgba(112, 0, 255, 0.03);
-  --shadow-elevated: 0 25px 50px rgba(0, 0, 0, 0.08), 0 12px 24px rgba(112, 0, 255, 0.04);
+  --shadow-ambient:  0 20px 40px rgba(124, 58, 237, 0.06);
+  --shadow-elevated: 0 25px 50px rgba(0, 0, 0, 0.08), 0 12px 24px rgba(124, 58, 237, 0.04);
   --shadow-subtle:   0 2px 8px rgba(0, 0, 0, 0.04);
 
   /* ── Status ── */
@@ -84,8 +83,7 @@
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
   /* ═══════════════════════════════════════════════════════════
-     Legacy aliases — maps old token names used across codebase.
-     Migrate to new names over time.
+     Legacy aliases
      ═══════════════════════════════════════════════════════════ */
   --bg:             var(--background);
   --surface:        var(--surface-container-lowest);
@@ -96,8 +94,8 @@
   --text-secondary: var(--on-surface-variant);
   --text-tertiary:  var(--outline);
   --brand:          var(--primary);
-  --brand-light:    #f3eeff;
-  --brand-border:   var(--primary-container);
+  --brand-light:    #f5f3ff;
+  --brand-border:   #ddd6fe;
   --error:          var(--error-base);
   --error-text:     var(--error-base);
   --error-light:    #fef2f2;
@@ -106,33 +104,26 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Luminous Liquid — Signature Patterns
+   Signature Patterns
    ═══════════════════════════════════════════════════════════════ */
 
-/* Glass card — frosted translucent surface */
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   transition: all 0.3s ease;
 }
 .glass-card:hover {
   backdrop-filter: blur(var(--glass-blur-hover));
+  -webkit-backdrop-filter: blur(var(--glass-blur-hover));
   border-color: var(--glass-border-hover);
-  transform: translateY(-4px);
 }
 
-/* Mesh gradient background — 4-corner radial blobs */
-.mesh-gradient-bg {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(at 0% 0%, rgba(112, 0, 255, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(182, 0, 85, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(64, 82, 182, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(112, 0, 255, 0.1) 0px, transparent 50%);
+.primary-gradient {
+  background: var(--gradient-primary);
 }
 
-/* Gradient text — violet → magenta */
 .liquid-gradient-text {
   background: var(--gradient-liquid-text);
   -webkit-background-clip: text;
@@ -140,25 +131,28 @@
   background-clip: text;
 }
 
-/* Liquid button — gradient CTA */
 .liquid-btn {
-  background: var(--gradient-liquid);
+  background: var(--gradient-primary);
   color: var(--on-primary);
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .liquid-btn:hover {
-  filter: brightness(1.1);
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
   transform: scale(1.02);
 }
 
 body {
   background: var(--bg);
   color: var(--text-primary);
+  font-family: 'Inter', var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Visually hidden but accessible to screen readers */
+h1, h2, h3 {
+  font-family: 'Manrope', var(--font-manrope), sans-serif;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -171,7 +165,6 @@ body {
   border-width: 0;
 }
 
-/* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -180,13 +173,12 @@ body {
   }
 }
 
-/* Staggered fade-in for leak cards */
+/* ── Animations ── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Consolidated Animations ── */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -212,15 +204,19 @@ body {
   to { opacity: 1; }
 }
 
-/* Polish: Enhanced hover and focus states */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Hover / Focus ── */
 .polish-hover-lift {
   transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
               box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
 .polish-hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .polish-focus-ring {
@@ -228,24 +224,13 @@ body {
               outline-offset 200ms cubic-bezier(0.23, 1, 0.32, 1),
               box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
 .polish-focus-ring:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-}
-
-/* ── Analysis Loader Animations ── */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
 }
 
 /* ── Phase Transitions ── */
-:root {
-  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-}
-
 @keyframes phase-enter {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -266,59 +251,37 @@ body {
 }
 
 /* ── Modal Transitions ── */
-@keyframes backdrop-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes backdrop-exit {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
+@keyframes backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdrop-exit { from { opacity: 1; } to { opacity: 0; } }
 @keyframes modal-enter {
   from { opacity: 0; transform: scale(0.92) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 @keyframes modal-exit {
   from { opacity: 1; transform: scale(1) translateY(0); }
   to { opacity: 0; transform: scale(0.92) translateY(10px); }
 }
 
-.modal-backdrop-enter {
-  animation: backdrop-enter 250ms var(--ease-out-quart) both;
-}
+.modal-backdrop-enter { animation: backdrop-enter 250ms var(--ease-out-quart) both; }
+.modal-backdrop-exit { animation: backdrop-exit 200ms var(--ease-out-quart) both; }
+.modal-content-enter { animation: modal-enter 300ms var(--ease-out-quart) both; }
+.modal-content-exit { animation: modal-exit 200ms var(--ease-out-quart) both; }
 
-.modal-backdrop-exit {
-  animation: backdrop-exit 200ms var(--ease-out-quart) both;
-}
-
-.modal-content-enter {
-  animation: modal-enter 300ms var(--ease-out-quart) both;
-}
-
-.modal-content-exit {
-  animation: modal-exit 200ms var(--ease-out-quart) both;
-}
-
-/* ── Score Card Collapse/Expand ── */
+/* ── Score Card ── */
 @keyframes score-card-collapse {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes score-card-expand {
   from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
+.score-card-collapse { animation: score-card-collapse 350ms var(--ease-out-quart) both; }
+.score-card-expand { animation: score-card-expand 400ms var(--ease-out-quart) both; }
 
-.score-card-collapse {
-  animation: score-card-collapse 350ms var(--ease-out-quart) both;
-}
-
-.score-card-expand {
-  animation: score-card-expand 400ms var(--ease-out-quart) both;
+/* ── Score Ring ── */
+.score-ring-progress {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* ── Modal step crossfade ── */
@@ -326,7 +289,4 @@ body {
   from { opacity: 0; transform: translateX(16px); }
   to { opacity: 1; transform: translateX(0); }
 }
-
-.modal-step-enter {
-  animation: step-enter 300ms var(--ease-out-quart) both;
-}
+.modal-step-enter { animation: step-enter 300ms var(--ease-out-quart) both; }

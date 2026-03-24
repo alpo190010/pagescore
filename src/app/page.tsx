@@ -304,14 +304,10 @@ export default function Home() {
     setShowCard(true);
     const t1 = setTimeout(() => setShowRevenue(true), 1500);
     const t2 = setTimeout(() => setShowLeaks(true), 1800);
-    // Auto-collapse score card after 2.5s so issues are visible
+    // Auto-scroll to issues after the reveal sequence
     const t3 = setTimeout(() => {
-      setScoreCardCollapsed(true);
-      // Smooth scroll to issues
-      setTimeout(() => {
-        issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 350);
-    }, 2500);
+      issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 2800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [result]);
 
@@ -568,122 +564,89 @@ export default function Home() {
 
   return (
     <>
-      {/* ═══ MINIMAL NAV ═══ */}
-      <nav className="w-full h-16 sm:h-20 backdrop-blur-md border-b border-[var(--border)]" style={{ background: "rgba(248, 247, 244, 0.85)" }} aria-label="Main navigation">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-[var(--brand)] to-blue-700">
-              <div className="w-3 h-3 rounded-sm bg-white"></div>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-[var(--text-primary)]">PageLeaks</span>
+      {/* ═══ NAV ═══ */}
+      <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
+        <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
+          <div className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (result) {
+                  handleScanAnother();
+                } else {
+                  document.getElementById("hero-form")?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm"
+            >
+              {result ? "Scan Another" : "Start Analysis"}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (result) {
-                handleScanAnother();
-              } else {
-                document.getElementById("hero-form")?.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-            className="hidden sm:inline-block text-sm font-semibold px-5 py-2.5 rounded-xl text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
-            style={{ boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)" }}
-          >
-            {result ? "Scan Another" : "Start Analysis"}
-          </button>
         </div>
       </nav>
 
       <main className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>
-        {/* ═══ HERO — hidden during loading and after results ═══ */}
+        {/* ═══ HERO ═══ */}
         {(phase === "hero" || phase === "hero-exit") && !result && (
-        <section className={`relative pt-12 sm:pt-20 pb-10 sm:pb-16 px-4 sm:px-6 ${phase === "hero-exit" ? "anim-phase-exit" : "anim-phase-enter"}`}>
-          <div className="max-w-3xl mx-auto text-center">
-            {/* Visual indicator */}
-            <div className="flex items-center justify-center mb-8">
-              <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-[var(--surface)] border-[1.5px] border-[var(--border)]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-sm font-medium text-[var(--brand)]">Live Analysis Engine</span>
-              </div>
-            </div>
+        <section className={`relative pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden ${phase === "hero-exit" ? "anim-phase-exit" : "anim-phase-enter"}`}>
+          {/* Decorative background */}
+          <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-violet-200/30 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -z-10 w-1/3 h-2/3 bg-gradient-to-tr from-violet-100/30 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
 
-            <h1 className="font-bold tracking-tight mb-6 text-[var(--text-primary)]" style={{
-              fontSize: "clamp(32px, 5vw, 64px)",
-              lineHeight: "1.1",
-              letterSpacing: "-0.02em"
-            }}>
-              Every month, your product page loses
-              <br />
-              <span className="text-[var(--error)]">$1,000s in sales</span>
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 text-center">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-[var(--on-surface)] mb-8 leading-[1.1]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
+              Every month, your product page{" "}
+              <br className="hidden md:block" />
+              loses <span className="text-[var(--brand)]">$1,000s</span> in sales
             </h1>
 
-            <p className="text-lg mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed text-[var(--text-secondary)]">
-              Get your conversion score in 30 seconds. See exactly where you're bleeding revenue and how to stop it.
+            <p className="text-lg sm:text-xl text-[var(--on-surface-variant)] max-w-2xl mx-auto mb-12">
+              Stop guessing. PageLeaks scans your sales page for conversion killers and tells you exactly what to fix.
             </p>
 
-            {/* Premium input design */}
-            <form id="hero-form" onSubmit={analyze} className="max-w-xl mx-auto mb-10 sm:mb-16">
-              <div className="relative group">
-                <div
-                  className="relative flex flex-col sm:flex-row rounded-2xl overflow-hidden transition-shadow duration-200 group-focus-within:shadow-xl sm:group-focus-within:scale-[1.01] bg-[var(--surface)] border-2 border-transparent"
-                  style={{
-                    backgroundClip: "padding-box",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px var(--border)"
-                  }}
-                >
-                  <div className="hidden sm:block absolute inset-0 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 bg-gradient-to-r from-[var(--brand)] to-blue-700" style={{ padding: "2px" }}>
-                    <div className="w-full h-full bg-[var(--surface)] rounded-2xl"></div>
-                  </div>
-
-                  <div className="relative flex flex-col sm:flex-row w-full">
-                    <input
-                      id="url-input"
-                      type="text"
-                      inputMode="url"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      placeholder="Paste your store or product page URL..."
-                      value={url}
-                      onChange={handleUrlChange}
-                      aria-label="Shopify product page URL"
-                      className="flex-1 px-5 py-4 sm:px-6 sm:py-5 text-base bg-transparent outline-none placeholder-gray-500 text-[var(--text-primary)]"
-                      aria-describedby={error ? "url-error" : undefined}
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-8 py-4 sm:py-5 text-base font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed polish-hover-lift polish-focus-ring rounded-xl sm:rounded-xl mx-1 mb-1 sm:m-1"
-                      style={{
-                        background: loading ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), #1D4ED8)"
-                      }}
-                    >
-                      {loading ? "Scanning..." : "Analyze →"}
-                    </button>
-                  </div>
+            {/* Search input — pill style from Stitch */}
+            <form id="hero-form" onSubmit={analyze} className="max-w-2xl mx-auto">
+              <div className="flex flex-col sm:flex-row p-2 bg-[var(--surface-container-lowest)] rounded-full shadow-[0_20px_40px_rgba(124,58,237,0.06)] border border-[var(--outline-variant)]/15 focus-within:border-[var(--brand)]/40 transition-all duration-300">
+                <div className="hidden sm:flex items-center pl-6 pr-2 text-[var(--outline)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 </div>
+                <input
+                  id="url-input"
+                  type="text"
+                  inputMode="url"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="Paste your store or product page URL..."
+                  value={url}
+                  onChange={handleUrlChange}
+                  aria-label="Product page URL"
+                  className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-base sm:text-lg placeholder:text-[var(--outline)]/60 px-4 py-3 sm:py-0 text-[var(--on-surface)]"
+                  aria-describedby={error ? "url-error" : undefined}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || productPickerLoading}
+                  className="primary-gradient text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                >
+                  {loading ? "Scanning..." : productPickerLoading ? "Finding..." : "Analyze"}
+                  {!loading && !productPickerLoading && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  )}
+                </button>
               </div>
             </form>
 
             {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-[var(--text-tertiary)]">
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 15l-1.18-1.05C2.42 10.65 0 8.48 0 5.8 0 3.42 1.42 2 4 2c1.24 0 2.47.52 3 1.3C7.53 2.52 8.76 2 10 2c2.58 0 4 1.42 4 3.8 0 2.68-2.42 4.85-6.82 8.15L8 15z" fill="var(--success)"/>
-                </svg>
-                <span>Free forever</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 16A8 8 0 108 0a8 8 0 000 16zM7 3v6h2V3H7zm0 8v2h2v-2H7z" fill="var(--brand)"/>
-                </svg>
-                <span>No signup required</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 0l2.4 4.8L16 6.4l-4 3.9.9 5.3L8 13.2 3.1 15.6l.9-5.3-4-3.9L5.6 4.8z" fill="var(--warning)"/>
-                </svg>
-                <span>30 second analysis</span>
-              </div>
+            <div className="mt-8 flex flex-wrap justify-center gap-6 sm:gap-8 text-[var(--outline)] text-sm font-medium">
+              <span className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--brand)" aria-hidden="true"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                No Credit Card Required
+              </span>
+              <span className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--brand)" aria-hidden="true"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></svg>
+                30-Second Analysis
+              </span>
             </div>
           </div>
         </section>
@@ -796,187 +759,180 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══ SCORE REVEAL — auto-collapses after 2.5s ═══ */}
+        {/* ═══ RESULTS HERO — Score Ring + Revenue Summary ═══ */}
         {result && showCard && (phase === "results" || phase === "results-exit") && (
-          <section className={`max-w-4xl mx-auto px-6 ${scoreCardCollapsed ? "pb-4" : "pb-16"} ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
+          <section
+            className={`pt-24 sm:pt-28 pb-8 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}
+            style={{ animation: "fade-in-up 600ms var(--ease-out-quart) both" }}
+          >
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
 
-            {/* ── COLLAPSED: compact summary bar ── */}
-            {scoreCardCollapsed && (
-              <button
-                type="button"
-                onClick={() => setScoreCardCollapsed(false)}
-                className="w-full score-card-collapse bg-[var(--surface)] rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg group"
-                style={{
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--border)",
-                }}
-              >
-                <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700 rounded-t-2xl"></div>
-                <div className="px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-4">
-                  {/* Left: domain + score */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 border-2"
-                      style={{
-                        backgroundColor: scoreColorTintBg(result.score),
-                        color: scoreColor(result.score),
-                        borderColor: scoreColor(result.score),
-                      }}
-                    >
-                      {result.score}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                        {domain || url}
-                      </p>
-                      <p className="text-xs text-[var(--text-tertiary)]">
-                        {result.score >= 80 ? "Excellent" :
-                         result.score >= 60 ? "Above average" :
-                         result.score >= 40 ? "Needs improvement" :
-                         "Critical"} • Shopify avg: 65
-                      </p>
-                    </div>
-                  </div>
+                {/* ── Score Ring + Domain Info ── */}
+                <div
+                  className="md:col-span-8 bg-[var(--surface)] rounded-3xl p-8 sm:p-10 flex flex-col md:flex-row items-center gap-8 sm:gap-10 relative overflow-hidden"
+                  style={{ boxShadow: "var(--shadow-elevated)" }}
+                >
+                  {/* Decorative glow */}
+                  <div
+                    className="absolute top-0 right-0 w-72 h-72 rounded-full -mr-24 -mt-24 blur-3xl pointer-events-none"
+                    style={{ background: "var(--brand)", opacity: 0.04 }}
+                  ></div>
 
-                  {/* Right: revenue loss + expand hint */}
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="hidden sm:block text-right">
-                      <p className="text-sm font-bold text-[var(--error-text)]">
-                        -${lossLow.toLocaleString()}–${lossHigh.toLocaleString()}/mo
-                      </p>
-                      <p className="text-xs text-[var(--text-tertiary)]">revenue loss</p>
-                    </div>
+                  {/* Score ring */}
+                  <div className="relative shrink-0">
                     <svg
-                      className="w-5 h-5 text-[var(--text-tertiary)] group-hover:text-[var(--brand)] transition-colors"
-                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                      className="w-44 h-44 sm:w-48 sm:h-48"
+                      viewBox="0 0 192 192"
+                      style={{ transform: "rotate(-90deg)" }}
+                      aria-hidden="true"
                     >
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <circle
+                        cx="96" cy="96" r="88"
+                        fill="transparent"
+                        stroke="var(--surface-container)"
+                        strokeWidth="10"
+                      />
+                      <circle
+                        cx="96" cy="96" r="88"
+                        fill="transparent"
+                        stroke={scoreColor(result.score)}
+                        strokeWidth="10"
+                        strokeLinecap="round"
+                        strokeDasharray="553"
+                        strokeDashoffset={553 - (553 * animatedScore / 100)}
+                        className="score-ring-progress"
+                      />
                     </svg>
-                  </div>
-                </div>
-              </button>
-            )}
-
-            {/* ── EXPANDED: full score card ── */}
-            {!scoreCardCollapsed && (
-            <div
-              className="relative overflow-hidden bg-[var(--surface)] rounded-3xl score-card-expand"
-              style={{
-                boxShadow: "0 20px 64px rgba(0,0,0,0.12), 0 0 0 1px var(--border)",
-              }}
-            >
-              {/* Decorative gradient top */}
-              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700"></div>
-
-              <div className="px-5 py-10 sm:px-12 sm:py-16 relative">
-                {/* Collapse button (only after first auto-collapse) */}
-                {showLeaks && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setScoreCardCollapsed(true);
-                      setTimeout(() => {
-                        issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }, 100);
-                    }}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                    aria-label="Collapse score card"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                )}
-
-                {/* Domain header */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 bg-[var(--bg)] border border-[var(--border)]">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: scoreColor(result.score) }}></div>
-                    <span className="text-sm font-medium text-[var(--text-secondary)] truncate max-w-[300px]">
-                      {domain || url}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Score display */}
-                <div className="text-center mb-8">
-                  <div className="relative inline-block">
-                    <div
-                      className="font-bold font-[family-name:var(--font-mono)]"
-                      style={{
-                        fontSize: "clamp(80px, 12vw, 140px)",
-                        color: scoreColor(result.score),
-                        letterSpacing: "-0.03em",
-                        lineHeight: "1",
-                        textShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                      }}
-                    >
-                      {animatedScore}
-                      <span className="text-[0.3em] opacity-60">/100</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span
+                        className="font-extrabold text-[var(--on-surface)]"
+                        style={{
+                          fontSize: "clamp(40px, 7vw, 56px)",
+                          fontFamily: "var(--font-manrope), Manrope, sans-serif",
+                          lineHeight: 1,
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        {animatedScore}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)] opacity-50 mt-1">
+                        Score
+                      </span>
                     </div>
                   </div>
 
-                  {/* Score interpretation */}
-                  <div className="max-w-md mx-auto mt-6">
-                    <p className="text-lg mb-2 text-[var(--text-primary)] font-medium">
-                      {result.score >= 80 ? "Excellent conversion rate" :
-                       result.score >= 60 ? "Above average performance" :
-                       result.score >= 40 ? "Significant room for improvement" :
-                       "Critical optimization needed"}
+                  {/* Domain + context */}
+                  <div className="space-y-4 text-center md:text-left relative z-10">
+                    <div>
+                      <span
+                        className="inline-block px-3 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-wider"
+                        style={{
+                          backgroundColor: scoreColorTintBg(result.score),
+                          color: scoreColorText(result.score),
+                        }}
+                      >
+                        {result.score >= 80
+                          ? "Excellent"
+                          : result.score >= 60
+                          ? "Above Average"
+                          : result.score >= 40
+                          ? "Needs Improvement"
+                          : "Critical Issues Found"}
+                      </span>
+                      <h1
+                        className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight"
+                        style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                      >
+                        {domain || url}
+                      </h1>
+                    </div>
+                    <p className="text-[var(--on-surface-variant)] max-w-md text-sm sm:text-base leading-relaxed">
+                      {result.summary}
                     </p>
-                    <p className="text-sm text-[var(--text-tertiary)]">
-                      Shopify average: 65/100 • Analyzed in under 30 seconds
-                    </p>
-                  </div>
-                </div>
-
-                {/* Revenue impact - THE EMOTIONAL MOMENT */}
-                {showRevenue && (
-                  <div className="relative">
-                    <div
-                      className="text-center p-5 sm:p-8 rounded-2xl bg-[var(--error-light)] border-2 border-red-300 animate-[slide-up_300ms_ease-out_forwards]"
-                      style={{
-                        boxShadow: "0 8px 32px rgba(248, 113, 113, 0.2)"
-                      }}
-                    >
-                      <div className="mb-4">
-                        <svg className="mx-auto mb-3" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                          <path d="M12 2L13.09 8.26L19.96 9L13.09 15.74L15.18 22L12 18.77L8.82 22L10.91 15.74L4.04 9L10.91 8.26L12 2Z" fill="var(--error)"/>
-                        </svg>
-                        <h3 className="text-lg font-semibold mb-2 text-[var(--error-text)]">
-                          Monthly Revenue Loss
-                        </h3>
-                        <p
-                          className="font-bold font-[family-name:var(--font-mono)] text-[var(--error-text)]"
-                          style={{
-                            fontSize: "clamp(28px, 5vw, 48px)",
-                            textShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                          }}
+                    <div className="flex gap-3 pt-2 justify-center md:justify-start">
+                      <div className="px-4 py-2.5 bg-[var(--surface-container-low)] rounded-xl">
+                        <div className="text-[9px] text-[var(--on-surface-variant)] uppercase font-bold tracking-[0.15em]">
+                          Issues
+                        </div>
+                        <div
+                          className="text-lg font-bold text-[var(--on-surface)]"
+                          style={{ fontVariantNumeric: "tabular-nums" }}
                         >
-                          ${lossLow.toLocaleString()}–${lossHigh.toLocaleString()}
-                        </p>
-                        <p className="text-sm mt-2 text-[var(--error-text)] opacity-80">
-                          This is money walking away from your store every single month.
-                        </p>
+                          {leaks.length}
+                        </div>
+                      </div>
+                      <div className="px-4 py-2.5 bg-[var(--surface-container-low)] rounded-xl">
+                        <div className="text-[9px] text-[var(--on-surface-variant)] uppercase font-bold tracking-[0.15em]">
+                          Avg Score
+                        </div>
+                        <div
+                          className="text-lg font-bold text-[var(--on-surface)]"
+                          style={{ fontVariantNumeric: "tabular-nums" }}
+                        >
+                          65
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* ── Revenue Loss Card ── */}
+                {showRevenue && (
+                  <div
+                    className="md:col-span-4 p-8 rounded-3xl text-white flex flex-col justify-between"
+                    style={{
+                      background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
+                      boxShadow: "0 20px 60px rgba(124, 58, 237, 0.25)",
+                      animation: "fade-in-up 500ms var(--ease-out-quart) both",
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-50" aria-hidden="true">
+                        <path d="M23 6l-9.5 9.5-5-5L1 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M17 6h6v6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <h3 className="text-base sm:text-lg font-semibold opacity-80 leading-tight">
+                        Estimated Monthly Revenue Loss
+                      </h3>
+                    </div>
+                    <div className="space-y-1 my-6">
+                      <div
+                        className="font-extrabold tracking-tighter"
+                        style={{
+                          fontSize: "clamp(28px, 5vw, 44px)",
+                          fontFamily: "var(--font-manrope), Manrope, sans-serif",
+                        }}
+                      >
+                        -${lossLow.toLocaleString()}&ndash;${lossHigh.toLocaleString()}
+                      </div>
+                      <p className="text-sm font-medium opacity-70">Based on estimated store traffic</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                      className="w-full py-3 bg-white/10 backdrop-blur-md rounded-xl font-bold border border-white/20 hover:bg-white/20 transition-all text-sm"
+                    >
+                      View Issue Breakdown &darr;
+                    </button>
+                  </div>
                 )}
+
               </div>
             </div>
-            )}
           </section>
         )}
 
-        {/* ═══ COMPETITOR TEASER — between score and issues, impossible to miss ═══ */}
-        {result && showLeaks && (phase === "results" || phase === "results-exit") && !competitorLoading && !competitorResult && !competitorError && (
+        {/* ═══ COMPETITOR TEASER — hidden for now ═══ */}
+        {false && result && showLeaks && (phase === "results" || phase === "results-exit") && !competitorLoading && !competitorResult && !competitorError && (
           <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 500ms ease-out 200ms both" }}>
             <button
               type="button"
               onClick={fetchCompetitors}
               className="w-full group relative overflow-hidden rounded-2xl text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]"
               style={{
-                background: "linear-gradient(135deg, var(--brand), #1D4ED8)",
-                boxShadow: "0 8px 32px rgba(37, 99, 235, 0.25)",
+                background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
+                boxShadow: "0 8px 32px rgba(124, 58, 237, 0.25)",
               }}
             >
               {/* Decorative glow */}
@@ -1001,14 +957,16 @@ export default function Home() {
                   <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 leading-snug">
                     Are competitors outscoring you?
                   </h3>
-                  <p className="text-sm text-white/70">
+                  <p className="text-sm text-white/70 hidden sm:block">
                     See how your page compares to similar products — category by category
                   </p>
                 </div>
 
-                {/* Arrow */}
-                <div className="shrink-0 w-10 h-10 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
-                  <svg className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                {/* Explicit CTA */}
+                <div className="shrink-0 flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-white text-[var(--brand)] font-bold text-sm group-hover:bg-white/90 transition-colors shadow-sm">
+                  <span className="hidden sm:inline">Compare Now</span>
+                  <span className="sm:hidden">Compare</span>
+                  <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -1017,15 +975,15 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══ COMPETITOR LOADER — between score and issues ═══ */}
-        {result && showLeaks && competitorLoading && (phase === "results" || phase === "results-exit") && (
+        {/* ═══ COMPETITOR LOADER — hidden for now ═══ */}
+        {false && result && showLeaks && competitorLoading && (phase === "results" || phase === "results-exit") && (
           <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 300ms ease-out both" }}>
             <CompetitorLoader url={url} />
           </div>
         )}
 
-        {/* ═══ COMPETITOR ERROR — between score and issues ═══ */}
-        {result && showLeaks && competitorError && (phase === "results" || phase === "results-exit") && (
+        {/* ═══ COMPETITOR ERROR — hidden for now ═══ */}
+        {false && result && showLeaks && competitorError && (phase === "results" || phase === "results-exit") && (
           <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 300ms ease-out both" }}>
             <div className="p-6 rounded-2xl bg-[var(--error-light)] border border-red-200">
               <div className="flex items-center gap-4">
@@ -1040,7 +998,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={fetchCompetitors}
-                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-blue-700 hover:scale-105 transition-transform"
+                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-violet-800 hover:scale-105 transition-transform"
                 >
                   Retry
                 </button>
@@ -1049,7 +1007,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══ COMPETITOR RESULTS — between score and issues ═══ */}
+        {/* ═══ COMPETITOR RESULTS — hidden for now
         {result && showLeaks && competitorResult && (phase === "results" || phase === "results-exit") && (
           <div className={`max-w-4xl mx-auto px-6 mb-6 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
             {competitorResult.competitors.length > 0 ? (
@@ -1068,45 +1026,50 @@ export default function Home() {
             )}
           </div>
         )}
+        ═══ */}
 
-        {/* ═══ ISSUES LIST — shown immediately after score ═══ */}
+        {/* ═══ ISSUES BENTO GRID — 3-column with CTA card ═══ */}
         {result && showLeaks && (phase === "results" || phase === "results-exit") && (
-          <div ref={issuesRef} className={`max-w-4xl mx-auto px-6 pb-16 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
-            <div className="text-center md:text-left mb-10 sm:mb-12">
-              <h2 className="text-2xl font-bold mb-3 text-[var(--text-primary)]">Issues Found on Your Page</h2>
-              <p className="text-lg text-[var(--text-secondary)]">Click any issue to get the detailed fix</p>
+          <div ref={issuesRef} className={`max-w-6xl mx-auto px-4 sm:px-6 pb-8 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
+            {/* Section header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10 pl-0 sm:pl-1">
+              <div className="border-l-[3px] border-[var(--brand)] pl-5">
+                <h2
+                  className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight"
+                  style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                >
+                  Issues Found
+                </h2>
+                <p className="text-[var(--on-surface-variant)] text-sm sm:text-base mt-1">
+                  {leaks.length} conversion leaks identified. Click any to get the fix.
+                </p>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {leaks.map((leak, i) => {
-                const severityIcons = {
-                  HIGH: "🚨",
-                  MED: "⚠️",
-                  LOW: "💡"
+                const CATEGORY_ICONS: Record<string, string> = {
+                  title: "✍️",
+                  images: "📸",
+                  pricing: "💰",
+                  socialProof: "⭐",
+                  cta: "🎯",
+                  description: "📄",
+                  trust: "🛡️",
                 };
 
-                const severityStyles = {
+                const style = {
                   HIGH: {
-                    bg: "var(--error-light)",
-                    borderColor: "rgb(252 165 165)",
                     textColor: "var(--error-text)",
-                    hoverBorder: "rgb(248 113 113)",
                   },
                   MED: {
-                    bg: "var(--warning-light)",
-                    borderColor: "rgb(251 191 36)",
                     textColor: "var(--warning-text)",
-                    hoverBorder: "rgb(245 158 11)",
                   },
                   LOW: {
-                    bg: "var(--success-light)",
-                    borderColor: "rgb(134 239 172)",
                     textColor: "var(--success-text)",
-                    hoverBorder: "rgb(74 222 128)",
-                  }
-                };
-
-                const style = severityStyles[leak.impact as keyof typeof severityStyles];
+                  },
+                }[leak.impact as "HIGH" | "MED" | "LOW"];
 
                 return (
                   <button
@@ -1118,64 +1081,210 @@ export default function Home() {
                       setEmailError("");
                       captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
                     }}
-                    className="group text-left rounded-2xl p-5 sm:p-6 cursor-pointer transition-all duration-200 hover:-translate-y-1 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--brand)] hover:shadow-xl"
+                    className="group text-left bg-[var(--surface)] rounded-[1.5rem] p-6 sm:p-7 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
                     style={{
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                      animation: `fade-in-up 400ms ease-out ${i * 80}ms both`,
+                      boxShadow: "var(--shadow-subtle)",
+                      animation: `fade-in-up 400ms ease-out ${i * 70}ms both`,
                     }}
                   >
-                    {/* Category + severity */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span
-                        className="inline-flex items-center justify-center w-9 h-6 rounded-md text-xs font-bold font-[family-name:var(--font-mono)] border"
-                        style={{
-                          fontVariantNumeric: "tabular-nums",
-                          color: style.textColor,
-                          backgroundColor: style.bg,
-                          borderColor: style.borderColor,
-                        }}
-                      >
-                        {leak.catScore}
-                      </span>
-                      <span className="text-sm font-semibold text-[var(--text-secondary)]">
-                        {leak.category}
-                      </span>
+                    <div className="space-y-5">
+                      {/* Icon + Score */}
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 bg-[var(--surface-container-high)] rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300">
+                          {CATEGORY_ICONS[leak.key] || "📊"}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[9px] font-bold text-[var(--on-surface-variant)] tracking-[0.15em] uppercase">
+                            Score
+                          </div>
+                          <div
+                            className="text-xl font-extrabold"
+                            style={{
+                              color: style.textColor,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {leak.catScore}<span className="text-xs font-semibold opacity-50">/100</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Category + Problem */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-[var(--on-surface)] tracking-tight leading-snug">
+                          {leak.category}
+                        </h3>
+                        <p className="text-sm text-[var(--on-surface-variant)] leading-relaxed line-clamp-3">
+                          {leak.problem}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Problem — the main thing */}
-                    <p className="text-base font-semibold leading-snug text-[var(--text-primary)] mb-4">
-                      {leak.problem}
-                    </p>
-
-                    {/* Bottom: revenue + CTA */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold" style={{ color: style.textColor }}>
-                        {leak.revenue} potential
-                      </span>
-                      <span className="text-sm font-semibold text-[var(--brand)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
-                        See fix
-                        <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </span>
+                    {/* Bottom: Revenue + Arrow */}
+                    <div className="mt-6 pt-5 border-t border-[var(--surface-container)] flex justify-between items-center">
+                      <div>
+                        <div className="text-[9px] font-bold text-[var(--on-surface-variant)] uppercase tracking-[0.15em]">
+                          Potential Gain
+                        </div>
+                        <div className="text-base sm:text-lg font-extrabold text-[var(--brand)]">
+                          {leak.revenue}
+                        </div>
+                      </div>
+                      <svg
+                        className="w-5 h-5 text-[var(--on-surface-variant)] group-hover:text-[var(--brand)] group-hover:translate-x-1 transition-all duration-200"
+                        viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                      >
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
                     </div>
                   </button>
                 );
               })}
+
+              {/* CTA Card — last position */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLeak(leaks[0]?.key || null);
+                  setEmailStep("form");
+                  setEmailError("");
+                  captureEvent("cta_card_clicked", { url });
+                }}
+                className="group relative rounded-[1.5rem] p-7 flex flex-col items-center justify-center text-center overflow-hidden text-white min-h-[280px]"
+                style={{
+                  background: "linear-gradient(135deg, var(--on-surface) 0%, #2d1b42 100%)",
+                  animation: `fade-in-up 400ms ease-out ${leaks.length * 70}ms both`,
+                }}
+              >
+                {/* Subtle grid pattern overlay */}
+                <div
+                  className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                  style={{
+                    backgroundImage: "linear-gradient(var(--brand) 1px, transparent 1px), linear-gradient(90deg, var(--brand) 1px, transparent 1px)",
+                    backgroundSize: "40px 40px",
+                  }}
+                ></div>
+
+                <div className="relative z-10 space-y-4">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <h3
+                    className="text-xl sm:text-2xl font-extrabold"
+                    style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                  >
+                    Get All Fixes
+                  </h3>
+                  <p className="text-white/60 text-sm max-w-[200px] mx-auto leading-relaxed">
+                    Step-by-step recommendations for all {leaks.length} issues, sent to your inbox.
+                  </p>
+                  <span className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-white text-[var(--on-surface)] rounded-full font-bold text-sm group-hover:scale-105 transition-transform">
+                    Get Free Report
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ FEATURED INSIGHT — editorial section ═══ */}
+        {result && showLeaks && (phase === "results" || phase === "results-exit") && (
+          <section
+            className={`max-w-6xl mx-auto px-4 sm:px-6 pb-16 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}
+            style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}
+          >
+            <div className="bg-[var(--surface-container-low)] rounded-3xl p-8 sm:p-12 relative overflow-hidden">
+              <div className="grid md:grid-cols-2 gap-10 items-center relative z-10">
+                <div className="space-y-5">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-[var(--brand-light)] text-[var(--brand)] border border-[var(--brand-border)]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--brand)" aria-hidden="true">
+                      <path d="M12 1.5l2.61 6.727 6.89.52-5.23 4.917 1.58 6.836L12 16.56 6.15 20.5l1.58-6.836L2.5 8.747l6.89-.52L12 1.5z"/>
+                    </svg>
+                    Top Insight
+                  </div>
+                  <h2
+                    className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight leading-tight"
+                    style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                  >
+                    {leaks[0]
+                      ? `Your "${leaks[0].category}" score of ${leaks[0].catScore} is the #1 revenue blocker.`
+                      : "Critical improvements identified."}
+                  </h2>
+                  <p className="text-[var(--on-surface-variant)] text-base leading-relaxed max-w-lg">
+                    {leaks[0]?.tip || result.summary}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (leaks[0]) {
+                        setSelectedLeak(leaks[0].key);
+                        setEmailStep("form");
+                        setEmailError("");
+                      }
+                    }}
+                    className="group inline-flex items-center gap-2 text-[var(--brand)] font-bold text-base"
+                  >
+                    Get the detailed fix
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Score breakdown mini-chart */}
+                <div className="space-y-3">
+                  {leaks.slice(0, 5).map((leak) => (
+                    <div key={leak.key} className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-[var(--on-surface-variant)] w-24 shrink-0 truncate">
+                        {leak.category}
+                      </span>
+                      <div className="flex-1 h-3 bg-[var(--surface-container)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${leak.catScore}%`,
+                            backgroundColor: scoreColor(leak.catScore),
+                          }}
+                        ></div>
+                      </div>
+                      <span
+                        className="text-sm font-bold w-8 text-right"
+                        style={{
+                          color: scoreColorText(leak.catScore),
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {leak.catScore}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Decorative blur */}
+              <div
+                className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none"
+                style={{ background: "var(--brand)", opacity: 0.06 }}
+              ></div>
             </div>
 
-            {/* Scan another */}
-            <div className="text-center mt-16">
+            {/* Scan another CTA */}
+            <div className="text-center mt-12">
               <button
                 type="button"
                 onClick={handleScanAnother}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
-                style={{ boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)" }}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
+                style={{ boxShadow: "0 8px 32px rgba(124, 58, 237, 0.2)" }}
               >
                 Analyze Another Page
               </button>
             </div>
-          </div>
+          </section>
         )}
 
         {/* ═══ EMAIL MODAL — triggered by clicking an issue ═══ */}
@@ -1193,7 +1302,7 @@ export default function Home() {
               style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
             >
               {/* Top accent */}
-              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700"></div>
+              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800"></div>
 
               {/* Close button */}
               <button
@@ -1249,8 +1358,8 @@ export default function Home() {
                         disabled={emailSubmitting}
                         className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
                         style={{
-                          background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), #1D4ED8)",
-                          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
+                          background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))",
+                          boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)"
                         }}
                       >
                         {emailSubmitting ? "Submitting..." : "Send Me the Fixes →"}
@@ -1306,8 +1415,8 @@ export default function Home() {
                         }}
                         className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
                         style={{
-                          background: "linear-gradient(135deg, var(--brand), #1D4ED8)",
-                          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
+                          background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
+                          boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)"
                         }}
                       >
                         Get Priority Report — $0.99
@@ -1334,106 +1443,134 @@ export default function Home() {
         {/* ═══ WHAT WE CHECK + HOW IT WORKS ═══ */}
         {phase === "hero" && !result && !loading && (
           <>
-          {/* 7 Leak Categories */}
-          <section className="py-16 sm:py-20 bg-gradient-to-b from-[var(--bg)] to-[var(--surface)] anim-phase-enter" style={{ animationDelay: "100ms" }}>
-            <div className="max-w-5xl mx-auto px-4 sm:px-6">
-              <div className="text-center mb-10 sm:mb-14">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[var(--text-primary)]">
-                  7 Places Your Page Leaks Revenue
-                </h2>
-                <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-xl mx-auto">
-                  We scan every product page for these conversion killers
-                </p>
+          {/* ── Bento Grid: 7 Leak Categories ── */}
+          <section className="py-16 sm:py-24 bg-[var(--surface-container-low)] anim-phase-enter" style={{ animationDelay: "100ms" }}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
+              <div className="text-center mb-12 sm:mb-16">
+                <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 text-[var(--on-surface)]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>7 Places Your Page Leaks Revenue</h2>
+                <p className="text-[var(--on-surface-variant)] text-lg">Our engine identifies the friction points that drive users away.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {LEAK_CATEGORIES.map((cat, i) => (
-                  <div
-                    key={cat.label}
-                    className="group bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:border-[var(--brand)] hover:shadow-lg hover:-translate-y-0.5"
-                    style={{
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                      animation: `fade-in-up 400ms ease-out ${i * 60}ms both`,
-                    }}
-                  >
-                    <div className="flex items-start gap-3.5">
-                      <span className="text-2xl leading-none shrink-0 mt-0.5" aria-hidden="true">{cat.icon}</span>
-                      <div className="min-w-0">
-                        <h3 className="text-base font-semibold mb-1.5 text-[var(--text-primary)]">{cat.label}</h3>
-                        <p className="text-sm font-medium mb-1 text-[var(--error-text)]">{cat.leak}</p>
-                        <p className="text-sm text-[var(--text-tertiary)] leading-snug">{cat.cost}</p>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
+                {/* Large highlight card */}
+                <div className="md:col-span-8 bg-[var(--surface-container-lowest)] p-8 sm:p-10 rounded-[2rem] shadow-sm flex flex-col justify-between group hover:shadow-xl transition-shadow duration-500" style={{ animation: "fade-in-up 500ms ease-out 0ms both" }}>
+                  <div>
+                    <div className="w-14 h-14 glass-card rounded-2xl flex items-center justify-center mb-8 shadow-sm">
+                      <span className="text-2xl" aria-hidden="true">⚡</span>
                     </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-[var(--on-surface)]">Title, Images & First Impression</h3>
+                    <p className="text-[var(--on-surface-variant)] text-lg leading-relaxed max-w-lg">Generic titles and poor imagery cause visitors to bounce in seconds. We analyze your above-the-fold content for conversion impact.</p>
                   </div>
-                ))}
+                </div>
 
-                {/* CTA card fills the last slot */}
-                <div
-                  className="group bg-gradient-to-br from-[var(--brand)] to-blue-700 rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer polish-hover-lift"
-                  style={{
-                    boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)",
-                    animation: `fade-in-up 400ms ease-out ${7 * 60}ms both`,
-                  }}
-                  onClick={() => document.getElementById("url-input")?.focus()}
-                >
-                  <p className="text-white font-semibold text-lg mb-1">How many leaks does your page have?</p>
-                  <p className="text-blue-200 text-sm">Find out in 30 seconds →</p>
+                {/* Vertical gradient card */}
+                <div className="md:col-span-4 primary-gradient text-white p-8 sm:p-10 rounded-[2rem] shadow-lg flex flex-col justify-between overflow-hidden relative" style={{ animation: "fade-in-up 500ms ease-out 80ms both" }}>
+                  <div className="relative z-10">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8">
+                      <span className="text-2xl" aria-hidden="true">🧠</span>
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold mb-4">Pricing & Value</h3>
+                    <p className="text-white/80 text-lg leading-relaxed">No anchoring, no urgency, no context. If your price just sits there, customers leave to &ldquo;think about it.&rdquo;</p>
+                  </div>
+                  <div className="absolute -bottom-10 -right-10 opacity-10 text-[10rem] pointer-events-none">💰</div>
+                </div>
+
+                {/* Small cards row */}
+                <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 160ms both" }}>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
+                    <span className="text-xl" aria-hidden="true">⭐</span>
+                  </div>
+                  <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">Social Proof</h4>
+                  <p className="text-[var(--on-surface-variant)]">Missing reviews or buried testimonials create immediate doubt. No trust = no purchase.</p>
+                </div>
+                <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 240ms both" }}>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
+                    <span className="text-xl" aria-hidden="true">🔘</span>
+                  </div>
+                  <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">CTA Clarity</h4>
+                  <p className="text-[var(--on-surface-variant)]">Weak or hidden Add to Cart buttons let ready buyers slip away at the final moment.</p>
+                </div>
+                <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 320ms both" }}>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
+                    <span className="text-xl" aria-hidden="true">🛡️</span>
+                  </div>
+                  <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">Trust & Copy</h4>
+                  <p className="text-[var(--on-surface-variant)]">Missing guarantees, poor descriptions, and no security badges create friction at checkout.</p>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* How It Works — 3 steps */}
-          <section className="py-14 sm:py-16 bg-[var(--surface)] border-t border-[var(--border)] anim-phase-enter" style={{ animationDelay: "200ms" }}>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6">
-              <div className="text-center mb-10 sm:mb-12">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[var(--text-primary)]">
-                  How It Works
-                </h2>
+          {/* ── How It Works — 3 steps ── */}
+          <section className="py-16 sm:py-24 bg-[var(--surface-base)] anim-phase-enter" style={{ animationDelay: "200ms" }}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
+              <div className="flex flex-col md:flex-row justify-between items-end mb-16 sm:mb-20 gap-6">
+                <div className="max-w-xl">
+                  <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 text-[var(--on-surface)]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>Three Steps to More Sales</h2>
+                  <p className="text-[var(--on-surface-variant)] text-lg">Stop losing money and start optimizing with precision.</p>
+                </div>
+                <div className="hidden md:block h-px bg-violet-100 flex-1 mx-12 mb-5"></div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 relative">
                 {[
-                  { step: "1", title: "Paste your URL", desc: "Any Shopify product page" },
-                  { step: "2", title: "AI scans 7 factors", desc: "Title, images, pricing, reviews, CTA, copy, trust" },
-                  { step: "3", title: "Get your leak report", desc: "Score + revenue impact + fixes" },
+                  { num: "01", title: "Input Your URL", desc: "Simply paste your sales or product page link. No code installation required." },
+                  { num: "02", title: "Deep AI Scan", desc: "Our AI analyzes 7 conversion factors — title, images, pricing, reviews, CTA, copy, and trust." },
+                  { num: "03", title: "Execute Fixes", desc: "Get a prioritized list of high-impact changes with estimated revenue impact for each." },
                 ].map((s, i) => (
-                  <div key={s.step} className="text-center" style={{ animation: `fade-in-up 400ms ease-out ${i * 100 + 100}ms both` }}>
-                    <div
-                      className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center text-lg font-bold text-[var(--brand)] bg-[var(--brand-light)] border border-[var(--brand-border)]"
-                    >
-                      {s.step}
+                  <div key={s.num} className="relative" style={{ animation: `fade-in-up 500ms ease-out ${i * 120 + 100}ms both` }}>
+                    <div className="text-[8rem] font-black text-[var(--brand)]/5 absolute -top-16 sm:-top-20 -left-2 sm:-left-4 pointer-events-none select-none" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>{s.num}</div>
+                    <div className="relative z-10">
+                      <h4 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-[var(--on-surface)]">{s.title}</h4>
+                      <p className="text-[var(--on-surface-variant)] leading-relaxed">{s.desc}</p>
                     </div>
-                    <h3 className="text-base font-semibold mb-1 text-[var(--text-primary)]">{s.title}</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">{s.desc}</p>
-                    {i < 2 && (
-                      <div className="hidden sm:block mt-4 text-[var(--text-tertiary)]" aria-hidden="true">
-                        <svg className="mx-auto w-5 h-5 rotate-90 sm:rotate-0" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
 
-              {/* Bottom CTA */}
-              <div className="text-center mt-12">
-                <button
-                  type="button"
-                  onClick={() => {
-                    document.getElementById("url-input")?.focus();
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
-                  style={{ boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)" }}
-                >
-                  Find Your Leaks — Free
-                </button>
-                <p className="text-sm text-[var(--text-tertiary)] mt-3">No signup. No email. Just paste and go.</p>
+          {/* ── CTA Section ── */}
+          <section className="py-16 sm:py-24 px-4 sm:px-8 anim-phase-enter" style={{ animationDelay: "300ms" }}>
+            <div className="max-w-7xl mx-auto primary-gradient rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 md:p-24 text-center text-white relative overflow-hidden shadow-2xl">
+              <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-[100px] pointer-events-none"></div>
+              <div className="relative z-10">
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-6 sm:mb-8 tracking-tight" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>Ready to stop the leak?</h2>
+                <p className="text-lg sm:text-xl text-violet-100 mb-10 sm:mb-12 max-w-xl mx-auto">Find your conversion killers in 30 seconds. Free. No signup required.</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+                  <button
+                    type="button"
+                    onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="bg-white text-violet-600 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-violet-50 transition-all hover:scale-105 active:scale-95"
+                  >
+                    Get Your Free Audit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="bg-white/10 backdrop-blur-md border border-white/20 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-white/20 transition-all"
+                  >
+                    Learn More
+                  </button>
+                </div>
               </div>
             </div>
           </section>
+
+          {/* ── Footer ── */}
+          <footer className="bg-violet-50 border-t border-violet-100 w-full">
+            <div className="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 py-10 sm:py-12 gap-6 max-w-7xl mx-auto">
+              <div className="flex flex-col gap-1 text-center md:text-left">
+                <div className="text-lg font-bold text-violet-800" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
+                <p className="text-slate-500 text-xs tracking-wide uppercase">© 2024 PageLeaks. All rights reserved.</p>
+              </div>
+              <div className="flex gap-6 sm:gap-8 text-xs tracking-wide uppercase">
+                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Privacy Policy</a>
+                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Terms of Service</a>
+                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Support</a>
+              </div>
+            </div>
+          </footer>
           </>
         )}
       </main>
