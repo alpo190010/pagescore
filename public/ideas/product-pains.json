@@ -1,0 +1,34 @@
+{
+  "lastUpdated": "2026-03-24T16:00:00Z",
+  "angle": "Angle 1: User Complaints About CRO Tools",
+  "findings": [
+    {
+      "pain": "PageSpeed/Lighthouse scores are gameable and widely faked — Fiverr sellers inject scripts that detect speed testing tools and temporarily block assets to show 90+ scores while real visitors see zero improvement. Merchants pay $50-200 and get no actual benefit.",
+      "userQuote": "Fake scripts are injected into your theme. These scripts detect when a speed testing tool (Google PageSpeed, GTMetrix, Lighthouse, etc.) is running. When detected, they temporarily block apps, images, or scripts just long enough to fool the tool. The test then shows a 90+ score — but real visitors see no improvement at all.",
+      "source": "https://old.reddit.com/r/shopify/ (speed optimization scam exposé post, 2025-2026)",
+      "actionForPageScore": "PageScore should emphasize REAL user-visible metrics over synthetic scores. Add a 'score integrity' badge or indicator that shows we're testing what actual visitors see, not what bots see. Consider adding a 'scam detector' that identifies sites with suspiciously different bot vs. real scores. This is a massive trust differentiator.",
+      "priority": "high"
+    },
+    {
+      "pain": "Lighthouse/PageSpeed scores feel completely disconnected from reality — statically generated sites loading in under 1 second get terrible performance scores (Gap.com: 10/100, Patreon: 18/100). Merchants obsess over a number that doesn't correlate with actual user experience.",
+      "userQuote": "How is this even possible? The pages are statically generated, they load in less than a second, and the performance is considered terrible? Time to interactive is especially baffling - 22 seconds! [...] basically every modern site I scanned completely sucks according to Google Insights!",
+      "source": "https://www.reddit.com/r/webdev/comments/1127bk4/performance_scores_for_google_lighthouseinsights/",
+      "actionForPageScore": "PageScore should explicitly differentiate itself from PageSpeed Insights. Our scoring should map to ACTUAL conversion impact, not synthetic lab metrics. Show 'what this means for your sales' next to every score. Position as 'the score that actually matters for revenue' vs. the meaningless Google number.",
+      "priority": "high"
+    },
+    {
+      "pain": "CRO/optimization tools give generic, non-actionable advice that merchants can't actually implement. Most tools just say 'improve your images' or 'add trust badges' without specific, prioritized steps. Merchants feel overwhelmed and don't know what to fix first.",
+      "userQuote": "I feel like I read a lot of posts about Page Speed being harder to get a good score compared to GTmetrix [...] Should I be super worried, is there a reason this is happening?",
+      "source": "https://old.reddit.com/r/bigseo/ (multiple threads about confusing/contradictory scoring tools)",
+      "actionForPageScore": "Every PageScore recommendation should be: (1) specific to THAT product page, (2) prioritized by revenue impact, (3) include a before/after example, (4) one-click actionable where possible. Never give generic advice. Show 'fix this first — estimated +X% conversion lift' ranking.",
+      "priority": "high"
+    },
+    {
+      "pain": "Merchants are drowning in tools (Hotjar, Lucky Orange, heatmaps, A/B testing) but none connect the dots. Each tool shows data in isolation — heatmaps don't tell you WHY people aren't buying, PageSpeed doesn't relate to conversion, and CRO audits don't account for the specific product/niche.",
+      "userQuote": "Digital marketing isn't hard. You just need to know SEO, PPC, CRO, analytics, content, design, branding, psychology, automation tools, and have a sixth sense for what Google's gonna do next.",
+      "source": "https://www.reddit.com/r/DigitalMarketing/ (viral post about tool overload, 2025)",
+      "actionForPageScore": "PageScore's core value prop should be: ONE tool, ONE score, ONE prioritized action list. Not another dashboard to check. Position against the 'tool stack fatigue' that every ecommerce merchant feels. Integrate what matters from speed, UX, copy, trust signals into a single view.",
+      "priority": "medium"
+    }
+  ]
+}
