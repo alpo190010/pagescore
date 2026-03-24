@@ -104,7 +104,7 @@ ${truncated}`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "deepseek/deepseek-v3.2",
+      model: "openai/gpt-5.4-nano",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4,
       max_tokens: 4000,

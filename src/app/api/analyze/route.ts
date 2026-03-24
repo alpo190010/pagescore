@@ -131,7 +131,7 @@ ${truncated}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "minimax/minimax-m2.7",
+        model: "openai/gpt-5.4-nano",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
         max_tokens: 4000,
@@ -147,7 +147,7 @@ ${truncated}`;
     }
 
     const aiData = await aiRes.json();
-    // minimax-m2.7 is a reasoning model — content may be null while reasoning is populated
+    // Extract content from response
     const msg = aiData.choices?.[0]?.message || {};
     const content = msg.content || msg.reasoning || "";
 
