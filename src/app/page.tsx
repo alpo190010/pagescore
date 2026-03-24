@@ -277,6 +277,13 @@ export default function Home() {
   const [showCard, setShowCard] = useState(false);
   const [showRevenue, setShowRevenue] = useState(false);
   const [showLeaks, setShowLeaks] = useState(false);
+
+  // Product picker for homepage URLs
+  const [productPicker, setProductPicker] = useState<{
+    products: Array<{ url: string; slug: string }>;
+    storeName: string;
+  } | null>(null);
+  const [productPickerLoading, setProductPickerLoading] = useState(false);
   const [scoreCardCollapsed, setScoreCardCollapsed] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
 
@@ -311,6 +318,7 @@ export default function Home() {
   const handleUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
     if (error) setError("");
+    if (productPicker) setProductPicker(null);
   }, [error]);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -365,12 +373,50 @@ export default function Home() {
     // Validate URL
     const validUrl = isValidUrl(url);
     if (!validUrl) {
-      setError("Please enter a valid URL (e.g. https://yourstore.myshopify.com/products/...)");
+      setError("Please enter a valid URL (e.g. yourstore.com or yourstore.com/products/...)");
       return;
     }
 
     // Prevent double-submit
-    if (loading) return;
+    if (loading || productPickerLoading) return;
+
+    // Check if this looks like a product page or a homepage/collection
+    const urlPath = new URL(validUrl).pathname;
+    const isLikelyProductPage = /\/products\/[^/]+/.test(urlPath);
+
+    // If not a product page, try to discover products first
+    if (!isLikelyProductPage) {
+      setProductPickerLoading(true);
+      setError("");
+      setProductPicker(null);
+      try {
+        const res = await fetch("/api/discover-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: validUrl }),
+        });
+        const data = await res.json();
+
+        if (data.isProductPage) {
+          // It's actually a product page (non-standard URL structure) — proceed with analysis
+          setProductPickerLoading(false);
+        } else if (data.products?.length > 0) {
+          // Show product picker
+          setProductPicker({ products: data.products, storeName: data.storeName || "" });
+          setProductPickerLoading(false);
+          return;
+        } else {
+          // No products found — let the main analyze try anyway
+          setProductPickerLoading(false);
+        }
+      } catch {
+        // Discovery failed — let the main analyze try anyway
+        setProductPickerLoading(false);
+      }
+    }
+
+    // Clear picker if it was showing
+    setProductPicker(null);
 
     // Abort any in-flight request
     abortRef.current?.abort();
@@ -438,7 +484,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [url, loading]);
+  }, [url, loading, productPickerLoading]);
 
   const submitEmail = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,6 +541,8 @@ export default function Home() {
       setCompetitorResult(null);
       setCompetitorLoading(false);
       setCompetitorError("");
+      setProductPicker(null);
+      setProductPickerLoading(false);
       setPhase("hero");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 350);
@@ -592,7 +640,7 @@ export default function Home() {
                       id="url-input"
                       type="url"
                       required
-                      placeholder="https://yourstore.myshopify.com/products/..."
+                      placeholder="Paste your store or product page URL..."
                       value={url}
                       onChange={handleUrlChange}
                       aria-label="Shopify product page URL"
@@ -637,6 +685,76 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
+
+        {/* ═══ PRODUCT PICKER — shown when user pastes a homepage ═══ */}
+        {productPicker && productPicker.products.length > 0 && phase === "hero" && (
+          <div className="max-w-xl mx-auto px-6 -mt-4 mb-8 anim-phase-enter">
+            <div
+              className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden"
+              style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
+            >
+              {/* Header */}
+              <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--surface-dim)]">
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  {productPicker.storeName
+                    ? <>We found products on <span className="text-[var(--brand)]">{productPicker.storeName}</span></>
+                    : "We found products on this store"
+                  }
+                </p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                  Pick a product page to analyze
+                </p>
+              </div>
+              {/* Product list */}
+              <div className="max-h-[280px] overflow-y-auto">
+                {productPicker.products.slice(0, 12).map((product) => (
+                  <button
+                    key={product.url}
+                    type="button"
+                    onClick={() => {
+                      setUrl(product.url);
+                      setProductPicker(null);
+                      // Auto-submit after a tick so React updates the url state
+                      setTimeout(() => {
+                        document.getElementById("hero-form")?.dispatchEvent(
+                          new Event("submit", { bubbles: true, cancelable: true })
+                        );
+                      }, 50);
+                    }}
+                    className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-[var(--brand-light)] transition-colors border-b border-[var(--track)] last:border-b-0 group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-dim)] border border-[var(--border)] flex items-center justify-center shrink-0 group-hover:border-[var(--brand)] group-hover:bg-[var(--brand-light)] transition-colors">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5" aria-hidden="true">
+                        <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate capitalize">
+                        {product.slug}
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)] truncate">
+                        {product.url}
+                      </p>
+                    </div>
+                    <svg className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--brand)] transition-colors shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ PRODUCT PICKER LOADING ═══ */}
+        {productPickerLoading && phase === "hero" && (
+          <div className="max-w-xl mx-auto px-6 -mt-4 mb-8 text-center anim-phase-enter">
+            <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <div className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent" style={{ animation: "spin 0.8s linear infinite" }}></div>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Finding products on this store…</span>
+            </div>
+          </div>
         )}
 
         {/* ═══ ERROR REDESIGNED ═══ */}

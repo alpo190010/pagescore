@@ -76,7 +76,7 @@ async function scorePage(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
+      model: "deepseek/deepseek-v3.2",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3,
       max_tokens: 500,
@@ -138,7 +138,7 @@ Return ONLY a valid JSON array, no markdown.`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
+      model: "deepseek/deepseek-v3.2",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.5,
       max_tokens: 500,
@@ -344,7 +344,7 @@ Return ONLY a valid JSON array, no markdown.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "openai/gpt-4o-mini",
+            model: "deepseek/deepseek-v3.2",
             messages: [{ role: "user", content: fallbackPrompt }],
             temperature: 0.4,
             max_tokens: 800,
