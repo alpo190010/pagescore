@@ -193,46 +193,84 @@ function buildLeaks(categories: CategoryScores, tips: string[]) {
   });
 }
 
+/* ── Category SVG icons — solid, monochrome ── */
+const CATEGORY_SVG: Record<string, React.ReactNode> = {
+  title: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M5 4v3h5.5v12h3V7H19V4H5z"/>
+    </svg>
+  ),
+  images: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+    </svg>
+  ),
+  pricing: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+    </svg>
+  ),
+  socialProof: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+    </svg>
+  ),
+  cta: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+    </svg>
+  ),
+  description: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z"/>
+    </svg>
+  ),
+  trust: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+    </svg>
+  ),
+};
 /* ── Leak categories for "What We Check" section ── */
 const LEAK_CATEGORIES = [
   {
-    icon: "📝",
+    iconKey: "title",
     label: "Title",
     leak: "Generic title that doesn't sell",
     cost: "Visitors bounce before scrolling",
   },
   {
-    icon: "📸",
+    iconKey: "images",
     label: "Images",
     leak: "Low-quality or too few photos",
     cost: "Buyers can't visualize owning it",
   },
   {
-    icon: "💰",
+    iconKey: "pricing",
     label: "Pricing",
     leak: "No anchoring, no urgency",
     cost: "Price feels high with no context",
   },
   {
-    icon: "⭐",
+    iconKey: "socialProof",
     label: "Social Proof",
     leak: "Reviews missing or buried below fold",
     cost: "No trust = no purchase",
   },
   {
-    icon: "🔘",
+    iconKey: "cta",
     label: "CTA",
     leak: "Weak or hidden Add to Cart button",
     cost: "Ready buyers can't find the button",
   },
   {
-    icon: "📄",
+    iconKey: "description",
     label: "Description",
     leak: "Wall of text, no benefits",
     cost: "Features don't convert, benefits do",
   },
   {
-    icon: "🛡️",
+    iconKey: "trust",
     label: "Trust",
     leak: "No guarantees, shipping, or badges",
     cost: "Doubt kills the sale at checkout",
@@ -1049,15 +1087,6 @@ export default function Home() {
             {/* Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {leaks.map((leak, i) => {
-                const CATEGORY_ICONS: Record<string, string> = {
-                  title: "✍️",
-                  images: "📸",
-                  pricing: "💰",
-                  socialProof: "⭐",
-                  cta: "🎯",
-                  description: "📄",
-                  trust: "🛡️",
-                };
 
                 const style = {
                   HIGH: {
@@ -1090,8 +1119,8 @@ export default function Home() {
                     <div className="space-y-5">
                       {/* Icon + Score */}
                       <div className="flex justify-between items-start">
-                        <div className="w-12 h-12 bg-[var(--surface-container-high)] rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300">
-                          {CATEGORY_ICONS[leak.key] || "📊"}
+                        <div className="w-12 h-12 bg-[var(--surface-container-high)] rounded-2xl flex items-center justify-center text-[var(--on-surface-variant)] group-hover:text-[var(--brand)] group-hover:scale-110 transition-all duration-300">
+                          {CATEGORY_SVG[leak.key] || CATEGORY_SVG.title}
                         </div>
                         <div className="text-right">
                           <div className="text-[9px] font-bold text-[var(--on-surface-variant)] tracking-[0.15em] uppercase">
@@ -1455,8 +1484,8 @@ export default function Home() {
                 {/* Large highlight card */}
                 <div className="md:col-span-8 bg-[var(--surface-container-lowest)] p-8 sm:p-10 rounded-[2rem] shadow-sm flex flex-col justify-between group hover:shadow-xl transition-shadow duration-500" style={{ animation: "fade-in-up 500ms ease-out 0ms both" }}>
                   <div>
-                    <div className="w-14 h-14 glass-card rounded-2xl flex items-center justify-center mb-8 shadow-sm">
-                      <span className="text-2xl" aria-hidden="true">⚡</span>
+                    <div className="w-14 h-14 glass-card rounded-2xl flex items-center justify-center mb-8 shadow-sm text-[var(--on-surface-variant)]">
+                      {CATEGORY_SVG.title}
                     </div>
                     <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-[var(--on-surface)]">Title, Images & First Impression</h3>
                     <p className="text-[var(--on-surface-variant)] text-lg leading-relaxed max-w-lg">Generic titles and poor imagery cause visitors to bounce in seconds. We analyze your above-the-fold content for conversion impact.</p>
@@ -1466,33 +1495,35 @@ export default function Home() {
                 {/* Vertical gradient card */}
                 <div className="md:col-span-4 primary-gradient text-white p-8 sm:p-10 rounded-[2rem] shadow-lg flex flex-col justify-between overflow-hidden relative" style={{ animation: "fade-in-up 500ms ease-out 80ms both" }}>
                   <div className="relative z-10">
-                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8">
-                      <span className="text-2xl" aria-hidden="true">🧠</span>
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 text-white">
+                      {CATEGORY_SVG.pricing}
                     </div>
                     <h3 className="text-2xl sm:text-3xl font-bold mb-4">Pricing & Value</h3>
                     <p className="text-white/80 text-lg leading-relaxed">No anchoring, no urgency, no context. If your price just sits there, customers leave to &ldquo;think about it.&rdquo;</p>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 opacity-10 text-[10rem] pointer-events-none">💰</div>
+                  <div className="absolute -bottom-10 -right-10 opacity-[0.06] pointer-events-none text-white">
+                    <svg width="160" height="160" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                  </div>
                 </div>
 
                 {/* Small cards row */}
                 <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 160ms both" }}>
-                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
-                    <span className="text-xl" aria-hidden="true">⭐</span>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6 text-[var(--on-surface-variant)]">
+                    {CATEGORY_SVG.socialProof}
                   </div>
                   <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">Social Proof</h4>
                   <p className="text-[var(--on-surface-variant)]">Missing reviews or buried testimonials create immediate doubt. No trust = no purchase.</p>
                 </div>
                 <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 240ms both" }}>
-                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
-                    <span className="text-xl" aria-hidden="true">🔘</span>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6 text-[var(--on-surface-variant)]">
+                    {CATEGORY_SVG.cta}
                   </div>
                   <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">CTA Clarity</h4>
                   <p className="text-[var(--on-surface-variant)]">Weak or hidden Add to Cart buttons let ready buyers slip away at the final moment.</p>
                 </div>
                 <div className="md:col-span-4 bg-[var(--surface-container-lowest)] p-7 sm:p-8 rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-300" style={{ animation: "fade-in-up 500ms ease-out 320ms both" }}>
-                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6">
-                    <span className="text-xl" aria-hidden="true">🛡️</span>
+                  <div className="w-12 h-12 glass-card rounded-xl flex items-center justify-center mb-6 text-[var(--on-surface-variant)]">
+                    {CATEGORY_SVG.trust}
                   </div>
                   <h4 className="text-xl font-bold mb-2 text-[var(--on-surface)]">Trust & Copy</h4>
                   <p className="text-[var(--on-surface-variant)]">Missing guarantees, poor descriptions, and no security badges create friction at checkout.</p>
