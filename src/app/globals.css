@@ -1,31 +1,154 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #F8F7F4;
-  --surface: #FFFFFF;
-  --surface-dim: #F9FAFB;
-  --border: #E5E7EB;
-  --track: #F3F4F6;
-  --text-primary: #111111;
-  --text-secondary: #6B6B6B;
-  --text-tertiary: #737069;
-  --brand: #2563EB;
-  --brand-light: #EFF6FF;
-  --brand-border: #BFDBFE;
-  --success: #16A34A;
-  --success-text: #15803D;
-  --success-light: #F0FDF4;
-  --success-border: #BBF7D0;
-  --warning: #D97706;
-  --warning-text: #92400E;
-  --warning-light: #FFFBEB;
-  --error: #DC2626;
-  --error-text: #B91C1C;
-  --error-light: #FEF2F2;
+/* ═══════════════════════════════════════════════════════════════
+   Design Tokens — Luminous Liquid
+   Source of truth: src/tokens/design-tokens.ts
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Aliases for blog/dashboard legacy references */
-  --muted: var(--text-secondary);
-  --card: var(--surface);
+:root {
+  /* ── Core Palette: Luminous Liquid ── */
+  --primary:            #7000ff;
+  --primary-dim:        #6200e1;
+  --primary-container:  #af8dff;
+  --on-primary:         #f8f1ff;
+  --on-primary-container: #2c006e;
+
+  --secondary:            #b60055;
+  --secondary-dim:        #a0004a;
+  --secondary-container:  #ffc1ce;
+  --on-secondary:         #ffeff1;
+
+  --tertiary:           #4052b6;
+  --tertiary-dim:       #3346a9;
+  --tertiary-container: #9eabff;
+  --on-tertiary:        #f3f1ff;
+
+  /* ── Surfaces ── */
+  --background:                #f5f6f9;
+  --surface-base:              #f5f6f9;
+  --surface-container-lowest:  #ffffff;
+  --surface-container-low:     #eff1f4;
+  --surface-container:         #e6e8ec;
+  --surface-container-high:    #e0e3e6;
+  --surface-container-highest: #dadde1;
+  --surface-variant:           #dadde1;
+  --surface-tint:              #7000ff;
+
+  /* ── Text / On-colors ── */
+  --on-surface:         #2c2f31;
+  --on-surface-variant: #595c5e;
+  --on-background:      #2c2f31;
+
+  /* ── Outline & Borders ── */
+  --outline:         #75777a;
+  --outline-variant: #abadb0;
+
+  /* ── Error ── */
+  --error-base:         #b41340;
+  --error-dim:          #a70138;
+  --error-container:    #f74b6d;
+  --on-error:           #ffefef;
+  --on-error-container: #510017;
+
+  /* ── Inverse ── */
+  --inverse-surface:    #0c0f11;
+  --inverse-on-surface: #9b9da0;
+  --inverse-primary:    #a178ff;
+
+  /* ── Gradients ── */
+  --gradient-liquid: linear-gradient(135deg, #7000ff, #b60055);
+  --gradient-liquid-text: linear-gradient(to right, #7000ff, #b60055);
+
+  /* ── Glass ── */
+  --glass-bg:           rgba(245, 246, 249, 0.7);
+  --glass-blur:         24px;
+  --glass-blur-hover:   32px;
+  --glass-border:       rgba(171, 173, 176, 0.15);
+  --glass-border-hover: rgba(112, 0, 255, 0.3);
+
+  /* ── Elevation ── */
+  --shadow-ambient:  0 20px 40px rgba(0, 0, 0, 0.04), 0 10px 20px rgba(112, 0, 255, 0.03);
+  --shadow-elevated: 0 25px 50px rgba(0, 0, 0, 0.08), 0 12px 24px rgba(112, 0, 255, 0.04);
+  --shadow-subtle:   0 2px 8px rgba(0, 0, 0, 0.04);
+
+  /* ── Status ── */
+  --success:        #16a34a;
+  --success-text:   #15803d;
+  --success-light:  #f0fdf4;
+  --success-border: #bbf7d0;
+  --warning:        #d97706;
+  --warning-text:   #92400e;
+  --warning-light:  #fffbeb;
+
+  /* ── Easing ── */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* ═══════════════════════════════════════════════════════════
+     Legacy aliases — maps old token names used across codebase.
+     Migrate to new names over time.
+     ═══════════════════════════════════════════════════════════ */
+  --bg:             var(--background);
+  --surface:        var(--surface-container-lowest);
+  --surface-dim:    var(--surface-container-low);
+  --border:         var(--outline-variant);
+  --track:          var(--surface-container-low);
+  --text-primary:   var(--on-surface);
+  --text-secondary: var(--on-surface-variant);
+  --text-tertiary:  var(--outline);
+  --brand:          var(--primary);
+  --brand-light:    #f3eeff;
+  --brand-border:   var(--primary-container);
+  --error:          var(--error-base);
+  --error-text:     var(--error-base);
+  --error-light:    #fef2f2;
+  --muted:          var(--on-surface-variant);
+  --card:           var(--surface-container-lowest);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Luminous Liquid — Signature Patterns
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Glass card — frosted translucent surface */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  backdrop-filter: blur(var(--glass-blur-hover));
+  border-color: var(--glass-border-hover);
+  transform: translateY(-4px);
+}
+
+/* Mesh gradient background — 4-corner radial blobs */
+.mesh-gradient-bg {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(112, 0, 255, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(182, 0, 85, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(64, 82, 182, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(112, 0, 255, 0.1) 0px, transparent 50%);
+}
+
+/* Gradient text — violet → magenta */
+.liquid-gradient-text {
+  background: var(--gradient-liquid-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Liquid button — gradient CTA */
+.liquid-btn {
+  background: var(--gradient-liquid);
+  color: var(--on-primary);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.liquid-btn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
 }
 
 body {
