@@ -136,7 +136,7 @@ export default function AnalysisLoader({ url }: { url: string }) {
                           key={i}
                           type="button"
                           onClick={() => setSelectedImage(i)}
-                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${
+                          className={`cursor-pointer w-10 h-10 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${
                             i === selectedImage
                               ? "border-[var(--brand)] ring-1 ring-[var(--brand)]"
                               : "border-[var(--border)] hover:border-[var(--text-tertiary)]"

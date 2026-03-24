@@ -578,7 +578,7 @@ export default function Home() {
                   document.getElementById("hero-form")?.scrollIntoView({ behavior: "smooth" });
                 }
               }}
-              className="primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm"
+              className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm"
             >
               {result ? "Scan Another" : "Start Analysis"}
             </button>
@@ -627,7 +627,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || productPickerLoading}
-                  className="primary-gradient text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                  className="cursor-pointer primary-gradient text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                 >
                   {loading ? "Scanning..." : productPickerLoading ? "Finding..." : "Analyze"}
                   {!loading && !productPickerLoading && (
@@ -687,7 +687,7 @@ export default function Home() {
                         );
                       }, 50);
                     }}
-                    className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--brand-light)] transition-colors border-b border-[var(--track)] last:border-b-0 group"
+                    className="cursor-pointer w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--brand-light)] transition-colors border-b border-[var(--track)] last:border-b-0 group"
                   >
                     {/* Product thumbnail */}
                     {product.image ? (
@@ -911,7 +911,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                      className="w-full py-3 bg-white/10 backdrop-blur-md rounded-xl font-bold border border-white/20 hover:bg-white/20 transition-all text-sm"
+                      className="cursor-pointer w-full py-3 bg-white/10 backdrop-blur-md rounded-xl font-bold border border-white/20 hover:bg-white/20 transition-all text-sm"
                     >
                       View Issue Breakdown &darr;
                     </button>
@@ -929,7 +929,7 @@ export default function Home() {
             <button
               type="button"
               onClick={fetchCompetitors}
-              className="w-full group relative overflow-hidden rounded-2xl text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]"
+              className="cursor-pointer w-full group relative overflow-hidden rounded-2xl text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]"
               style={{
                 background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
                 boxShadow: "0 8px 32px rgba(124, 58, 237, 0.25)",
@@ -998,7 +998,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={fetchCompetitors}
-                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-violet-800 hover:scale-105 transition-transform"
+                  className="cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-violet-800 hover:scale-105 transition-transform"
                 >
                   Retry
                 </button>
@@ -1081,7 +1081,7 @@ export default function Home() {
                       setEmailError("");
                       captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
                     }}
-                    className="group text-left bg-[var(--surface)] rounded-[1.5rem] p-6 sm:p-7 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+                    className="cursor-pointer group text-left bg-[var(--surface)] rounded-[1.5rem] p-6 sm:p-7 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
                     style={{
                       boxShadow: "var(--shadow-subtle)",
                       animation: `fade-in-up 400ms ease-out ${i * 70}ms both`,
@@ -1150,7 +1150,7 @@ export default function Home() {
                   setEmailError("");
                   captureEvent("cta_card_clicked", { url });
                 }}
-                className="group relative rounded-[1.5rem] p-7 flex flex-col items-center justify-center text-center overflow-hidden text-white min-h-[280px]"
+                className="cursor-pointer group relative rounded-[1.5rem] p-7 flex flex-col items-center justify-center text-center overflow-hidden text-white min-h-[280px]"
                 style={{
                   background: "linear-gradient(135deg, var(--on-surface) 0%, #2d1b42 100%)",
                   animation: `fade-in-up 400ms ease-out ${leaks.length * 70}ms both`,
@@ -1227,7 +1227,7 @@ export default function Home() {
                         setEmailError("");
                       }
                     }}
-                    className="group inline-flex items-center gap-2 text-[var(--brand)] font-bold text-base"
+                    className="cursor-pointer group inline-flex items-center gap-2 text-[var(--brand)] font-bold text-base"
                   >
                     Get the detailed fix
                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -1278,7 +1278,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleScanAnother}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
+                className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
                 style={{ boxShadow: "0 8px 32px rgba(124, 58, 237, 0.2)" }}
               >
                 Analyze Another Page
@@ -1290,7 +1290,7 @@ export default function Home() {
         {/* ═══ EMAIL MODAL — triggered by clicking an issue ═══ */}
         {(selectedLeak || competitorCTAName) && emailStep && (
           <div
-            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+            className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
             style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
             onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
             role="dialog"
@@ -1308,7 +1308,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                className="cursor-pointer absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                 aria-label="Close"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -1356,7 +1356,7 @@ export default function Home() {
                       <button
                         type="submit"
                         disabled={emailSubmitting}
-                        className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
+                        className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
                         style={{
                           background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))",
                           boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)"
@@ -1413,7 +1413,7 @@ export default function Home() {
                           // TODO: integrate Stripe checkout
                           alert("Stripe checkout coming soon!");
                         }}
-                        className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
+                        className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
                         style={{
                           background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
                           boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)"
@@ -1429,7 +1429,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors mt-2"
+                      className="cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors mt-2"
                     >
                       I'll wait for the free report →
                     </button>
@@ -1541,14 +1541,14 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    className="bg-white text-violet-600 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-violet-50 transition-all hover:scale-105 active:scale-95"
+                    className="cursor-pointer bg-white text-violet-600 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-violet-50 transition-all hover:scale-105 active:scale-95"
                   >
                     Get Your Free Audit
                   </button>
                   <button
                     type="button"
                     onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    className="bg-white/10 backdrop-blur-md border border-white/20 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-white/20 transition-all"
+                    className="cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-white/20 transition-all"
                   >
                     Learn More
                   </button>
@@ -1565,9 +1565,9 @@ export default function Home() {
                 <p className="text-slate-500 text-xs tracking-wide uppercase">© 2024 PageLeaks. All rights reserved.</p>
               </div>
               <div className="flex gap-6 sm:gap-8 text-xs tracking-wide uppercase">
-                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Privacy Policy</a>
-                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Terms of Service</a>
-                <a className="text-slate-500 hover:text-violet-600 transition-colors" href="#">Support</a>
+                <a className="cursor-pointer text-slate-500 hover:text-violet-600 transition-colors" href="#">Privacy Policy</a>
+                <a className="cursor-pointer text-slate-500 hover:text-violet-600 transition-colors" href="#">Terms of Service</a>
+                <a className="cursor-pointer text-slate-500 hover:text-violet-600 transition-colors" href="#">Support</a>
               </div>
             </div>
           </footer>
