@@ -280,7 +280,7 @@ export default function Home() {
 
   // Product picker for homepage URLs
   const [productPicker, setProductPicker] = useState<{
-    products: Array<{ url: string; slug: string }>;
+    products: Array<{ url: string; slug: string; image: string }>;
     storeName: string;
   } | null>(null);
   const [productPickerLoading, setProductPickerLoading] = useState(false);
@@ -638,8 +638,10 @@ export default function Home() {
                   <div className="relative flex flex-col sm:flex-row w-full">
                     <input
                       id="url-input"
-                      type="url"
-                      required
+                      type="text"
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
                       placeholder="Paste your store or product page URL..."
                       value={url}
                       onChange={handleUrlChange}
@@ -722,13 +724,25 @@ export default function Home() {
                         );
                       }, 50);
                     }}
-                    className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-[var(--brand-light)] transition-colors border-b border-[var(--track)] last:border-b-0 group"
+                    className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--brand-light)] transition-colors border-b border-[var(--track)] last:border-b-0 group"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-dim)] border border-[var(--border)] flex items-center justify-center shrink-0 group-hover:border-[var(--brand)] group-hover:bg-[var(--brand-light)] transition-colors">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5" aria-hidden="true">
-                        <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
+                    {/* Product thumbnail */}
+                    {product.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={product.image}
+                        alt=""
+                        className="w-10 h-10 rounded-lg object-cover bg-[var(--surface-dim)] border border-[var(--border)] shrink-0"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-[var(--surface-dim)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5" aria-hidden="true">
+                          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate capitalize">
                         {product.slug}
