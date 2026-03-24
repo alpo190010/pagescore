@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Send email
     const { error: emailError } = await resend.emails.send({
-      from: "PageLeaks <onboarding@resend.dev>",
+      from: "PageScore <noreply@alpo.ai>",
       to: email.trim(),
       subject: `Your product page scored ${safeScore}/100 — here are your fixes`,
       html: buildEmail(safeScore, safeTips),
