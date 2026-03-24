@@ -39,7 +39,7 @@ const directives = [
   {
     priority: "🟡 THIS WEEK",
     title: "Build the Lead Magnet",
-    detail: "47-point Landing Page Conversion Checklist. Free. Gives value, reveals they need PageScore. Salty pretzel strategy.",
+    detail: "47-point Landing Page Conversion Checklist. Free. Gives value, reveals they need PageLeaks. Salty pretzel strategy.",
   },
   {
     priority: "🟡 THIS WEEK",
@@ -188,7 +188,7 @@ export default function HormoziPage() {
       </section>
 
       <footer className="text-center text-xs text-[var(--muted)] pt-8">
-        PageScore · Hormozi CMO Dashboard · Private
+        PageLeaks · Hormozi CMO Dashboard · Private
       </footer>
     </main>
   );

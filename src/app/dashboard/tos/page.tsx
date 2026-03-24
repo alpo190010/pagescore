@@ -108,7 +108,7 @@ export default function TosPage() {
       ))}
 
       <footer className="text-center text-xs text-[var(--muted)] pt-8">
-        PageScore TOS Guardian · Private · Auto-refreshes every 15s
+        PageLeaks TOS Guardian · Private · Auto-refreshes every 15s
       </footer>
     </main>
   );

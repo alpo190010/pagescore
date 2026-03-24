@@ -16,22 +16,22 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PageScore — Shopify Product Page Analyzer | Free Score in 30 Seconds",
+  title: "PageLeaks — Find Revenue Leaks on Your Product Page | Free in 30 Seconds",
   description:
-    "Paste any Shopify product URL. Get an AI-powered score (0-100) on 7 conversion factors with actionable fixes in 30 seconds. Free. No signup.",
+    "Paste any Shopify product URL. Get an AI-powered leak report on 7 conversion factors with actionable fixes in 30 seconds. Free. No signup.",
   openGraph: {
-    title: "PageScore — Is Your Shopify Product Page Losing You Sales?",
+    title: "PageLeaks — Is Your Product Page Bleeding Sales?",
     description:
-      "AI scores your Shopify product page on title, images, pricing, reviews, CTA and more. Free scan in 30 seconds.",
-    url: "https://alpo.ai",
-    siteName: "PageScore",
+      "AI finds revenue leaks on your Shopify product page — title, images, pricing, reviews, CTA and more. Free scan in 30 seconds.",
+    url: "https://pageleaks.com",
+    siteName: "PageLeaks",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PageScore — Shopify Product Page Analyzer",
+    title: "PageLeaks — Find Revenue Leaks on Your Product Page",
     description:
-      "Paste your Shopify product URL. Get a score + fixes in 30 seconds. Free.",
+      "Paste your Shopify product URL. Find leaks + get fixes in 30 seconds. Free.",
   },
   keywords: [
     "shopify product page analyzer",
@@ -52,6 +52,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        {/* Preconnect to AI API for faster analysis start */}
+        <link rel="preconnect" href="https://openrouter.ai" />
+        <link rel="dns-prefetch" href="https://openrouter.ai" />
+      </head>
       <body className="antialiased font-[family-name:var(--font-inter)]">
         <PHProvider>{children}</PHProvider>
       </body>

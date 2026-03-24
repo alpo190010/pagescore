@@ -50,7 +50,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold">PageScore — Founder Dashboard</h1>
+        <h1 className="text-2xl font-bold">PageLeaks — Founder Dashboard</h1>
         <span className="text-xs text-[var(--muted)]">Day {data.day}</span>
       </div>
       <p className="text-xs text-[var(--muted)] mb-2">Last updated: {data.lastUpdated} · Auto-refreshes every 15s</p>
@@ -163,7 +163,7 @@ export default function Dashboard() {
       </section>
 
       <footer className="text-center text-xs text-[var(--muted)] pt-8">
-        PageScore Founder Dashboard · Private · Auto-refreshes every 15s
+        PageLeaks Founder Dashboard · Private · Auto-refreshes every 15s
       </footer>
     </main>
   );

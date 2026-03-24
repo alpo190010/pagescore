@@ -3,7 +3,7 @@
   "name": "PageScore Evolution",
   "headline": "Every other tool tells you what Google thinks. We tell you what your customers think.",
   "status": "building",
-  "lastUpdated": "2026-03-23T12:57+04:00",
+  "lastUpdated": "2026-03-24T13:54+04:00",
   "score": "🏗️",
   "painSummary": "E-commerce merchants are flying blind on why their product listings don't convert. They blame traffic and ads when the real issue is listing quality — bad descriptions, missing trust signals, weak images, unclear CTAs. Existing tools only score SEO (meta tags, schema) but nobody scores CONVERSION quality. Merchants waste hours manually A/B testing titles and descriptions with no data to guide them.",
   "userQuotes": [
@@ -216,6 +216,136 @@
   ],
   "tam": "5M+ Shopify stores + 8.5% of web on WooCommerce",
   "timeToMvp": "Already live (scoring). 2-3 weeks for monitoring. 2-3 weeks for rewrites.",
+  "competitorAnalysis": {
+    "date": "2026-03-24",
+    "focus": "Competition Deep Dive",
+    "primaryCompetitor": {
+      "name": "EcomHint",
+      "url": "https://ecomhint.com",
+      "tagline": "Conversion Rate Optimization Tool for Ecommerce | AI CRO",
+      "launchedOn": "StartupFame listed (https://startupfa.me/s/ecomhint)",
+      "whatTheyDo": "AI-powered CRO audit tool for ecommerce stores. User pastes a store URL → AI scans homepage, product pages, cart, and checkout across 40+ checks in ~3 minutes → outputs a scored report with prioritized fixes. Covers 6 categories: SEO & Visibility, UX & Usability, Performance, Trust & Security, Content & CRO, Urgency & Scarcity. Works with Shopify and WooCommerce (PrestaShop coming soon). They've analyzed 700+ stores and discovered 10,000+ issues. Published benchmark data from 190 Shopify store audits — serious data moat.",
+      "keyFeatures": [
+        "40+ usability & sales checks across homepage, products, cart, checkout",
+        "AI-powered smart recommendations with priority scoring",
+        "Clear visual reports with severity levels",
+        "Progress tracking & audit history (paid tier)",
+        "Unlimited re-audits on paid plan",
+        "Conversion benchmarks from their 190-store dataset",
+        "Multi-platform: Shopify + WooCommerce (expanding to PrestaShop)"
+      ],
+      "pricing": {
+        "free": {
+          "price": "$0",
+          "includes": "Complete score + all issues found, but only 3 issues with detailed fixes. No signup required. Instant results."
+        },
+        "fullAccess": {
+          "price": "$29/mo",
+          "includes": "All 40+ checks revealed, AI-powered recommendations, priority scoring & action plan, progress tracking & history, unlimited re-audits, conversion benchmarks"
+        },
+        "expertAudit": {
+          "price": "Custom/Individual",
+          "includes": "For stores with 10K+ monthly visitors. 1:1 CRO expert call, custom implementation roadmap, prioritized action plan, A/B test recommendations, priority email support"
+        }
+      },
+      "pricingAnalysis": "Their $29/mo matches our proposed Starter tier exactly. But their free tier is more generous (shows ALL issues found + score, just limits detailed fixes to 3). They have no $79 or $199 tier — gap in the market for monitoring/agency features.",
+      "strengths": [
+        "MASSIVE data moat: Published CRO benchmarks from 190 real Shopify store audits — gives them credibility and SEO content",
+        "Broader scope: Audits entire store (homepage + product + cart + checkout) not just product pages",
+        "Established metrics: '700+ stores analyzed', '10,000+ issues discovered' — real social proof numbers",
+        "Fast: ~3 minutes for full audit vs our 30 seconds (they scan more pages)",
+        "Strong content marketing: Blog posts with real benchmark data (61% trust fail rate, 98% search box fail rate) — linkable, quotable research",
+        "Multi-platform already: Shopify + WooCommerce live, PrestaShop planned",
+        "Better free tier: Shows ALL issues found (just limits fixes to 3) — more compelling hook",
+        "No signup required for free audit — zero friction",
+        "Learned from 200+ usability rules from leading researchers (Baymard Institute citations)",
+        "Comparison table vs agencies ($2K-$10K) positions them as the affordable alternative"
+      ],
+      "weaknesses": [
+        "NOT product-page specific: They audit the whole store, which means less depth on individual product pages. PageScore can go deeper on product copy, images, CTAs per product",
+        "No AI rewrites: They tell you what's wrong but don't generate fixes. No 'here's your new product description' output",
+        "No monitoring/alerts: One-time audit only. No weekly re-scans, no score drop notifications. They check once, you have to manually re-audit",
+        "No competitive benchmarking per-product: They benchmark against their database, but don't let you compare YOUR product page vs a specific competitor's product page",
+        "No Shopify App Store presence: Not a Shopify app, just a web tool. Misses the discovery channel of Shopify's app marketplace",
+        "No image quality analysis mentioned: Their 40 checks seem to be structural/text-based. No vision AI for assessing product image quality",
+        "Generic store-level scoring: They score the store as a whole, not individual products. A merchant with 500 products can't see which ones underperform",
+        "Limited pricing tiers: Only $0 and $29/mo. No agency tier, no team seats — leaves money on table from agencies/consultants",
+        "Early stage: Only 700 stores analyzed (small for benchmarks). No reviews on major platforms yet",
+        "No brand voice/tone matching: Recommendations are generic, not tailored to luxury vs budget vs niche brands"
+      ],
+      "userSentiment": {
+        "note": "EcomHint appears relatively new — no Shopify App Store reviews (not listed there), no ProductHunt launch page found. Their StartupFame listing exists but details were blocked. Their blog content and benchmark data suggest technical credibility but limited public user feedback available.",
+        "impliedPositives": "The benchmark blog post is genuinely useful — real data from 190 stores with methodology transparency. This builds trust with technical merchants.",
+        "impliedNegatives": "No public reviews means unproven product-market fit. 700 stores is modest for a benchmark dataset."
+      }
+    },
+    "secondaryCompetitors": [
+      {
+        "name": "ConvertMate",
+        "url": "https://www.convertmate.io",
+        "shopifyAppUrl": "https://apps.shopify.com/convertmate",
+        "whatTheyDo": "Started as Shopify SEO optimizer, now pivoted to 'AI Agents for Marketing' — tracks LLM presence (ChatGPT, Perplexity, Gemini mentions), outreach campaigns, on-page optimization, competitor monitoring. Has a free Shopify Product Page Analyzer tool but it's a lead-gen side feature, not their core product.",
+        "shopifyRating": "3.1 stars (25 reviews) — 72% are 5-star, 24% are 1-star (extremely polarized)",
+        "pricing": "Was expensive ($3,800/yr for early adopters), now repositioned. Unclear current pricing (pricing page didn't load detailed tiers).",
+        "userReviewHighlights": {
+          "positive": [
+            "Quote: 'I love convertmate! its so easy to use... it automates your SEO for you in just a click of a button' — VitaBlend, US",
+            "Quote: 'Boris and Marc have been on top of their game regarding customer service' — Debug Store, UK",
+            "Quote: 'Already seen a big uptick in organic traffic and the support is top-notch' — San Rocco Italia"
+          ],
+          "negative": [
+            "Quote (translated from French): 'I paid $3,800 for an annual subscription... Three months after, they changed pricing to $290/year for the same plan. More than 10x less! The application brought me strictly nothing (no SEO improvement, no measurable gain)' — L'Atelier d'Eva, France",
+            "Quote: 'As loyal early adopters, we were dismayed to discover the company introduced a new, more affordable pricing tier without informing us. This omission cost our company €500 per month for several months' — Apteekki 360, Finland",
+            "Quote: 'The absolute worst part is customer support — it's non-existent... Over 30 days, I've submitted tickets, emails, and even tried social media — not a single response' — ZenithEndure, US"
+          ]
+        },
+        "threatLevel": "low-medium",
+        "analysis": "ConvertMate has pivoted away from product page analysis toward AI visibility and outreach. Their free product page analyzer is a lead-gen tool, not a core product. Their Shopify app has polarized reviews (pricing drama, support gaps). They're solving a different problem now (AI search visibility) — not a direct competitor anymore."
+      },
+      {
+        "name": "CRO Guru — Launch Check",
+        "url": "https://apps.shopify.com/conversion-rate-optimization",
+        "whatTheyDo": "Shopify app that generates AI/GPT-powered CRO audit checklists. Covers funnel optimization: Landing Page → Product View → Cart → Checkout. Generates practical checklist to improve CVR, LTV & AOV.",
+        "shopifyRating": "5.0 stars (1 review) — too early to judge",
+        "pricing": "Listed on Shopify App Store, pricing details not fully visible",
+        "threatLevel": "low",
+        "analysis": "Single review, very early stage. Generates generic checklists rather than per-page analysis. More of a chatbot wrapper than a real analyzer. Not a threat currently but concept overlap exists."
+      },
+      {
+        "name": "cro.media",
+        "url": "https://cro.media/shopify-cro-audit/shopify-cro-checklist/",
+        "whatTheyDo": "Free interactive Shopify CRO checklist (not a tool — a manual checklist you tick off). Also offers paid CRO audit service. Based on 1,000+ A/B tests.",
+        "threatLevel": "low",
+        "analysis": "Manual checklist + consultancy service. Not automated. Different market segment (people who want to hire CRO agencies vs DIY merchants)."
+      }
+    ],
+    "competitiveLandscapeSummary": "The market has three layers: (1) FREE checklists/guides (cro.media, Shopify Academy) — manual, no automation; (2) BROAD marketing platforms with page analysis as a side feature (ConvertMate) — pivoting away from this space; (3) DEDICATED AI audit tools (EcomHint) — the real competition. EcomHint is the strongest direct competitor but focuses on store-level auditing, not per-product-page scoring. This is the gap.",
+    "pageScoreAdvantages": [
+      "PRODUCT-LEVEL granularity: Score individual product pages, not just the store. 'Your widget A scores 54, widget B scores 87 — here's why'",
+      "AI REWRITES: Don't just identify problems, generate the fix. 'Your title could be: [rewritten title]'",
+      "MONITORING: Weekly re-scans with alerts when scores drop — makes it a subscription product",
+      "COMPETITIVE per-product: Compare YOUR product page vs a competitor's specific product page",
+      "SHOPIFY APP STORE distribution: Be where merchants already discover tools (EcomHint is web-only)",
+      "FASTER: 30 seconds vs 3 minutes. Speed wins for first impressions",
+      "IMAGE QUALITY via vision AI: Score product images for quality, lifestyle vs plain, etc."
+    ],
+    "pageScoreVulnerabilities": [
+      "EcomHint has DATA credibility (published benchmarks from 190 stores). We need our own benchmark dataset ASAP",
+      "EcomHint covers full funnel (homepage + cart + checkout). We only do product pages — could be seen as narrower",
+      "EcomHint's free tier is more generous (shows all issues, limits fixes). Our free tier needs to match or beat this",
+      "EcomHint already supports WooCommerce. We're Shopify-only",
+      "EcomHint has content marketing with real data. We need similar content strategy"
+    ],
+    "actionableInsights": [
+      "URGENT: Publish our own benchmark data. Score 100+ Shopify product pages and publish the results as a blog post. This builds credibility AND SEO simultaneously",
+      "Match or beat EcomHint's free tier: Show all issues found (not just 3), limit the AI rewrites/fixes to paid tier",
+      "Double down on per-product granularity — this is our moat. EcomHint scores stores, we score products. Very different merchant need",
+      "Build the Shopify App Store listing — distribution channel EcomHint doesn't have",
+      "Add a 'Compare' feature: paste your URL + competitor URL → side-by-side score comparison. EcomHint can't do this",
+      "Start publishing blog content with real data: '100 Shopify Product Pages Scored: The 5 Most Common Conversion Killers'",
+      "Consider raising free tier to 5 scans/month (EcomHint has no scan limit on free tier, just limits detail)"
+    ]
+  },
   "researchRounds": [
     {
       "date": "2026-03-23 12:15",
@@ -231,6 +361,11 @@
       "date": "2026-03-23 12:27",
       "focus": "Upsell strategy",
       "finding": "All 3 features (Fix It, Monitor, Compete) should be subscription upsells, not separate products. Free scan → subscription funnel. Agencies are the real money."
+    },
+    {
+      "date": "2026-03-24 13:54",
+      "focus": "Competition Deep Dive — EcomHint analysis",
+      "finding": "EcomHint (ecomhint.com) is the strongest direct competitor: AI CRO audit tool, 700+ stores analyzed, $29/mo pricing, 40+ checks, Shopify+WooCommerce. BUT they score STORES not PRODUCTS — our per-product granularity is the moat. They have no AI rewrites, no monitoring, no competitive per-product comparison. Their data credibility (190-store benchmarks published) is ahead of us. Action: publish our own benchmark data, match their free tier generosity, double down on product-level depth."
     }
   ]
 }

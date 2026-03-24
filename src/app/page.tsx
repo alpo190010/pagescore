@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import posthog from "posthog-js";
 import AnalysisLoader from "@/components/AnalysisLoader";
+
+/* ── Lazy PostHog — don't block initial paint with 176KB bundle ── */
+function captureEvent(event: string, properties?: Record<string, unknown>) {
+  import("posthog-js").then(({ default: posthog }) => {
+    try { posthog.capture(event, properties); } catch { /* not initialized */ }
+  });
+}
 
 /* ── Types ── */
 interface CategoryScores {
@@ -82,33 +88,29 @@ function calculateRevenueLoss(
 
 /* ── Score color helper ── */
 function scoreColor(score: number): string {
-  if (score >= 70) return "#16A34A";
-  if (score >= 40) return "#D97706";
-  return "#DC2626";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
+  return "var(--error)";
+}
+
+/** High-contrast variant for text on tinted backgrounds */
+function scoreColorText(score: number): string {
+  if (score >= 70) return "var(--success-text)";
+  if (score >= 40) return "var(--warning-text)";
+  return "var(--error-text)";
 }
 
 function scoreColorTintBg(score: number): string {
-  if (score >= 70) return "#F0FDF4";
-  if (score >= 40) return "#FFFBEB";
-  return "#FEF2F2";
-}
-
-function severityBorderColor(score: number): string {
-  if (score >= 70) return "#16A34A";
-  if (score >= 40) return "#D97706";
-  return "#DC2626";
-}
-
-function impactBorderColor(impact: "HIGH" | "MED" | "LOW"): string {
-  if (impact === "HIGH") return "#DC2626";
-  if (impact === "MED") return "#D97706";
-  return "#16A34A";
+  if (score >= 70) return "var(--success-light)";
+  if (score >= 40) return "var(--warning-light)";
+  return "var(--error-light)";
 }
 
 /* ── Animated count-up hook ── */
 function useCountUp(target: number, duration = 1200) {
   const [value, setValue] = useState(0);
   const started = useRef(false);
+  const rafId = useRef<number>(0);
 
   useEffect(() => {
     if (target <= 0) {
@@ -124,44 +126,13 @@ function useCountUp(target: number, duration = 1200) {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
+      if (progress < 1) rafId.current = requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+    rafId.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId.current);
   }, [target, duration]);
 
   return value;
-}
-
-/* ── SVG Arc Gauge ── */
-function ArcGauge({ score, animated }: { score: number; animated: number }) {
-  const size = 240;
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = Math.PI * radius;
-  const progress = animated / 100;
-  const offset = circumference * (1 - progress);
-
-  return (
-    <svg width={size} height={size / 2 + strokeWidth} viewBox={`0 0 ${size} ${size / 2 + strokeWidth}`} className="mx-auto" role="img" aria-label={`Score gauge: ${animated} out of 100`}>
-      <path
-        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
-        fill="none"
-        stroke="#E5E7EB"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-      <path
-        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
-        fill="none"
-        stroke={scoreColor(score)}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{ transition: "stroke-dashoffset 1.2s ease-out" }}
-      />
-    </svg>
-  );
 }
 
 /* ── Build leak cards from categories + tips ── */
@@ -173,6 +144,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   cta: "CTA",
   description: "Description",
   trust: "Trust",
+};
+
+const CATEGORY_PROBLEMS: Record<string, { low: string; mid: string }> = {
+  title: { low: "Product title fails to communicate value or key benefits", mid: "Title misses opportunities to highlight differentiators" },
+  images: { low: "Product imagery is insufficient for purchase confidence", mid: "Image gallery lacks variety and lifestyle context" },
+  pricing: { low: "Price presentation creates friction and lacks anchoring", mid: "Pricing strategy misses conversion optimization basics" },
+  socialProof: { low: "No visible social proof to build buyer confidence", mid: "Social proof elements are present but poorly positioned" },
+  cta: { low: "Call-to-action is weak, hidden, or lacks urgency", mid: "CTA could be more prominent and compelling" },
+  description: { low: "Product description fails to sell — wall of text or missing", mid: "Description needs better structure and benefit focus" },
+  trust: { low: "No trust signals visible — guarantees, returns, or badges missing", mid: "Trust elements present but not prominently displayed" },
 };
 
 function buildLeaks(categories: CategoryScores, tips: string[]) {
@@ -193,42 +174,77 @@ function buildLeaks(categories: CategoryScores, tips: string[]) {
       impact = "LOW";
       revenue = `+$${30 + (catScore * 13) % 30}/mo`;
     }
+    const problems = CATEGORY_PROBLEMS[key] || { low: `Improve your ${key} to increase conversions.`, mid: `Your ${key} needs optimization.` };
+    const problem = catScore <= 4 ? problems.low : problems.mid;
     const tip = tips[i] || `Improve your ${key} to increase conversions.`;
-    return { key, catScore, impact, revenue, tip, category: CATEGORY_LABELS[key] || key };
+    return { key, catScore, impact, revenue, tip, problem, category: CATEGORY_LABELS[key] || key };
   });
 }
 
-/* ── Example cards for proof section ── */
-const EXAMPLES = [
-  { score: 43, product: "Leather Wallet", domain: "luxgoods.myshopify.com", finding: "Title is generic — costing ~$280/mo", fix: "Rewrite title with benefit + keyword" },
-  { score: 67, product: "Coffee Blend", domain: "brewhaus.myshopify.com", finding: "No reviews above fold — costing ~$190/mo", fix: "Move review stars below product title" },
-  { score: 81, product: "Yoga Mat", domain: "zenflow.myshopify.com", finding: "CTA has no urgency — costing ~$90/mo", fix: "Add stock count or limited-time offer" },
+/* ── Leak categories for "What We Check" section ── */
+const LEAK_CATEGORIES = [
+  {
+    icon: "📝",
+    label: "Title",
+    leak: "Generic title that doesn't sell",
+    cost: "Visitors bounce before scrolling",
+  },
+  {
+    icon: "📸",
+    label: "Images",
+    leak: "Low-quality or too few photos",
+    cost: "Buyers can't visualize owning it",
+  },
+  {
+    icon: "💰",
+    label: "Pricing",
+    leak: "No anchoring, no urgency",
+    cost: "Price feels high with no context",
+  },
+  {
+    icon: "⭐",
+    label: "Social Proof",
+    leak: "Reviews missing or buried below fold",
+    cost: "No trust = no purchase",
+  },
+  {
+    icon: "🔘",
+    label: "CTA",
+    leak: "Weak or hidden Add to Cart button",
+    cost: "Ready buyers can't find the button",
+  },
+  {
+    icon: "📄",
+    label: "Description",
+    leak: "Wall of text, no benefits",
+    cost: "Features don't convert, benefits do",
+  },
+  {
+    icon: "🛡️",
+    label: "Trust",
+    leak: "No guarantees, shipping, or badges",
+    cost: "Doubt kills the sale at checkout",
+  },
 ];
 
-/* ── Reset helper ── */
-function resetAnalysis(
-  setResult: (v: FreeResult | null) => void,
-  setUrl: (v: string) => void,
-  setError: (v: string) => void,
-  setEmail: (v: string) => void,
-  setEmailSent: (v: boolean) => void,
-  setEmailSkipped: (v: boolean) => void,
-  setShowCard: (v: boolean) => void,
-  setShowRevenue: (v: boolean) => void,
-  setShowEmail: (v: boolean) => void,
-  setShowLeaks: (v: boolean) => void,
-) {
-  setResult(null);
-  setUrl("");
-  setError("");
-  setEmail("");
-  setEmailSent(false);
-  setEmailSkipped(false);
-  setShowCard(false);
-  setShowRevenue(false);
-  setShowEmail(false);
-  setShowLeaks(false);
+/* ── URL validation ── */
+function isValidUrl(input: string): string | null {
+  const trimmed = input.trim();
+  // Auto-prefix protocol if missing
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const parsed = new URL(withProtocol);
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    // Must have a dot in hostname (rejects "localhost" etc)
+    if (!parsed.hostname.includes(".")) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
 }
+
+/* ── View phase for animated transitions ── */
+type ViewPhase = "hero" | "hero-exit" | "loading" | "results" | "results-exit";
 
 /* ── Main Page ── */
 export default function Home() {
@@ -239,22 +255,37 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [emailSubmitting, setEmailSubmitting] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailSkipped, setEmailSkipped] = useState(false);
+
+  // New flow: issues shown immediately, modal on click
+  const [selectedLeak, setSelectedLeak] = useState<string | null>(null);
+  const [emailStep, setEmailStep] = useState<"form" | "queued" | null>(null);
+  const [modalClosing, setModalClosing] = useState(false);
 
   const [showCard, setShowCard] = useState(false);
   const [showRevenue, setShowRevenue] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
   const [showLeaks, setShowLeaks] = useState(false);
+  const [scoreCardCollapsed, setScoreCardCollapsed] = useState(false);
+  const issuesRef = useRef<HTMLDivElement>(null);
+
+  // Phase state machine for transitions
+  const [phase, setPhase] = useState<ViewPhase>("hero");
 
   const animatedScore = useCountUp(showCard ? (result?.score ?? 0) : 0);
 
   useEffect(() => {
     if (!result) return;
+    setScoreCardCollapsed(false);
     setShowCard(true);
     const t1 = setTimeout(() => setShowRevenue(true), 1500);
-    const t2 = setTimeout(() => setShowEmail(true), 1800);
-    const t3 = setTimeout(() => setShowLeaks(true), 2000);
+    const t2 = setTimeout(() => setShowLeaks(true), 1800);
+    // Auto-collapse score card after 2.5s so issues are visible
+    const t3 = setTimeout(() => {
+      setScoreCardCollapsed(true);
+      // Smooth scroll to issues
+      setTimeout(() => {
+        issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 350);
+    }, 2500);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [result]);
 
@@ -263,44 +294,91 @@ export default function Home() {
     if (error) setError("");
   }, [error]);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const analyze = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) {
-      setError("URL is required");
+
+    // Validate URL
+    const validUrl = isValidUrl(url);
+    if (!validUrl) {
+      setError("Please enter a valid URL (e.g. https://yourstore.myshopify.com/products/...)");
       return;
     }
-    setLoading(true);
+
+    // Prevent double-submit
+    if (loading) return;
+
+    // Abort any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Phase transition: hero exits first, then loading appears
+    setPhase("hero-exit");
     setError("");
     setResult(null);
-    setEmailSent(false);
-    setEmailSkipped(false);
+    setSelectedLeak(null);
+    setEmailStep(null);
+    setModalClosing(false);
+    setEmail("");
     setShowCard(false);
     setShowRevenue(false);
-    setShowEmail(false);
     setShowLeaks(false);
+    setScoreCardCollapsed(false);
+
+    // Wait for exit animation, then start loading
+    await new Promise(r => setTimeout(r, 350));
+    setPhase("loading");
+    setLoading(true);
 
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: validUrl }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Analysis failed");
+        throw new Error(data.error || `Analysis failed (${res.status})`);
       }
       const data = await res.json();
-      setResult(data);
-      posthog.capture("scan_completed", { url, score: data.score });
+
+      // Defensive: ensure categories has all expected keys
+      const safeCategories: CategoryScores = {
+        title: Number(data.categories?.title) || 0,
+        images: Number(data.categories?.images) || 0,
+        pricing: Number(data.categories?.pricing) || 0,
+        socialProof: Number(data.categories?.socialProof) || 0,
+        cta: Number(data.categories?.cta) || 0,
+        description: Number(data.categories?.description) || 0,
+        trust: Number(data.categories?.trust) || 0,
+      };
+
+      setResult({
+        score: Math.min(100, Math.max(0, Number(data.score) || 0)),
+        summary: String(data.summary || "Analysis complete."),
+        tips: Array.isArray(data.tips) ? data.tips.map(String).slice(0, 7) : [],
+        categories: safeCategories,
+        productPrice: Number(data.productPrice) || 0,
+        productCategory: String(data.productCategory || "other"),
+        estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
+      });
+      setPhase("results");
+      captureEvent("scan_completed", { url: validUrl, score: data.score });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setPhase("hero");
     } finally {
       setLoading(false);
     }
-  }, [url]);
+  }, [url, loading]);
 
   const submitEmail = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (emailSubmitting) return;
     setEmailSubmitting(true);
     setEmailError("");
     try {
@@ -308,7 +386,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           url,
           score: result?.score,
           summary: result?.summary,
@@ -318,20 +396,47 @@ export default function Home() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to submit");
+        if (res.status === 429) {
+          throw new Error("Too many requests. Please wait a moment and try again.");
+        }
+        throw new Error(data.error || "Failed to send. Please try again.");
       }
-      setEmailSent(true);
-      posthog.capture("report_email_submitted", { url, score: result?.score, email });
+      setEmailStep("queued");
+      captureEvent("report_email_submitted", { url, score: result?.score });
     } catch (err: unknown) {
-      setEmailError(err instanceof Error ? err.message : "Something went wrong");
+      setEmailError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setEmailSubmitting(false);
     }
-  }, [email, url, result]);
+  }, [email, url, result, emailSubmitting]);
 
   const handleScanAnother = useCallback(() => {
-    resetAnalysis(setResult, setUrl, setError, setEmail, setEmailSent, setEmailSkipped, setShowCard, setShowRevenue, setShowEmail, setShowLeaks);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Animate results out, then reset to hero
+    setPhase("results-exit");
+    setTimeout(() => {
+      setResult(null);
+      setUrl("");
+      setError("");
+      setEmail("");
+      setSelectedLeak(null);
+      setEmailStep(null);
+      setModalClosing(false);
+      setShowCard(false);
+      setShowRevenue(false);
+      setShowLeaks(false);
+      setScoreCardCollapsed(false);
+      setPhase("hero");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 350);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalClosing(true);
+    setTimeout(() => {
+      setSelectedLeak(null);
+      setEmailStep(null);
+      setModalClosing(false);
+    }, 200);
   }, []);
 
   const leaks = result ? buildLeaks(result.categories, result.tips) : [];
@@ -345,27 +450,35 @@ export default function Home() {
   return (
     <>
       {/* ═══ MINIMAL NAV ═══ */}
-      <nav className="w-full h-20 backdrop-blur-md border-b border-[var(--border)]" style={{ background: "rgba(248, 247, 244, 0.85)" }}>
-        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
+      <nav className="w-full h-16 sm:h-20 backdrop-blur-md border-b border-[var(--border)]" style={{ background: "rgba(248, 247, 244, 0.85)" }} aria-label="Main navigation">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-[var(--brand)] to-blue-700">
               <div className="w-3 h-3 rounded-sm bg-white"></div>
             </div>
-            <span className="text-xl font-bold tracking-tight text-[var(--text-primary)]">PageScore</span>
+            <span className="text-xl font-bold tracking-tight text-[var(--text-primary)]">PageLeaks</span>
           </div>
-          <a
-            href="#hero-form"
-            className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
+          <button
+            type="button"
+            onClick={() => {
+              if (result) {
+                handleScanAnother();
+              } else {
+                document.getElementById("hero-form")?.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+            className="hidden sm:inline-block text-sm font-semibold px-5 py-2.5 rounded-xl text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
             style={{ boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)" }}
           >
-            Start Analysis
-          </a>
+            {result ? "Scan Another" : "Start Analysis"}
+          </button>
         </div>
       </nav>
 
       <main className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>
-        {/* ═══ HERO REDESIGNED ═══ */}
-        <section className="relative pt-20 pb-16 px-6">
+        {/* ═══ HERO — hidden during loading and after results ═══ */}
+        {(phase === "hero" || phase === "hero-exit") && !result && (
+        <section className={`relative pt-12 sm:pt-20 pb-10 sm:pb-16 px-4 sm:px-6 ${phase === "hero-exit" ? "anim-phase-exit" : "anim-phase-enter"}`}>
           <div className="max-w-3xl mx-auto text-center">
             {/* Visual indicator */}
             <div className="flex items-center justify-center mb-8">
@@ -385,25 +498,25 @@ export default function Home() {
               <span className="text-[var(--error)]">$1,000s in sales</span>
             </h1>
 
-            <p className="text-lg mb-12 max-w-2xl mx-auto leading-relaxed text-[var(--text-secondary)]">
+            <p className="text-lg mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed text-[var(--text-secondary)]">
               Get your conversion score in 30 seconds. See exactly where you're bleeding revenue and how to stop it.
             </p>
 
             {/* Premium input design */}
-            <form id="hero-form" onSubmit={analyze} className="max-w-xl mx-auto mb-16">
+            <form id="hero-form" onSubmit={analyze} className="max-w-xl mx-auto mb-10 sm:mb-16">
               <div className="relative group">
                 <div
-                  className="relative flex rounded-2xl overflow-hidden transition-all duration-200 group-focus-within:shadow-xl group-focus-within:scale-[1.01] bg-[var(--surface)] border-2 border-transparent"
+                  className="relative flex flex-col sm:flex-row rounded-2xl overflow-hidden transition-shadow duration-200 group-focus-within:shadow-xl sm:group-focus-within:scale-[1.01] bg-[var(--surface)] border-2 border-transparent"
                   style={{
                     backgroundClip: "padding-box",
                     boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px var(--border)"
                   }}
                 >
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 bg-gradient-to-r from-[var(--brand)] to-blue-700" style={{ padding: "2px" }}>
+                  <div className="hidden sm:block absolute inset-0 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 bg-gradient-to-r from-[var(--brand)] to-blue-700" style={{ padding: "2px" }}>
                     <div className="w-full h-full bg-[var(--surface)] rounded-2xl"></div>
                   </div>
 
-                  <div className="relative flex w-full">
+                  <div className="relative flex flex-col sm:flex-row w-full">
                     <input
                       id="url-input"
                       type="url"
@@ -411,13 +524,14 @@ export default function Home() {
                       placeholder="https://yourstore.myshopify.com/products/..."
                       value={url}
                       onChange={handleUrlChange}
-                      className="flex-1 px-6 py-5 text-base bg-transparent outline-none placeholder-gray-400 text-[var(--text-primary)] polish-focus-ring"
+                      aria-label="Shopify product page URL"
+                      className="flex-1 px-5 py-4 sm:px-6 sm:py-5 text-base bg-transparent outline-none placeholder-gray-500 text-[var(--text-primary)]"
                       aria-describedby={error ? "url-error" : undefined}
                     />
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-8 py-5 text-base font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed polish-hover-lift polish-focus-ring rounded-xl m-1"
+                      className="px-8 py-4 sm:py-5 text-base font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed polish-hover-lift polish-focus-ring rounded-xl sm:rounded-xl mx-1 mb-1 sm:m-1"
                       style={{
                         background: loading ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), #1D4ED8)"
                       }}
@@ -430,7 +544,7 @@ export default function Home() {
             </form>
 
             {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-[var(--text-tertiary)]">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-[var(--text-tertiary)]">
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M8 15l-1.18-1.05C2.42 10.65 0 8.48 0 5.8 0 3.42 1.42 2 4 2c1.24 0 2.47.52 3 1.3C7.53 2.52 8.76 2 10 2c2.58 0 4 1.42 4 3.8 0 2.68-2.42 4.85-6.82 8.15L8 15z" fill="var(--success)"/>
@@ -452,11 +566,13 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ═══ ERROR REDESIGNED ═══ */}
         {error && (
           <div className="max-w-2xl mx-auto px-6 mb-8 animate-[slide-down_300ms_ease-out_forwards]">
             <div
+              id="url-error"
               className="p-4 rounded-xl text-sm border-l-4 bg-red-50 border-l-[var(--error)] border border-red-200"
               role="alert"
             >
@@ -470,27 +586,109 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══ LOADER (keep as-is) ═══ */}
-        {loading && <AnalysisLoader url={url} />}
+        {/* ═══ LOADER ═══ */}
+        {loading && phase === "loading" && (
+          <div className="anim-phase-enter">
+            <AnalysisLoader url={url} />
+          </div>
+        )}
 
-        {/* ═══ SCORE REVEAL REDESIGNED ═══ */}
-        {result && showCard && (
-          <section className="max-w-4xl mx-auto px-6 pb-16">
+        {/* ═══ SCORE REVEAL — auto-collapses after 2.5s ═══ */}
+        {result && showCard && (phase === "results" || phase === "results-exit") && (
+          <section className={`max-w-4xl mx-auto px-6 ${scoreCardCollapsed ? "pb-4" : "pb-16"} ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
+
+            {/* ── COLLAPSED: compact summary bar ── */}
+            {scoreCardCollapsed && (
+              <button
+                type="button"
+                onClick={() => setScoreCardCollapsed(false)}
+                className="w-full score-card-collapse bg-[var(--surface)] rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg group"
+                style={{
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--border)",
+                }}
+              >
+                <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700 rounded-t-2xl"></div>
+                <div className="px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-4">
+                  {/* Left: domain + score */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 border-2"
+                      style={{
+                        backgroundColor: scoreColorTintBg(result.score),
+                        color: scoreColor(result.score),
+                        borderColor: scoreColor(result.score),
+                      }}
+                    >
+                      {result.score}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
+                        {domain || url}
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)]">
+                        {result.score >= 80 ? "Excellent" :
+                         result.score >= 60 ? "Above average" :
+                         result.score >= 40 ? "Needs improvement" :
+                         "Critical"} • Shopify avg: 65
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: revenue loss + expand hint */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="hidden sm:block text-right">
+                      <p className="text-sm font-bold text-[var(--error-text)]">
+                        -${lossLow.toLocaleString()}–${lossHigh.toLocaleString()}/mo
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)]">revenue loss</p>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-[var(--text-tertiary)] group-hover:text-[var(--brand)] transition-colors"
+                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                    >
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* ── EXPANDED: full score card ── */}
+            {!scoreCardCollapsed && (
             <div
-              className="relative overflow-hidden bg-[var(--surface)] rounded-3xl animate-[scale-in_500ms_ease-out_forwards]"
+              className="relative overflow-hidden bg-[var(--surface)] rounded-3xl score-card-expand"
               style={{
                 boxShadow: "0 20px 64px rgba(0,0,0,0.12), 0 0 0 1px var(--border)",
               }}
             >
               {/* Decorative gradient top */}
-              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] via-purple-500 to-[var(--error)]"></div>
+              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700"></div>
 
-              <div className="px-8 py-12 sm:px-12 sm:py-16">
+              <div className="px-5 py-10 sm:px-12 sm:py-16 relative">
+                {/* Collapse button (only after first auto-collapse) */}
+                {showLeaks && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScoreCardCollapsed(true);
+                      setTimeout(() => {
+                        issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 100);
+                    }}
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                    aria-label="Collapse score card"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+
                 {/* Domain header */}
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 bg-[var(--bg)] border border-[var(--border)]">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: scoreColor(result.score) }}></div>
-                    <span className="text-sm font-medium text-[var(--text-secondary)]">
+                    <span className="text-sm font-medium text-[var(--text-secondary)] truncate max-w-[300px]">
                       {domain || url}
                     </span>
                   </div>
@@ -514,13 +712,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Enhanced arc gauge */}
-                  <div className="mt-6 mb-8">
-                    <ArcGauge score={result.score} animated={animatedScore} />
-                  </div>
-
                   {/* Score interpretation */}
-                  <div className="max-w-md mx-auto">
+                  <div className="max-w-md mx-auto mt-6">
                     <p className="text-lg mb-2 text-[var(--text-primary)] font-medium">
                       {result.score >= 80 ? "Excellent conversion rate" :
                        result.score >= 60 ? "Above average performance" :
@@ -528,7 +721,7 @@ export default function Home() {
                        "Critical optimization needed"}
                     </p>
                     <p className="text-sm text-[var(--text-tertiary)]">
-                      Shopify average: 65/100 • Analyzed in {Math.random() > 0.5 ? "12" : "8"} seconds
+                      Shopify average: 65/100 • Analyzed in under 30 seconds
                     </p>
                   </div>
                 </div>
@@ -537,7 +730,7 @@ export default function Home() {
                 {showRevenue && (
                   <div className="relative">
                     <div
-                      className="text-center p-8 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 animate-[slide-up_300ms_ease-out_forwards]"
+                      className="text-center p-5 sm:p-8 rounded-2xl bg-[var(--error-light)] border-2 border-red-300 animate-[slide-up_300ms_ease-out_forwards]"
                       style={{
                         boxShadow: "0 8px 32px rgba(248, 113, 113, 0.2)"
                       }}
@@ -546,11 +739,11 @@ export default function Home() {
                         <svg className="mx-auto mb-3" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M12 2L13.09 8.26L19.96 9L13.09 15.74L15.18 22L12 18.77L8.82 22L10.91 15.74L4.04 9L10.91 8.26L12 2Z" fill="var(--error)"/>
                         </svg>
-                        <h3 className="text-lg font-semibold mb-2 text-[var(--error)]">
+                        <h3 className="text-lg font-semibold mb-2 text-[var(--error-text)]">
                           Monthly Revenue Loss
                         </h3>
                         <p
-                          className="font-bold font-[family-name:var(--font-mono)] text-[var(--error)]"
+                          className="font-bold font-[family-name:var(--font-mono)] text-[var(--error-text)]"
                           style={{
                             fontSize: "clamp(28px, 5vw, 48px)",
                             textShadow: "0 2px 4px rgba(0,0,0,0.1)"
@@ -558,117 +751,28 @@ export default function Home() {
                         >
                           ${lossLow.toLocaleString()}–${lossHigh.toLocaleString()}
                         </p>
-                        <p className="text-sm mt-2 opacity-80 text-[var(--error)]">
+                        <p className="text-sm mt-2 text-[var(--error-text)] opacity-80">
                           This is money walking away from your store every single month.
                         </p>
-                      </div>
-
-                      {/* Impact visualization */}
-                      <div className="flex items-center justify-center gap-4 mt-6 text-xs">
-                        <div className="flex items-center gap-1 text-[var(--error)]">
-                          <div className="w-2 h-2 rounded-full bg-current"></div>
-                          <span>Lost sales</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-[var(--success)]">
-                          <div className="w-2 h-2 rounded-full bg-current"></div>
-                          <span>Potential recovery</span>
-                        </div>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
+            )}
           </section>
         )}
 
-        {/* ═══ EMAIL CAPTURE REDESIGNED ═══ */}
-        {result && showEmail && !emailSkipped && !emailSent && (
-          <div className="max-w-2xl mx-auto px-6 mb-12">
-            <div
-              className="p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border-[1.5px] border-blue-300 animate-[fade-in-smooth_300ms_ease-out_forwards]"
-              style={{ boxShadow: "0 8px 32px rgba(37, 99, 235, 0.1)" }}
-            >
-              <div className="text-center">
-                <div className="mb-6">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center bg-[var(--brand)]">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M3 8L10.89 13.26C11.2 13.47 11.8 13.47 12.11 13.26L20 8M5 19H19C20.1 19 21 18.1 21 17V7C21 5.9 20.1 5 19 5H5C3.9 5 3 5.9 3 7V17C3 18.1 3.9 19 5 19Z" stroke="white" strokeWidth="2" fill="none"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 text-[var(--text-primary)]">
-                    Get Your Complete Fix List
-                  </h3>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Detailed action items to recover that lost revenue
-                  </p>
-                </div>
-
-                <form onSubmit={submitEmail} className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <input
-                      id="email-input"
-                      type="email"
-                      required
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-4 text-base rounded-xl outline-none border-[1.5px] border-blue-300 text-[var(--text-primary)] bg-[var(--surface)] polish-focus-ring"
-                      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={emailSubmitting}
-                    className="px-8 py-4 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
-                    style={{
-                      background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), #1D4ED8)",
-                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
-                    }}
-                  >
-                    {emailSubmitting ? "Sending..." : "Send Report →"}
-                  </button>
-                </form>
-
-                {emailError && (
-                  <p className="text-sm mt-3 text-center text-[var(--error)] font-medium" role="alert">{emailError}</p>
-                )}
-
-                <button
-                  type="button"
-                  className="text-sm mt-4 opacity-60 hover:opacity-100 transition-opacity cursor-pointer bg-transparent border-none text-[var(--text-secondary)] polish-focus-ring p-2 rounded-lg"
-                  onClick={() => setEmailSkipped(true)}
-                >
-                  View summary instead →
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {result && emailSent && (
-          <div className="max-w-2xl mx-auto px-6 mb-12">
-            <div className="p-6 text-center rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border-[1.5px] border-green-300">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center bg-[var(--success)]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="white" strokeWidth="2" fill="none"/>
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-[var(--success)]">Report Sent!</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Check your inbox for the complete analysis</p>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ LEAK CARDS REDESIGNED ═══ */}
-        {result && showLeaks && (emailSkipped || emailSent) && (
-          <div className="max-w-4xl mx-auto px-6 pb-16">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Revenue Leak Analysis</h2>
-              <p className="text-lg text-[var(--text-secondary)]">Here's exactly where your page is losing money</p>
+        {/* ═══ ISSUES LIST — shown immediately after score ═══ */}
+        {result && showLeaks && (phase === "results" || phase === "results-exit") && (
+          <div ref={issuesRef} className={`max-w-4xl mx-auto px-6 pb-16 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
+            <div className="text-center md:text-left mb-10 sm:mb-12">
+              <h2 className="text-2xl font-bold mb-3 text-[var(--text-primary)]">Issues Found on Your Page</h2>
+              <p className="text-lg text-[var(--text-secondary)]">Click any issue to get the detailed fix</p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {leaks.map((leak, i) => {
                 const severityIcons = {
                   HIGH: "🚨",
@@ -678,85 +782,81 @@ export default function Home() {
 
                 const severityStyles = {
                   HIGH: {
-                    bg: "linear-gradient(to bottom right, rgb(254 242 242), rgb(254 226 226))",
+                    bg: "var(--error-light)",
                     borderColor: "rgb(252 165 165)",
-                    textColor: "var(--error)"
+                    textColor: "var(--error-text)",
+                    hoverBorder: "rgb(248 113 113)",
                   },
                   MED: {
-                    bg: "linear-gradient(to bottom right, rgb(255 251 235), rgb(254 243 199))",
+                    bg: "var(--warning-light)",
                     borderColor: "rgb(251 191 36)",
-                    textColor: "var(--warning)"
+                    textColor: "var(--warning-text)",
+                    hoverBorder: "rgb(245 158 11)",
                   },
                   LOW: {
-                    bg: "linear-gradient(to bottom right, rgb(240 253 244), rgb(220 252 231))",
+                    bg: "var(--success-light)",
                     borderColor: "rgb(134 239 172)",
-                    textColor: "var(--success)"
+                    textColor: "var(--success-text)",
+                    hoverBorder: "rgb(74 222 128)",
                   }
                 };
 
                 const style = severityStyles[leak.impact as keyof typeof severityStyles];
 
                 return (
-                  <div
+                  <button
                     key={leak.key}
-                    className="group polish-hover-lift border-2 rounded-3xl p-6"
+                    type="button"
+                    onClick={() => {
+                      setSelectedLeak(leak.key);
+                      setEmailStep("form");
+                      setEmailError("");
+                      captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
+                    }}
+                    className="group text-left rounded-2xl p-5 sm:p-6 cursor-pointer transition-all duration-200 hover:-translate-y-1 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--brand)] hover:shadow-xl"
                     style={{
-                      background: style.bg,
-                      borderColor: style.borderColor,
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-                      animation: `fade-in-up 400ms ease-out ${i * 100}ms both`,
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                      animation: `fade-in-up 400ms ease-out ${i * 80}ms both`,
                     }}
                   >
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg" aria-hidden="true">{severityIcons[leak.impact]}</span>
-                        <span
-                          className="text-xs font-bold px-3 py-1 rounded-full bg-[var(--surface)]"
-                          style={{ color: style.textColor }}
-                        >
-                          {leak.category}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div
-                          className="text-xs font-bold px-3 py-1 rounded-full text-white"
-                          style={{ backgroundColor: style.textColor }}
-                        >
-                          {leak.impact} IMPACT
-                        </div>
-                        <div className="text-sm font-semibold mt-1" style={{ color: style.textColor }}>
-                          {leak.revenue}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Main content */}
-                    <h3 className="text-lg font-semibold mb-4 leading-snug text-[var(--text-primary)]">
-                      {leak.tip}
-                    </h3>
-
-                    {/* Action indicator */}
-                    <div
-                      className="pt-4 border-t opacity-70 flex items-center gap-2"
-                      style={{ borderColor: style.borderColor }}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full flex items-center justify-center text-xs text-white"
+                    {/* Category + severity */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: style.textColor }}
-                      >
-                        →
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: style.textColor }}>
-                        Fix this to boost conversions
+                      ></span>
+                      <span className="text-sm font-semibold text-[var(--text-secondary)]">
+                        {leak.category}
+                      </span>
+                      <span className="text-xs text-[var(--text-tertiary)]">·</span>
+                      <span className="text-xs font-medium" style={{ color: style.textColor }}>
+                        {leak.catScore}/10
                       </span>
                     </div>
-                  </div>
+
+                    {/* Problem — the main thing */}
+                    <p className="text-base font-semibold leading-snug text-[var(--text-primary)] mb-4">
+                      {leak.problem}
+                    </p>
+
+                    {/* Bottom: revenue + CTA */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold" style={{ color: style.textColor }}>
+                        {leak.revenue} potential
+                      </span>
+                      <span className="text-sm font-semibold text-[var(--brand)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
+                        See fix
+                        <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
                 );
               })}
             </div>
 
-            {/* Call to action */}
+            {/* Scan another */}
             <div className="text-center mt-16">
               <button
                 type="button"
@@ -764,119 +864,263 @@ export default function Home() {
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
                 style={{ boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)" }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" fill="none"/>
-                </svg>
                 Analyze Another Page
               </button>
             </div>
           </div>
         )}
 
-        {/* ═══ PROOF SECTION REDESIGNED ═══ */}
-        {!result && !loading && (
-          <section className="py-20 bg-gradient-to-b from-[var(--bg)] to-[var(--surface)]">
-            <div className="max-w-6xl mx-auto px-6">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl font-bold mb-4 text-[var(--text-primary)]">
-                  See What Others Discovered
+        {/* ═══ EMAIL MODAL — triggered by clicking an issue ═══ */}
+        {selectedLeak && emailStep && (
+          <div
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+            style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Get detailed fix"
+          >
+            <div
+              className={`relative w-full max-w-md bg-[var(--surface)] rounded-3xl overflow-hidden ${modalClosing ? "modal-content-exit" : "modal-content-enter"}`}
+              style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
+            >
+              {/* Top accent */}
+              <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-blue-700"></div>
+
+              {/* Close button */}
+              <button
+                type="button"
+                onClick={closeModal}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                aria-label="Close"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+
+              <div className="p-6 sm:p-8">
+                {emailStep === "form" && (
+                  <div key="form-step">
+                    <div className="text-center mb-6">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
+                        Get the Fix for "{leaks.find(l => l.key === selectedLeak)?.category}"
+                      </h3>
+                      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                        Enter your email and we'll send you detailed, actionable fixes for all {leaks.length} issues found on your page.
+                      </p>
+                    </div>
+
+                    <form onSubmit={submitEmail}>
+                      <div className="mb-3">
+                        <input
+                          id="modal-email-input"
+                          type="email"
+                          required
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          aria-label="Your email address"
+                          autoFocus
+                          className="w-full px-4 py-3.5 text-base rounded-xl outline-none border-[1.5px] border-[var(--border)] text-[var(--text-primary)] bg-[var(--bg)] polish-focus-ring"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={emailSubmitting}
+                        className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
+                        style={{
+                          background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), #1D4ED8)",
+                          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
+                        }}
+                      >
+                        {emailSubmitting ? "Submitting..." : "Send Me the Fixes →"}
+                      </button>
+                      {emailError && (
+                        <p className="text-sm mt-3 text-center text-[var(--error)] font-medium" role="alert">{emailError}</p>
+                      )}
+                    </form>
+
+                    <p className="text-xs text-center mt-4 text-[var(--text-tertiary)]">
+                      No spam. Just your fixes.
+                    </p>
+                  </div>
+                )}
+
+                {emailStep === "queued" && (
+                  <div className="text-center modal-step-enter" key="queued-step">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--success-light)] border border-[var(--success-border)]">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
+                      You're in the Queue!
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
+                      Due to high demand, your detailed report with step-by-step fixes will arrive within <strong className="text-[var(--text-primary)]">48 hours</strong>.
+                    </p>
+
+                    {/* Priority upsell */}
+                    <div
+                      className="p-5 rounded-2xl border-2 border-dashed mb-4"
+                      style={{
+                        borderColor: "var(--brand-border)",
+                        background: "linear-gradient(135deg, var(--brand-light), #EEF2FF)",
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="var(--brand)"/>
+                        </svg>
+                        <span className="text-sm font-bold text-[var(--brand)]">Skip the wait</span>
+                      </div>
+                      <p className="text-sm text-[var(--text-secondary)] mb-4">
+                        Get your full report with expert suggestions <strong className="text-[var(--text-primary)]">instantly</strong>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          captureEvent("priority_report_clicked", { url, score: result?.score, email });
+                          // TODO: integrate Stripe checkout
+                          alert("Stripe checkout coming soon!");
+                        }}
+                        className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
+                        style={{
+                          background: "linear-gradient(135deg, var(--brand), #1D4ED8)",
+                          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
+                        }}
+                      >
+                        Get Priority Report — $0.99
+                      </button>
+                      <p className="text-xs text-center mt-2 text-[var(--text-tertiary)]">
+                        Full report with actionable suggestions • Instant delivery
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors mt-2"
+                    >
+                      I'll wait for the free report →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ WHAT WE CHECK + HOW IT WORKS ═══ */}
+        {phase === "hero" && !result && !loading && (
+          <>
+          {/* 7 Leak Categories */}
+          <section className="py-16 sm:py-20 bg-gradient-to-b from-[var(--bg)] to-[var(--surface)] anim-phase-enter" style={{ animationDelay: "100ms" }}>
+            <div className="max-w-5xl mx-auto px-4 sm:px-6">
+              <div className="text-center mb-10 sm:mb-14">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[var(--text-primary)]">
+                  7 Places Your Page Leaks Revenue
                 </h2>
-                <p className="text-lg text-[var(--text-secondary)]">
-                  Real stores, real problems, real revenue impact
+                <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-xl mx-auto">
+                  We scan every product page for these conversion killers
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {EXAMPLES.map((ex, i) => {
-                  const mockRevenue = ["$2,340", "$1,890", "$890"][i];
-                  const mockVisitors = ["8,200", "6,500", "3,100"][i];
-
-                  return (
-                    <div
-                      key={ex.product}
-                      className="group polish-hover-lift bg-[var(--surface)] border-[1.5px] border-[var(--border)] rounded-3xl p-6 relative overflow-hidden"
-                      style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    >
-                      {/* Score badge */}
-                      <div className="absolute top-6 right-6">
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold border-2"
-                          style={{
-                            backgroundColor: scoreColorTintBg(ex.score),
-                            color: scoreColor(ex.score),
-                            borderColor: scoreColor(ex.score)
-                          }}
-                        >
-                          {ex.score}
-                        </div>
-                      </div>
-
-                      {/* Mock browser */}
-                      <div className="mb-6">
-                        <div className="h-32 rounded-lg mb-4 relative overflow-hidden bg-gray-100 border border-[var(--border)]">
-                          {/* Browser chrome */}
-                          <div className="flex items-center gap-2 p-3 border-b border-[var(--border)]">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                              <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                              <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                            </div>
-                            <div className="text-xs px-2 py-1 bg-[var(--surface)] rounded text-[var(--text-tertiary)] ml-2">
-                              {ex.domain}
-                            </div>
-                          </div>
-
-                          {/* Mock content */}
-                          <div className="p-4">
-                            <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                            <div className="h-3 bg-gray-200 rounded w-2/3 mb-3"></div>
-                            <div className="flex gap-2">
-                              <div className="w-8 h-8 bg-gray-300 rounded"></div>
-                              <div className="w-8 h-8 bg-gray-300 rounded"></div>
-                              <div className="w-8 h-8 bg-gray-300 rounded"></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <h3 className="font-semibold text-lg mb-2 text-[var(--text-primary)]">
-                          {ex.product}
-                        </h3>
-                        <p className="text-sm mb-4 text-[var(--text-tertiary)]">
-                          {mockVisitors} monthly visitors • Losing {mockRevenue}/mo
-                        </p>
-                      </div>
-
-                      {/* Finding */}
-                      <div
-                        className="p-4 rounded-lg mb-4"
-                        style={{
-                          backgroundColor: scoreColorTintBg(ex.score),
-                          border: `1px solid ${scoreColor(ex.score)}33`
-                        }}
-                      >
-                        <p className="text-sm font-medium" style={{ color: scoreColor(ex.score) }}>
-                          {ex.finding}
-                        </p>
-                      </div>
-
-                      {/* Blurred solution */}
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--surface)] to-transparent z-10 flex items-center justify-center">
-                          <div className="px-4 py-2 rounded-full text-xs font-medium bg-[var(--brand)] text-white">
-                            Sign up to see solution
-                          </div>
-                        </div>
-                        <p className="text-sm blur-sm select-none text-[var(--text-secondary)]">
-                          {ex.fix}
-                        </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {LEAK_CATEGORIES.map((cat, i) => (
+                  <div
+                    key={cat.label}
+                    className="group bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:border-[var(--brand)] hover:shadow-lg hover:-translate-y-0.5"
+                    style={{
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      animation: `fade-in-up 400ms ease-out ${i * 60}ms both`,
+                    }}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <span className="text-2xl leading-none shrink-0 mt-0.5" aria-hidden="true">{cat.icon}</span>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-semibold mb-1.5 text-[var(--text-primary)]">{cat.label}</h3>
+                        <p className="text-sm font-medium mb-1 text-[var(--error-text)]">{cat.leak}</p>
+                        <p className="text-sm text-[var(--text-tertiary)] leading-snug">{cat.cost}</p>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+
+                {/* CTA card fills the last slot */}
+                <div
+                  className="group bg-gradient-to-br from-[var(--brand)] to-blue-700 rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer polish-hover-lift"
+                  style={{
+                    boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)",
+                    animation: `fade-in-up 400ms ease-out ${7 * 60}ms both`,
+                  }}
+                  onClick={() => document.getElementById("url-input")?.focus()}
+                >
+                  <p className="text-white font-semibold text-lg mb-1">How many leaks does your page have?</p>
+                  <p className="text-blue-200 text-sm">Find out in 30 seconds →</p>
+                </div>
               </div>
             </div>
           </section>
+
+          {/* How It Works — 3 steps */}
+          <section className="py-14 sm:py-16 bg-[var(--surface)] border-t border-[var(--border)] anim-phase-enter" style={{ animationDelay: "200ms" }}>
+            <div className="max-w-4xl mx-auto px-4 sm:px-6">
+              <div className="text-center mb-10 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[var(--text-primary)]">
+                  How It Works
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+                {[
+                  { step: "1", title: "Paste your URL", desc: "Any Shopify product page" },
+                  { step: "2", title: "AI scans 7 factors", desc: "Title, images, pricing, reviews, CTA, copy, trust" },
+                  { step: "3", title: "Get your leak report", desc: "Score + revenue impact + fixes" },
+                ].map((s, i) => (
+                  <div key={s.step} className="text-center" style={{ animation: `fade-in-up 400ms ease-out ${i * 100 + 100}ms both` }}>
+                    <div
+                      className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center text-lg font-bold text-[var(--brand)] bg-[var(--brand-light)] border border-[var(--brand-border)]"
+                    >
+                      {s.step}
+                    </div>
+                    <h3 className="text-base font-semibold mb-1 text-[var(--text-primary)]">{s.title}</h3>
+                    <p className="text-sm text-[var(--text-secondary)]">{s.desc}</p>
+                    {i < 2 && (
+                      <div className="hidden sm:block mt-4 text-[var(--text-tertiary)]" aria-hidden="true">
+                        <svg className="mx-auto w-5 h-5 rotate-90 sm:rotate-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="text-center mt-12">
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById("url-input")?.focus();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
+                  style={{ boxShadow: "0 8px 32px rgba(37, 99, 235, 0.2)" }}
+                >
+                  Find Your Leaks — Free
+                </button>
+                <p className="text-sm text-[var(--text-tertiary)] mt-3">No signup. No email. Just paste and go.</p>
+              </div>
+            </div>
+          </section>
+          </>
         )}
       </main>
     </>

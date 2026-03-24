@@ -39,26 +39,26 @@ function ReportContent() {
   return (
     <>
       {/* ═══ NAV ═══ */}
-      <nav className="w-full h-16" style={{ background: "#F8F7F4", borderBottom: "1px solid #E5E7EB" }}>
+      <nav className="w-full h-16 bg-[var(--bg)] border-b border-[var(--border)]" aria-label="Main navigation">
         <div className="max-w-2xl mx-auto px-4 h-full flex items-center">
-          <a href="/" className="text-lg font-bold tracking-[-0.02em]" style={{ color: "#111111" }} aria-label="PageScore home">
-            PageScore
+          <a href="/" className="text-lg font-bold tracking-[-0.02em] text-[var(--text-primary)]" aria-label="PageLeaks home">
+            PageLeaks
           </a>
         </div>
       </nav>
 
-      <main className="min-h-screen flex flex-col items-center px-4 pt-12 sm:pt-24" style={{ background: "#F8F7F4" }}>
+      <main className="min-h-screen flex flex-col items-center px-4 pt-12 sm:pt-24 bg-[var(--bg)]">
         <div className="max-w-2xl w-full">
           <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#111111", letterSpacing: "-0.02em" }}>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-[var(--text-primary)] tracking-[-0.02em]">
               {feature === "rewrites" ? "Unlock AI Rewrites" : "Unlock Your Full Report"}
             </h1>
-            <p className="text-sm mb-2" style={{ color: "#6B6B6B" }}>
+            <p className="text-sm mb-2 text-[var(--text-secondary)]">
               {feature === "rewrites"
                 ? "Get AI-optimized product copy for:"
                 : "Deep-dive analysis for:"}
             </p>
-            <p className="font-[family-name:var(--font-mono)] text-sm break-all" style={{ color: "#2563EB" }}>
+            <p className="font-[family-name:var(--font-mono)] text-sm break-all text-[var(--brand)]">
               {url || "No URL provided"}
             </p>
           </div>
@@ -68,40 +68,34 @@ function ReportContent() {
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className="flex flex-col relative"
-                style={{
-                  padding: "clamp(20px, 3vw, 24px)",
-                  borderRadius: "12px",
-                  border: plan.highlight ? "1.5px solid #BFDBFE" : "1.5px solid #E5E7EB",
-                  background: plan.highlight ? "#EFF6FF" : "#FFFFFF",
-                }}
+                className={`flex flex-col relative p-[clamp(20px,3vw,24px)] rounded-xl border-[1.5px] ${
+                  plan.highlight
+                    ? "border-[var(--brand-border)] bg-[var(--brand-light)]"
+                    : "border-[var(--border)] bg-[var(--surface)]"
+                }`}
               >
                 {plan.highlight && (
-                  <div
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold text-white"
-                    style={{ backgroundColor: "#2563EB" }}
-                  >
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold text-white bg-[var(--brand)]">
                     Recommended
                   </div>
                 )}
-                <h3 className="font-bold text-lg mb-1" style={{ color: "#111111" }}>{plan.name}</h3>
-                <div className="text-2xl font-bold mb-3" style={{ color: "#111111" }}>{plan.price}</div>
+                <h3 className="font-bold text-lg mb-1 text-[var(--text-primary)]">{plan.name}</h3>
+                <div className="text-2xl font-bold mb-3 text-[var(--text-primary)]">{plan.price}</div>
                 <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className="text-sm flex gap-2" style={{ color: "#6B6B6B" }}>
-                      <span className="shrink-0" style={{ color: "#2563EB" }}>&#10003;</span>
+                    <li key={f} className="text-sm flex gap-2 text-[var(--text-secondary)]">
+                      <span className="shrink-0 text-[var(--brand)]">&#10003;</span>
                       <span>{f}</span>
                     </li>
                   ))}
                 </ul>
                 <a
                   href="#"
-                  className="block text-center px-6 py-3 rounded-lg font-bold transition hover:opacity-90"
-                  style={{
-                    backgroundColor: plan.highlight ? "#2563EB" : "#FFFFFF",
-                    color: plan.highlight ? "#FFFFFF" : "#111111",
-                    border: plan.highlight ? "none" : "1.5px solid #E5E7EB",
-                  }}
+                  className={`block text-center px-6 py-3 rounded-lg font-bold transition-opacity hover:opacity-90 polish-focus-ring ${
+                    plan.highlight
+                      ? "bg-[var(--brand)] text-white"
+                      : "bg-[var(--surface)] text-[var(--text-primary)] border-[1.5px] border-[var(--border)]"
+                  }`}
                   aria-label={`${plan.cta} at ${plan.price}`}
                 >
                   {plan.cta}
@@ -110,7 +104,7 @@ function ReportContent() {
             ))}
           </div>
 
-          <p className="text-center text-xs mb-4" style={{ color: "#9E9E9E" }}>
+          <p className="text-center text-xs mb-4 text-[var(--text-tertiary)]">
             Cancel anytime. Reports delivered to your email within 5 minutes.
           </p>
         </div>
@@ -121,7 +115,7 @@ function ReportContent() {
 
 export default function ReportPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ color: "#9E9E9E", background: "#F8F7F4" }}>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[var(--text-tertiary)] bg-[var(--bg)]">Loading...</div>}>
       <ReportContent />
     </Suspense>
   );

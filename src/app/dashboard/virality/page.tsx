@@ -141,7 +141,7 @@ export default function ViralityPage() {
       )}
 
       <footer className="text-center text-xs text-[var(--muted)] pt-8">
-        PageScore Virality Research · Private · Auto-refreshes every 15s
+        PageLeaks Virality Research · Private · Auto-refreshes every 15s
       </footer>
     </main>
   );

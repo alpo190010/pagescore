@@ -12,20 +12,67 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Fetch the page HTML
+    // Validate URL format and prevent SSRF
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+    }
+
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return NextResponse.json({ error: "Only HTTP/HTTPS URLs are supported" }, { status: 400 });
+    }
+
+    // Block internal/private IPs
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("172.") ||
+      hostname === "0.0.0.0" ||
+      hostname.endsWith(".local") ||
+      hostname === "[::1]"
+    ) {
+      return NextResponse.json({ error: "Internal URLs are not allowed" }, { status: 400 });
+    }
+
+    // Cap URL length
+    if (url.length > 2048) {
+      return NextResponse.json({ error: "URL is too long" }, { status: 400 });
+    }
+
+    // Fetch the page HTML (limit redirects to prevent loops)
     let html: string;
     try {
       const res = await fetch(url, {
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; PageScore/1.0; +https://pagescore.app)",
+            "Mozilla/5.0 (compatible; PageLeaks/1.0; +https://pageleaks.com)",
         },
         signal: AbortSignal.timeout(10000),
+        redirect: "follow",
       });
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: `Page returned ${res.status}. Make sure the URL is correct and publicly accessible.` },
+          { status: 400 }
+        );
+      }
       html = await res.text();
     } catch {
       return NextResponse.json(
-        { error: "Could not fetch that URL. Make sure it's accessible." },
+        { error: "Could not fetch that URL. Make sure it's accessible and not behind a login." },
+        { status: 400 }
+      );
+    }
+
+    // Reject empty/tiny pages
+    if (html.length < 100) {
+      return NextResponse.json(
+        { error: "Page appears to be empty or too small to analyze." },
         { status: 400 }
       );
     }
@@ -95,25 +142,46 @@ ${truncated}`;
     const msg = aiData.choices?.[0]?.message || {};
     const content = msg.content || msg.reasoning || "";
 
-    // Parse JSON from response
+    // Parse JSON from response (safely)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
-        { error: "Failed to parse analysis" },
+        { error: "AI returned an unexpected format. Please try again." },
         { status: 500 }
       );
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    let result: Record<string, unknown>;
+    try {
+      result = JSON.parse(jsonMatch[0]);
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse AI response. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    // Defensive: ensure all category keys exist as numbers 0-10
+    const rawCats = (result.categories || {}) as Record<string, unknown>;
+    const clampScore = (v: unknown) => Math.min(10, Math.max(0, Number(v) || 0));
+    const safeCategories = {
+      title: clampScore(rawCats.title),
+      images: clampScore(rawCats.images),
+      pricing: clampScore(rawCats.pricing),
+      socialProof: clampScore(rawCats.socialProof),
+      cta: clampScore(rawCats.cta),
+      description: clampScore(rawCats.description),
+      trust: clampScore(rawCats.trust),
+    };
 
     const response = {
       score: Math.min(100, Math.max(0, Number(result.score) || 50)),
-      summary: result.summary || "Analysis complete.",
-      tips: (result.tips || []).slice(0, 3),
-      categories: result.categories || {},
-      productPrice: Number(result.productPrice) || 0,
-      productCategory: result.productCategory || "other",
-      estimatedMonthlyVisitors: Number(result.estimatedMonthlyVisitors) || 1000,
+      summary: String(result.summary || "Analysis complete.").slice(0, 200),
+      tips: (Array.isArray(result.tips) ? result.tips : []).map((t: unknown) => String(t).slice(0, 300)).slice(0, 7),
+      categories: safeCategories,
+      productPrice: Math.max(0, Number(result.productPrice) || 0),
+      productCategory: String(result.productCategory || "other"),
+      estimatedMonthlyVisitors: Math.max(0, Number(result.estimatedMonthlyVisitors) || 1000),
     };
 
     // Persist scan to Postgres (blocking — surface errors)

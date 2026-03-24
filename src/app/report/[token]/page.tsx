@@ -36,28 +36,36 @@ const SECTIONS: {
   { key: "seo", title: "SEO Discoverability", getScore: (c) => Math.min(10, Math.max(0, c.title)) },
 ];
 
+/* ── Semantic color helpers using CSS variable values ── */
 function scoreColor(score: number): string {
-  if (score >= 70) return "#16A34A";
-  if (score >= 40) return "#D97706";
-  return "#DC2626";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
+  return "var(--error)";
+}
+
+/** High-contrast variant for text on tinted backgrounds */
+function scoreColorText(score: number): string {
+  if (score >= 70) return "var(--success-text)";
+  if (score >= 40) return "var(--warning-text)";
+  return "var(--error-text)";
 }
 
 function sectionScoreColor(score: number): string {
-  if (score >= 8) return "#16A34A";
-  if (score >= 5) return "#D97706";
-  return "#DC2626";
+  if (score >= 8) return "var(--success-text)";
+  if (score >= 5) return "var(--warning-text)";
+  return "var(--error-text)";
 }
 
 function sectionScoreBg(score: number): string {
-  if (score >= 8) return "#F0FDF4";
-  if (score >= 5) return "#FFFBEB";
-  return "#FEF2F2";
+  if (score >= 8) return "var(--success-light)";
+  if (score >= 5) return "var(--warning-light)";
+  return "var(--error-light)";
 }
 
 function sectionBorderColor(score: number): string {
-  if (score >= 8) return "#16A34A";
-  if (score >= 5) return "#D97706";
-  return "#DC2626";
+  if (score >= 8) return "var(--success)";
+  if (score >= 5) return "var(--warning)";
+  return "var(--error)";
 }
 
 function getStatusLabel(score: number): string {
@@ -146,14 +154,13 @@ export default async function ReportTokenPage({
 
   if (!report) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "#F8F7F4", color: "#111111" }}>
+      <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-[var(--bg)] text-[var(--text-primary)]">
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-3" style={{ color: "#111111", letterSpacing: "-0.02em" }}>Report not found or expired</h1>
-          <p className="text-[15px] mb-6" style={{ color: "#6B6B6B" }}>This report link may have expired or is invalid. Try scanning your page again.</p>
+          <h1 className="text-2xl font-bold mb-3 tracking-[-0.02em] text-[var(--text-primary)]">Report not found or expired</h1>
+          <p className="text-[15px] mb-6 text-[var(--text-secondary)]">This report link may have expired or is invalid. Try scanning your page again.</p>
           <a
             href="/"
-            className="inline-block px-6 py-3 rounded-lg text-white font-semibold transition hover:opacity-90"
-            style={{ backgroundColor: "#2563EB" }}
+            className="inline-block px-6 py-3 rounded-lg text-white font-semibold transition-opacity hover:opacity-90 bg-[var(--brand)] polish-focus-ring"
             aria-label="Go back and scan a new page"
           >
             Scan a New Page
@@ -178,31 +185,28 @@ export default async function ReportTokenPage({
   return (
     <>
       {/* ═══ NAV ═══ */}
-      <nav className="w-full h-16" style={{ background: "#F8F7F4", borderBottom: "1px solid #E5E7EB" }}>
+      <nav className="w-full h-16 bg-[var(--bg)] border-b border-[var(--border)]" aria-label="Main navigation">
         <div className="max-w-2xl mx-auto px-4 h-full flex items-center">
-          <a href="/" className="text-lg font-bold tracking-[-0.02em]" style={{ color: "#111111" }} aria-label="PageScore home">
-            PageScore
+          <a href="/" className="text-lg font-bold tracking-[-0.02em] text-[var(--text-primary)]" aria-label="PageLeaks home">
+            PageLeaks
           </a>
         </div>
       </nav>
 
-      <main className="min-h-screen flex flex-col items-center px-4 py-8 sm:py-12" style={{ background: "#F8F7F4", color: "#111111" }}>
+      <main className="min-h-screen flex flex-col items-center px-4 py-8 sm:py-12 bg-[var(--bg)] text-[var(--text-primary)]">
         <div className="max-w-2xl w-full">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "#111111", letterSpacing: "-0.02em" }}>Full Conversion Report</h1>
-            <p className="text-sm break-all" style={{ color: "#6B6B6B" }}>{url}</p>
+            <h1 className="text-xl sm:text-2xl font-bold mb-2 tracking-[-0.02em] text-[var(--text-primary)]">Full Conversion Report</h1>
+            <p className="text-sm break-all text-[var(--text-secondary)]">{url}</p>
           </div>
 
           {/* Score card */}
           <div
-            className="text-center mb-8"
+            className="text-center mb-8 bg-[var(--surface)] rounded-2xl border-[1.5px] border-[var(--border)]"
             style={{
-              background: "#FFFFFF",
-              borderRadius: "16px",
               padding: "clamp(24px, 5vw, 48px)",
               boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
-              border: "1.5px solid #E5E7EB",
             }}
           >
             <div className="mb-2">
@@ -212,14 +216,17 @@ export default async function ReportTokenPage({
               >
                 {score}
               </span>
-              <span className="text-xl sm:text-2xl font-semibold" style={{ color: "#9E9E9E" }}>/100</span>
+              <span className="text-xl sm:text-2xl font-semibold text-[var(--text-tertiary)]">/100</span>
             </div>
-            <p className="text-sm mb-4" style={{ color: "#6B6B6B" }}>{summary}</p>
+            <p className="text-sm mb-4 text-[var(--text-secondary)]">{summary}</p>
 
             {/* Revenue impact */}
-            <div className="mt-6 p-4 sm:p-5 text-center" style={{ backgroundColor: "#FEF2F2", borderRadius: "12px" }}>
-              <p className="text-sm" style={{ color: "#6B6B6B" }}>Estimated revenue loss</p>
-              <p className="font-extrabold mt-1" style={{ fontSize: "clamp(22px, 4vw, 28px)", color: "#DC2626" }}>
+            <div className="mt-6 p-4 sm:p-5 text-center rounded-xl bg-[var(--error-light)]">
+              <p className="text-sm text-[var(--text-secondary)]">Estimated revenue loss</p>
+              <p
+                className="font-extrabold mt-1 text-[var(--error-text)]"
+                style={{ fontSize: "clamp(22px, 4vw, 28px)" }}
+              >
                 ${lossLow}–${lossHigh}/month
               </p>
             </div>
@@ -228,24 +235,18 @@ export default async function ReportTokenPage({
             <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <span
                 className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: score >= 70 ? "#F0FDF4" : score >= 40 ? "#FFFBEB" : "#FEF2F2",
-                  color: scoreColor(score),
-                }}
+                style={{ backgroundColor: sectionScoreBg(score >= 70 ? 8 : score >= 40 ? 5 : 2), color: scoreColorText(score) }}
               >
                 Your score: {score}
               </span>
-              <span
-                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: "#F0FDF4", color: "#16A34A" }}
-              >
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[var(--success-light)] text-[var(--success)]">
                 Avg Shopify store: 65
               </span>
             </div>
           </div>
 
           {/* Sections */}
-          <div style={{ display: "grid", gap: "16px" }} className="mb-8">
+          <div className="grid gap-4 mb-8">
             {SECTIONS.map((section) => {
               const sectionScore = section.getScore(categories);
               const explanation = getExplanation(section.key, sectionScore);
@@ -253,16 +254,14 @@ export default async function ReportTokenPage({
               return (
                 <div
                   key={section.key}
+                  className="bg-[var(--surface)] border-[1.5px] border-[var(--border)] rounded-xl"
                   style={{
-                    background: "#FFFFFF",
-                    border: "1.5px solid #E5E7EB",
                     borderLeft: `4px solid ${sectionBorderColor(sectionScore)}`,
-                    borderRadius: "12px",
                     padding: "clamp(16px, 3vw, 24px)",
                   }}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                    <h2 className="font-semibold text-base sm:text-lg" style={{ color: "#111111" }}>{section.title}</h2>
+                    <h2 className="font-semibold text-base sm:text-lg text-[var(--text-primary)]">{section.title}</h2>
                     <span
                       className="px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto whitespace-nowrap"
                       style={{ backgroundColor: sectionScoreBg(sectionScore), color: sectionScoreColor(sectionScore) }}
@@ -270,7 +269,7 @@ export default async function ReportTokenPage({
                       {sectionScore}/10 · {getStatusLabel(sectionScore)}
                     </span>
                   </div>
-                  <p className="text-sm sm:text-[15px] leading-relaxed" style={{ color: "#6B6B6B" }}>
+                  <p className="text-sm sm:text-[15px] leading-relaxed text-[var(--text-secondary)]">
                     {explanation}
                   </p>
                 </div>
@@ -279,30 +278,25 @@ export default async function ReportTokenPage({
 
             {/* Action Plan */}
             <div
-              style={{
-                background: "#FFFFFF",
-                border: "1.5px solid #E5E7EB",
-                borderRadius: "12px",
-                padding: "clamp(16px, 3vw, 24px)",
-              }}
+              className="bg-[var(--surface)] border-[1.5px] border-[var(--border)] rounded-xl"
+              style={{ padding: "clamp(16px, 3vw, 24px)" }}
             >
-              <h2 className="font-semibold text-base sm:text-lg mb-1" style={{ color: "#111111" }}>Action Plan</h2>
-              <p className="text-xs font-medium mb-4" style={{ color: "#2563EB" }}>
+              <h2 className="font-semibold text-base sm:text-lg mb-1 text-[var(--text-primary)]">Action Plan</h2>
+              <p className="text-xs font-medium mb-4 text-[var(--brand)]">
                 Top 3 prioritized fixes (ordered by lowest score)
               </p>
-              <div style={{ display: "grid", gap: "12px" }}>
+              <div className="grid gap-3">
                 {actionPlanItems.map((item) => (
                   <div key={item.priority} className="flex gap-3 items-start">
                     <span
-                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold"
-                      style={{ backgroundColor: "#EFF6FF", color: "#2563EB" }}
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[var(--brand-light)] text-[var(--brand)]"
                       aria-label={`Priority ${item.priority}`}
                     >
                       {item.priority}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: "#111111" }}>{item.tip}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "#6B6B6B" }}>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{item.tip}</p>
+                      <p className="text-xs mt-0.5 text-[var(--text-secondary)]">
                         {item.category} — currently {item.score}/10
                       </p>
                     </div>
@@ -314,24 +308,18 @@ export default async function ReportTokenPage({
 
           {/* Upsell */}
           <div
-            className="text-center mb-8"
-            style={{
-              backgroundColor: "#EFF6FF",
-              border: "1.5px solid #BFDBFE",
-              borderRadius: "12px",
-              padding: "clamp(20px, 4vw, 32px)",
-            }}
+            className="text-center mb-8 bg-[var(--brand-light)] border-[1.5px] border-[var(--brand-border)] rounded-xl"
+            style={{ padding: "clamp(20px, 4vw, 32px)" }}
           >
-            <h3 className="text-base sm:text-lg font-semibold mb-2" style={{ color: "#111111" }}>Get weekly monitoring + AI rewrites</h3>
-            <ul className="space-y-2 mb-5 text-sm text-left max-w-xs mx-auto" style={{ color: "#6B6B6B" }}>
+            <h3 className="text-base sm:text-lg font-semibold mb-2 text-[var(--text-primary)]">Get weekly monitoring + AI rewrites</h3>
+            <ul className="space-y-2 mb-5 text-sm text-left max-w-xs mx-auto text-[var(--text-secondary)]">
               <li>Score alerts when something drops</li>
               <li>AI-generated rewrites for every low section</li>
               <li>Track improvements over time</li>
             </ul>
             <a
               href="#upgrade"
-              className="inline-block px-8 py-3 rounded-lg text-white font-semibold transition hover:opacity-90"
-              style={{ backgroundColor: "#2563EB" }}
+              className="inline-block px-8 py-3 rounded-lg text-white font-semibold transition-opacity hover:opacity-90 bg-[var(--brand)] polish-focus-ring"
               aria-label="Upgrade to paid plan for $49 per month"
             >
               Upgrade — $49/mo
@@ -339,8 +327,8 @@ export default async function ReportTokenPage({
           </div>
 
           {/* Footer */}
-          <footer className="text-center text-xs pb-8" style={{ color: "#9E9E9E" }}>
-            &copy; {new Date().getFullYear()} PageScore
+          <footer className="text-center text-xs pb-8 text-[var(--text-tertiary)]">
+            &copy; {new Date().getFullYear()} PageLeaks
           </footer>
         </div>
       </main>

@@ -5,10 +5,20 @@ import { reports, subscribers } from "@/db/schema";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+/** Escape HTML entities to prevent XSS in email templates */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function buildEmail(score: number, tips: string[]): string {
   const scoreColor = score >= 70 ? "#16A34A" : score >= 40 ? "#D97706" : "#DC2626";
   const tipItems = (tips || []).slice(0, 7).map((t, i) =>
-    `<li style="margin-bottom:12px;color:#374151;font-size:15px;line-height:1.5;">${i + 1}. ${t}</li>`
+    `<li style="margin-bottom:12px;color:#374151;font-size:15px;line-height:1.5;">${i + 1}. ${escapeHtml(String(t))}</li>`
   ).join("");
 
   return `<!DOCTYPE html>
@@ -19,7 +29,7 @@ function buildEmail(score: number, tips: string[]): string {
 <tr><td align="center" style="padding:48px 20px;">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
   <tr><td style="text-align:center;padding-bottom:32px;">
-    <span style="font-size:20px;font-weight:700;color:#111111;">PageScore</span>
+    <span style="font-size:20px;font-weight:700;color:#111111;">PageLeaks</span>
   </td></tr>
   <tr><td style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:40px 36px;">
     <p style="margin:0 0 8px;font-size:13px;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;">Your conversion audit</p>
@@ -38,7 +48,7 @@ function buildEmail(score: number, tips: string[]): string {
     </div>
   </td></tr>
   <tr><td style="text-align:center;padding-top:24px;">
-    <p style="margin:0;font-size:12px;color:#9E9E9E;">PageScore · alpo.ai</p>
+    <p style="margin:0;font-size:12px;color:#9E9E9E;">PageLeaks · alpo.ai</p>
   </td></tr>
 </table>
 </td></tr>
@@ -52,38 +62,53 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, url, score, summary, tips, categories } = body;
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
+    // Validate email
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
-    if (!url) {
+    if (email.length > 254) {
+      return NextResponse.json({ error: "Email address is too long." }, { status: 400 });
+    }
+
+    // Validate URL
+    if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
+    if (url.length > 2048) {
+      return NextResponse.json({ error: "URL is too long" }, { status: 400 });
+    }
+
+    // Clamp score
+    const safeScore = Math.min(100, Math.max(0, Number(score) || 0));
+    const safeTips = Array.isArray(tips) ? tips.map((t: unknown) => String(t).slice(0, 300)).slice(0, 7) : [];
 
     // Send email
     const { error: emailError } = await resend.emails.send({
-      from: "PageScore <onboarding@resend.dev>",
-      to: email,
-      subject: `Your product page scored ${score}/100 — here are your fixes`,
-      html: buildEmail(score, tips || []),
+      from: "PageLeaks <onboarding@resend.dev>",
+      to: email.trim(),
+      subject: `Your product page scored ${safeScore}/100 — here are your fixes`,
+      html: buildEmail(safeScore, safeTips),
     });
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to send email. Please check your address and try again." }, { status: 500 });
     }
 
     // Save to DB (non-blocking)
     db.insert(reports).values({
-      email, url, score,
-      summary: summary || null,
-      tips: tips || null,
+      email: email.trim(),
+      url,
+      score: safeScore,
+      summary: typeof summary === "string" ? summary.slice(0, 500) : null,
+      tips: safeTips.length > 0 ? safeTips : null,
       categories: categories || null,
     }).catch(e => console.error("reports insert:", e));
 
     db.insert(subscribers).values({
-      email,
+      email: email.trim(),
       firstScanUrl: url,
-      firstScanScore: score,
+      firstScanScore: safeScore,
     }).onConflictDoNothing().catch(e => console.error("subscribers insert:", e));
 
     return NextResponse.json({ success: true });
