@@ -338,7 +338,17 @@ export default function Home() {
         throw new Error(data.error || `Competitor analysis failed (${res.status})`);
       }
       const data = await res.json();
-      setCompetitorResult({ competitors: data.competitors ?? [] });
+      // Server already filters out 404s/errors — this is a safety net
+      const validCompetitors = (data.competitors ?? []).filter(
+        (c: { score: number; categories?: Record<string, number> }) => {
+          if (c.score <= 0) return false;
+          // Reject if all category scores are zero (bad parse)
+          const cats = c.categories || {};
+          const catSum = Object.values(cats).reduce((a: number, b: number) => a + b, 0);
+          return catSum > 0;
+        }
+      );
+      setCompetitorResult({ competitors: validCompetitors });
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
@@ -825,6 +835,108 @@ export default function Home() {
           </section>
         )}
 
+        {/* ═══ COMPETITOR TEASER — between score and issues, impossible to miss ═══ */}
+        {result && showLeaks && (phase === "results" || phase === "results-exit") && !competitorLoading && !competitorResult && !competitorError && (
+          <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 500ms ease-out 200ms both" }}>
+            <button
+              type="button"
+              onClick={fetchCompetitors}
+              className="w-full group relative overflow-hidden rounded-2xl text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]"
+              style={{
+                background: "linear-gradient(135deg, var(--brand), #1D4ED8)",
+                boxShadow: "0 8px 32px rgba(37, 99, 235, 0.25)",
+              }}
+            >
+              {/* Decorative glow */}
+              <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 blur-[60px] rounded-full pointer-events-none"></div>
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 blur-[40px] rounded-full pointer-events-none"></div>
+
+              <div className="relative z-10 px-6 py-5 sm:px-8 sm:py-6 flex items-center gap-4 sm:gap-6">
+                {/* Pulsing icon */}
+                <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                  <div className="relative">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="3" y="12" width="4" height="9" rx="1" fill="white" opacity="0.5"/>
+                      <rect x="10" y="4" width="4" height="17" rx="1" fill="white"/>
+                      <rect x="17" y="8" width="4" height="13" rx="1" fill="white" opacity="0.7"/>
+                    </svg>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Copy */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 leading-snug">
+                    Are competitors outscoring you?
+                  </h3>
+                  <p className="text-sm text-white/70">
+                    See how your page compares to similar products — category by category
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <div className="shrink-0 w-10 h-10 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
+                  <svg className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* ═══ COMPETITOR LOADER — between score and issues ═══ */}
+        {result && showLeaks && competitorLoading && (phase === "results" || phase === "results-exit") && (
+          <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 300ms ease-out both" }}>
+            <CompetitorLoader url={url} />
+          </div>
+        )}
+
+        {/* ═══ COMPETITOR ERROR — between score and issues ═══ */}
+        {result && showLeaks && competitorError && (phase === "results" || phase === "results-exit") && (
+          <div className="max-w-4xl mx-auto px-6 mb-6" style={{ animation: "fade-in-up 300ms ease-out both" }}>
+            <div className="p-6 rounded-2xl bg-[var(--error-light)] border border-red-200">
+              <div className="flex items-center gap-4">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="var(--error)" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[var(--error-text)]">{competitorError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchCompetitors}
+                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-blue-700 hover:scale-105 transition-transform"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ COMPETITOR RESULTS — between score and issues ═══ */}
+        {result && showLeaks && competitorResult && (phase === "results" || phase === "results-exit") && (
+          <div className={`max-w-4xl mx-auto px-6 mb-6 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
+            {competitorResult.competitors.length > 0 ? (
+              <CompetitorComparison
+                competitors={competitorResult.competitors}
+                userCategories={result.categories}
+                userScore={result.score}
+                onBeatCompetitor={(name) => { setCompetitorCTAName(name); setEmailStep("form"); }}
+              />
+            ) : (
+              <CompetitorComparison
+                competitors={[]}
+                userCategories={result.categories}
+                userScore={result.score}
+              />
+            )}
+          </div>
+        )}
+
         {/* ═══ ISSUES LIST — shown immediately after score ═══ */}
         {result && showLeaks && (phase === "results" || phase === "results-exit") && (
           <div ref={issuesRef} className={`max-w-4xl mx-auto px-6 pb-16 ${phase === "results-exit" ? "anim-phase-exit" : ""}`}>
@@ -916,78 +1028,6 @@ export default function Home() {
                 );
               })}
             </div>
-
-            {/* ── Competitor comparison section ── */}
-
-            {/* Trigger button — hidden once clicked or after results/error */}
-            {!competitorLoading && !competitorResult && !competitorError && (
-              <div className="text-center mt-12 mb-4" style={{ animation: "fade-in-up 400ms ease-out both" }}>
-                <button
-                  type="button"
-                  onClick={fetchCompetitors}
-                  className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold polish-hover-lift polish-focus-ring border-2 border-[var(--brand)] text-[var(--brand)] bg-[var(--brand-light)]"
-                  style={{
-                    boxShadow: "0 4px 14px rgba(37, 99, 235, 0.12)",
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
-                    <path d="M16 3h5v5M4 20L20.586 3.414M8 21H3v-5M20 4L3.414 20.586" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Compare to Competitors
-                </button>
-                <p className="text-xs text-[var(--text-tertiary)] mt-2.5">
-                  See how your page stacks up against similar products
-                </p>
-              </div>
-            )}
-
-            {/* Competitor loader — shown during fetch */}
-            {competitorLoading && (
-              <div style={{ animation: "fade-in-up 300ms ease-out both" }}>
-                <CompetitorLoader url={url} />
-              </div>
-            )}
-
-            {/* Competitor error — shown on failure with retry */}
-            {competitorError && (
-              <div className="text-center mt-10 mb-4 px-4" style={{ animation: "fade-in-up 300ms ease-out both" }}>
-                <div className="inline-block max-w-md w-full p-6 rounded-2xl bg-[var(--error-light)] border border-red-200">
-                  <p className="text-sm font-medium text-[var(--error-text)] mb-3">
-                    {competitorError}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={fetchCompetitors}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
-                    style={{ boxShadow: "0 4px 14px rgba(37, 99, 235, 0.2)" }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Try Again
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Competitor comparison — rendered after competitor fetch completes */}
-            {competitorResult && competitorResult.competitors.length > 0 && result && (
-              <CompetitorComparison
-                competitors={competitorResult.competitors}
-                userCategories={result.categories}
-                userScore={result.score}
-                onBeatCompetitor={(name) => { setCompetitorCTAName(name); setEmailStep("form"); }}
-              />
-            )}
-            {competitorResult && competitorResult.competitors.length === 0 && (
-              <CompetitorComparison
-                competitors={[]}
-                userCategories={result?.categories ?? { title: 0, images: 0, pricing: 0, socialProof: 0, cta: 0, description: 0, trust: 0 }}
-                userScore={result?.score ?? 0}
-              />
-            )}
 
             {/* Scan another */}
             <div className="text-center mt-16">

@@ -37,30 +37,23 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as (keyof CategoryScores)[];
 
-/* ── Score color helpers (0-100 scale, mirrors page.tsx) ── */
+/* ── Score color helpers (0-10 category scale) ── */
+function cellColor(val: number, isBest: boolean, isWorst: boolean): string {
+  if (isBest) return "var(--success-text)";
+  if (isWorst) return "var(--error-text)";
+  return "var(--text-primary)";
+}
+
+function cellBg(isBest: boolean, isWorst: boolean): string {
+  if (isBest) return "var(--success-light)";
+  if (isWorst) return "var(--error-light)";
+  return "transparent";
+}
+
 function overallScoreColor(score: number): string {
   if (score >= 70) return "var(--success)";
   if (score >= 40) return "var(--warning)";
   return "var(--error)";
-}
-
-function overallScoreBg(score: number): string {
-  if (score >= 70) return "var(--success-light)";
-  if (score >= 40) return "var(--warning-light)";
-  return "var(--error-light)";
-}
-
-/* ── Win/loss bar color ── */
-function resultBarColor(userVal: number, compVal: number): string {
-  if (userVal > compVal) return "var(--success)";
-  if (userVal < compVal) return "var(--error)";
-  return "var(--brand)";
-}
-
-function resultTextColor(userVal: number, compVal: number): string {
-  if (userVal > compVal) return "var(--success-text)";
-  if (userVal < compVal) return "var(--error-text)";
-  return "var(--text-primary)";
 }
 
 /* ══════════════════════════════════════════════════════════ */
@@ -71,11 +64,11 @@ export default function CompetitorComparison({
   userScore,
   onBeatCompetitor,
 }: CompetitorComparisonProps) {
-  /* ── Empty state: 0 competitors ── */
+  /* ── Empty state ── */
   if (competitors.length === 0) {
     return (
       <section
-        className="text-center mt-12 mb-4"
+        className="text-center mt-8 mb-4"
         style={{ animation: "fade-in-up 400ms ease-out both" }}
         aria-label="No competitors found"
       >
@@ -85,352 +78,222 @@ export default function CompetitorComparison({
         >
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--surface-dim)] border border-[var(--border)]">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M21 21l-4.35-4.35M11 6v5m0 0v5m0-5h5m-5 0H6"
-                stroke="var(--text-tertiary)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="11" cy="11" r="8" stroke="var(--text-tertiary)" strokeWidth="1.5" />
+              <path d="M21 21l-4.35-4.35M11 6v5m0 0v5m0-5h5m-5 0H6" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="11" cy="11" r="8" stroke="var(--text-tertiary)" strokeWidth="1.5"/>
             </svg>
           </div>
-          <h3
-            className="text-lg font-semibold mb-2 text-[var(--text-primary)]"
-            style={{ textWrap: "balance" }}
-          >
-            No competitors found
+          <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">
+            No comparable pages found
           </h3>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            We couldn&apos;t find similar products to compare against.
-            This can happen with very niche or unique products.
-          </p>
-          <p className="text-xs text-[var(--text-tertiary)] mt-3">
-            Try scanning a different product page for comparison
+            We found competitor products but their pages weren&apos;t accessible
+            for analysis. This can happen when competitor URLs have changed or are geo-restricted.
           </p>
         </div>
       </section>
     );
   }
 
-  /* ── Comparison results ── */
+  /* ── Build column data: You + competitors ── */
+  const columns = [
+    { name: "You", score: userScore, categories: userCategories, isUser: true },
+    ...competitors.map((c) => ({
+      name: c.name,
+      score: c.score,
+      categories: c.categories,
+      isUser: false,
+    })),
+  ];
+
+  /* ── Count wins for "You" column ── */
+  const userWins = CATEGORY_KEYS.filter((key) => {
+    const userVal = userCategories[key] ?? 0;
+    return competitors.every((c) => userVal > (c.categories[key] ?? 0));
+  }).length;
+  const userLosses = CATEGORY_KEYS.filter((key) => {
+    const userVal = userCategories[key] ?? 0;
+    return competitors.some((c) => (c.categories[key] ?? 0) > userVal);
+  }).length;
+
+  /* ── Top competitor for CTA ── */
+  const topCompetitor = competitors.reduce((best, c) =>
+    c.score > best.score ? c : best
+  );
+
   return (
-    <section className="mt-12 mb-4 anim-phase-enter" aria-label="Competitor comparison">
+    <section className="mt-8 mb-4 anim-phase-enter" aria-label="Competitor comparison">
       {/* Section heading */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M16 3h5v5M4 20L20.586 3.414M8 21H3v-5M20 4L3.414 20.586"
-              stroke="var(--brand)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <div>
-          <h2
-            className="text-xl font-bold text-[var(--text-primary)]"
-            style={{ textWrap: "balance" }}
-          >
-            Competitive Breakdown
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            How your page compares category by category
-          </p>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="12" width="4" height="9" rx="1" fill="var(--brand)" opacity="0.4"/>
+              <rect x="10" y="4" width="4" height="17" rx="1" fill="var(--brand)"/>
+              <rect x="17" y="8" width="4" height="13" rx="1" fill="var(--brand)" opacity="0.6"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
+              Competitive Breakdown
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {userWins > userLosses
+                ? `You lead in ${userWins} of 7 categories`
+                : userWins === userLosses
+                  ? "You're neck and neck with competitors"
+                  : `Competitors lead in ${userLosses} of 7 categories`}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Competitor cards */}
-      <div className="flex flex-col gap-5">
-        {competitors.map((comp, i) => {
-          const wins = CATEGORY_KEYS.filter(
-            (k) => (userCategories[k] ?? 0) > (comp.categories[k] ?? 0)
-          ).length;
-          const losses = CATEGORY_KEYS.filter(
-            (k) => (userCategories[k] ?? 0) < (comp.categories[k] ?? 0)
-          ).length;
-          const ties = CATEGORY_KEYS.length - wins - losses;
-          const userLeads = userScore > comp.score;
-          const scoreTied = userScore === comp.score;
-          const scoreDiff = Math.abs(userScore - comp.score);
-
-          return (
-            <article
-              key={comp.url}
-              className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden polish-hover-lift"
-              style={{
-                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-                animation: `fade-in-up 400ms ease-out ${i * 150}ms both`,
-              }}
-            >
-              {/* ─── Card header ─── */}
-              <div className="px-5 py-5 sm:px-7 sm:py-6 border-b border-[var(--border)]">
-                {/* Name + W/L record */}
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                      vs
-                    </span>
-                    <h3 className="text-base font-semibold text-[var(--text-primary)] truncate">
-                      {comp.name}
-                    </h3>
-                  </div>
-                  <span
-                    className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
-                    style={{
-                      fontVariantNumeric: "tabular-nums",
-                      backgroundColor:
-                        wins > losses
-                          ? "var(--success-light)"
-                          : wins < losses
-                            ? "var(--error-light)"
+      {/* ── Unified comparison table ── */}
+      <div
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      >
+        {/* Scrollable wrapper for mobile */}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px]" role="table">
+            {/* ── Column headers: overall scores ── */}
+            <thead>
+              <tr className="border-b-2 border-[var(--border)]">
+                {/* Category label column */}
+                <th className="text-left px-4 sm:px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px] sm:w-[160px]">
+                  Category
+                </th>
+                {/* One column per player */}
+                {columns.map((col) => (
+                  <th key={col.name} className="px-3 sm:px-4 py-4 text-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      {/* Overall score badge */}
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold border-2"
+                        style={{
+                          color: overallScoreColor(col.score),
+                          borderColor: overallScoreColor(col.score),
+                          backgroundColor: col.isUser
+                            ? `color-mix(in srgb, ${overallScoreColor(col.score)} 8%, transparent)`
                             : "var(--surface-dim)",
-                      color:
-                        wins > losses
-                          ? "var(--success-text)"
-                          : wins < losses
-                            ? "var(--error-text)"
-                            : "var(--text-secondary)",
-                    }}
-                  >
-                    {wins}W · {losses}L{ties > 0 ? ` · ${ties}T` : ""}
-                  </span>
-                </div>
-
-                {/* Overall score badges */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  {/* User badge */}
-                  <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                    style={{
-                      backgroundColor: overallScoreBg(userScore),
-                      border: `1.5px solid ${
-                        userLeads ? "var(--success-border)" : "var(--border)"
-                      }`,
-                    }}
-                  >
-                    <span className="text-xs font-medium text-[var(--text-secondary)]">
-                      You
-                    </span>
-                    <span
-                      className="text-sm font-bold font-[family-name:var(--font-mono)]"
-                      style={{
-                        fontVariantNumeric: "tabular-nums",
-                        color: overallScoreColor(userScore),
-                      }}
-                    >
-                      {userScore}
-                    </span>
-                  </div>
-
-                  <span className="text-xs text-[var(--text-tertiary)]">vs</span>
-
-                  {/* Competitor badge */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-dim)] border-[1.5px] border-[var(--border)]">
-                    <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[100px]">
-                      {comp.name}
-                    </span>
-                    <span
-                      className="text-sm font-bold font-[family-name:var(--font-mono)]"
-                      style={{
-                        fontVariantNumeric: "tabular-nums",
-                        color: overallScoreColor(comp.score),
-                      }}
-                    >
-                      {comp.score}
-                    </span>
-                  </div>
-
-                  {/* Lead indicator */}
-                  {!scoreTied && (
-                    <span
-                      className="text-xs font-medium"
-                      style={{
-                        color: userLeads
-                          ? "var(--success-text)"
-                          : "var(--error-text)",
-                      }}
-                    >
-                      {userLeads ? "You lead" : "They lead"} by {scoreDiff}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* ─── Per-category breakdown ─── */}
-              <div className="px-5 py-4 sm:px-7 sm:py-5">
-                {CATEGORY_KEYS.map((key, j) => {
-                  const userCat = userCategories[key] ?? 0;
-                  const compCat = comp.categories[key] ?? 0;
-                  const isWin = userCat > compCat;
-                  const isLoss = userCat < compCat;
-
-                  return (
-                    <div
-                      key={key}
-                      className={`py-3 ${
-                        j < CATEGORY_KEYS.length - 1
-                          ? "border-b border-[var(--track)]"
-                          : ""
-                      }`}
-                      style={{
-                        animation: `fade-in-up 300ms ease-out ${i * 150 + j * 40}ms both`,
-                      }}
-                    >
-                      {/* Category label + win/loss indicator */}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-primary)]">
-                          {CATEGORY_LABELS[key]}
-                        </span>
-                        {isWin ? (
-                          <span
-                            className="w-5 h-5 rounded-full flex items-center justify-center bg-[var(--success-light)]"
-                            aria-label="You win this category"
-                          >
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M3 8.5L6.5 12L13 4"
-                                stroke="var(--success)"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                        ) : isLoss ? (
-                          <span
-                            className="w-5 h-5 rounded-full flex items-center justify-center bg-[var(--error-light)]"
-                            aria-label="Competitor wins this category"
-                          >
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M4 4L12 12M12 4L4 12"
-                                stroke="var(--error)"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </span>
-                        ) : (
-                          <span
-                            className="w-5 h-5 rounded-full flex items-center justify-center bg-[var(--surface-dim)]"
-                            aria-label="Tied in this category"
-                          >
-                            <span className="text-[10px] font-bold text-[var(--text-tertiary)]">
-                              =
-                            </span>
-                          </span>
-                        )}
+                        }}
+                      >
+                        {col.score}
                       </div>
+                      {/* Name */}
+                      <span
+                        className={`text-xs truncate max-w-[80px] sm:max-w-[100px] ${
+                          col.isUser
+                            ? "font-bold text-[var(--brand)]"
+                            : "font-medium text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        {col.name}
+                      </span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-                      {/* Dual score bars */}
-                      <div className="flex flex-col gap-1.5">
-                        {/* User bar */}
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[11px] font-medium text-[var(--text-tertiary)] w-11 shrink-0">
-                            You
-                          </span>
-                          <div className="flex-1 h-2 rounded-sm bg-[var(--track)] overflow-hidden">
-                            <div
-                              className="h-full rounded-sm"
-                              style={{
-                                width: `${(userCat / 10) * 100}%`,
-                                backgroundColor: resultBarColor(
-                                  userCat,
-                                  compCat
-                                ),
-                                transition:
-                                  "width 600ms cubic-bezier(0.25, 1, 0.5, 1)",
-                              }}
-                            />
-                          </div>
+            {/* ── Category rows ── */}
+            <tbody>
+              {CATEGORY_KEYS.map((key, rowIdx) => {
+                /* Find best and worst score for this category */
+                const scores = columns.map((c) => c.categories[key] ?? 0);
+                const maxVal = Math.max(...scores);
+                const minVal = Math.min(...scores);
+                const allSame = maxVal === minVal;
+
+                return (
+                  <tr
+                    key={key}
+                    className={rowIdx < CATEGORY_KEYS.length - 1 ? "border-b border-[var(--track)]" : ""}
+                    style={{ animation: `fade-in-up 300ms ease-out ${rowIdx * 50}ms both` }}
+                  >
+                    {/* Category label */}
+                    <td className="px-4 sm:px-6 py-3.5 text-sm font-medium text-[var(--text-primary)]">
+                      {CATEGORY_LABELS[key]}
+                    </td>
+
+                    {/* Score cells */}
+                    {columns.map((col) => {
+                      const val = col.categories[key] ?? 0;
+                      const isBest = !allSame && val === maxVal;
+                      const isWorst = !allSame && val === minVal;
+
+                      return (
+                        <td key={col.name} className="px-3 sm:px-4 py-3.5 text-center">
                           <span
-                            className="text-xs font-bold font-[family-name:var(--font-mono)] w-6 text-right"
+                            className="inline-flex items-center justify-center w-10 h-7 rounded-lg text-sm font-bold font-[family-name:var(--font-mono)]"
                             style={{
                               fontVariantNumeric: "tabular-nums",
-                              color: resultTextColor(userCat, compCat),
+                              color: cellColor(val, isBest, isWorst),
+                              backgroundColor: cellBg(isBest, isWorst),
                             }}
                           >
-                            {userCat}
+                            {val}
                           </span>
-                        </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-                        {/* Competitor bar */}
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[11px] font-medium text-[var(--text-tertiary)] w-11 shrink-0 truncate">
-                            Them
-                          </span>
-                          <div className="flex-1 h-2 rounded-sm bg-[var(--track)] overflow-hidden">
-                            <div
-                              className="h-full rounded-sm"
-                              style={{
-                                width: `${(compCat / 10) * 100}%`,
-                                backgroundColor: "var(--text-tertiary)",
-                                transition:
-                                  "width 600ms cubic-bezier(0.25, 1, 0.5, 1)",
-                              }}
-                            />
-                          </div>
-                          <span
-                            className="text-xs font-bold font-[family-name:var(--font-mono)] w-6 text-right text-[var(--text-tertiary)]"
-                            style={{ fontVariantNumeric: "tabular-nums" }}
-                          >
-                            {compCat}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* ─── AI summary ─── */}
-              {comp.summary && (
-                <div className="px-5 py-4 sm:px-7 sm:py-5 border-t border-[var(--border)] bg-[var(--surface-dim)]">
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                    {comp.summary}
-                  </p>
-                </div>
-              )}
-            </article>
-          );
-        })}
+        {/* ── Legend ── */}
+        <div className="px-4 sm:px-6 py-3 border-t border-[var(--track)] bg-[var(--surface-dim)] flex items-center gap-4 text-[11px] text-[var(--text-tertiary)]">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "var(--success-light)", border: "1px solid var(--success-border)" }}></span>
+            Best in category
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "var(--error-light)", border: "1px solid #fca5a5" }}></span>
+            Weakest in category
+          </span>
+          <span className="ml-auto text-[var(--text-tertiary)]">Scores out of 10</span>
+        </div>
       </div>
 
-      {/* ─── Beat-competitor CTA ─── */}
-      {competitors.length > 0 && onBeatCompetitor && (() => {
-        const topCompetitor = competitors.reduce((best, c) =>
-          c.score > best.score ? c : best
-        );
-        return (
-          <div className="mt-10 text-center" style={{ animation: "fade-in-up 400ms ease-out 300ms both" }}>
-            <button
-              type="button"
-              onClick={() => onBeatCompetitor(topCompetitor.name)}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
-              style={{
-                boxShadow: "0 8px 32px color-mix(in srgb, var(--brand) 20%, transparent)",
-              }}
-            >
-              Get a Detailed Plan to Beat {topCompetitor.name} →
-            </button>
-          </div>
-        );
-      })()}
+      {/* ── AI Summaries (collapsed under the table) ── */}
+      {competitors.some((c) => c.summary && !/404|error|cannot be assessed|not found/i.test(c.summary)) && (
+        <div className="mt-4 flex flex-col gap-3">
+          {competitors.map((comp, i) => (
+            comp.summary && !/404|error|cannot be assessed|not found/i.test(comp.summary) ? (
+              <div
+                key={comp.url}
+                className="px-5 py-4 rounded-xl bg-[var(--surface-dim)] border border-[var(--border)]"
+                style={{ animation: `fade-in-up 300ms ease-out ${200 + i * 100}ms both` }}
+              >
+                <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1.5">
+                  vs {comp.name}
+                </p>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  {comp.summary}
+                </p>
+              </div>
+            ) : null
+          ))}
+        </div>
+      )}
+
+      {/* ── Beat-competitor CTA ── */}
+      {onBeatCompetitor && (
+        <div className="mt-8 text-center" style={{ animation: "fade-in-up 400ms ease-out 400ms both" }}>
+          <button
+            type="button"
+            onClick={() => onBeatCompetitor(topCompetitor.name)}
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
+            style={{
+              boxShadow: "0 8px 32px color-mix(in srgb, var(--brand) 20%, transparent)",
+            }}
+          >
+            Get a Plan to Beat {topCompetitor.name} →
+          </button>
+        </div>
+      )}
     </section>
   );
 }
