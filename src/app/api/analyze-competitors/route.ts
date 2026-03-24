@@ -26,7 +26,7 @@ const SCORING_PROMPT = `You are an e-commerce conversion expert specializing in 
 - "score": number 0-100 (overall product page conversion effectiveness)
 - "summary": one-sentence assessment (max 30 words)
 - "tips": array of exactly 3 specific, actionable improvement tips (each max 25 words)
-- "categories": object with scores 0-10 for each: { "title", "images", "pricing", "socialProof", "cta", "description", "trust" }
+- "categories": object with scores 0-100 for each: { "title", "images", "pricing", "socialProof", "cta", "description", "trust" }
 
 Score these e-commerce specific criteria:
 - Title: Does it include product name, key benefit, and relevant keywords?
@@ -37,7 +37,7 @@ Score these e-commerce specific criteria:
 - Description: Does it lead with benefits over features? Scannable format?
 - Trust: Are there badges, guarantees, secure checkout signals, return policy?
 
-Be specific and reference actual content from the page. Be honest — don't inflate scores. If the page is a 404 or error page, score it 0 and say so.
+All scores must be 0-100. Be specific and reference actual content from the page. Be honest — don't inflate scores. If the page is a 404 or error page, score it 0 and say so.
 
 HTML:
 `;
@@ -96,15 +96,15 @@ async function scorePage(
 
   const result = JSON.parse(jsonMatch[0]);
   const cats = result.categories || {};
-  // Ensure all 7 category keys exist with numeric values
+  // Ensure all 7 category keys exist with numeric values 0-100
   const categories: CategoryScores = {
-    title: Math.min(10, Math.max(0, Number(cats.title) || 0)),
-    images: Math.min(10, Math.max(0, Number(cats.images) || 0)),
-    pricing: Math.min(10, Math.max(0, Number(cats.pricing) || 0)),
-    socialProof: Math.min(10, Math.max(0, Number(cats.socialProof) || 0)),
-    cta: Math.min(10, Math.max(0, Number(cats.cta) || 0)),
-    description: Math.min(10, Math.max(0, Number(cats.description) || 0)),
-    trust: Math.min(10, Math.max(0, Number(cats.trust) || 0)),
+    title: Math.min(100, Math.max(0, Number(cats.title) || 0)),
+    images: Math.min(100, Math.max(0, Number(cats.images) || 0)),
+    pricing: Math.min(100, Math.max(0, Number(cats.pricing) || 0)),
+    socialProof: Math.min(100, Math.max(0, Number(cats.socialProof) || 0)),
+    cta: Math.min(100, Math.max(0, Number(cats.cta) || 0)),
+    description: Math.min(100, Math.max(0, Number(cats.description) || 0)),
+    trust: Math.min(100, Math.max(0, Number(cats.trust) || 0)),
   };
   return {
     score: Math.min(100, Math.max(0, Number(result.score) || 50)),
@@ -304,6 +304,91 @@ export async function POST(req: NextRequest) {
           userHtml + `\n\n<!-- EXCLUDE THESE (already tried): ${alreadyNames} -->`,
           apiKey
         );
+      }
+    }
+
+    // Step 4: Fallback — if we still don't have enough, ask AI to score
+    // competitors from its knowledge (no URL fetch needed)
+    if (scoredCompetitors.length < TARGET_COMPETITORS) {
+      const existingNames = scoredCompetitors.map((c) => c.name).join(", ");
+      const shortfall = TARGET_COMPETITORS - scoredCompetitors.length;
+
+      const fallbackPrompt = `You are an e-commerce conversion expert with deep knowledge of major retail product pages.
+
+Based on this product page HTML, identify ${shortfall} real competitor products and score their product pages from your knowledge.
+
+${existingNames ? `ALREADY INCLUDED (do NOT repeat): ${existingNames}` : ""}
+
+For each competitor, return your best assessment of their typical product page quality. Use well-known brands whose product pages you know well.
+
+Return a JSON array of objects:
+[{
+  "name": "Brand - Product Name",
+  "score": number 0-100,
+  "summary": "one-sentence assessment of their product page (max 30 words)",
+  "categories": { "title": 0-100, "images": 0-100, "pricing": 0-100, "socialProof": 0-100, "cta": 0-100, "description": 0-100, "trust": 0-100 }
+}]
+
+Be realistic — score based on what these brands' product pages actually look like. Big brands often score high on images and trust but can score lower on CTA urgency or pricing anchoring.
+
+HTML of the user's product:
+${userHtml.slice(0, 5000)}
+
+Return ONLY a valid JSON array, no markdown.`;
+
+      try {
+        const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-4o-mini",
+            messages: [{ role: "user", content: fallbackPrompt }],
+            temperature: 0.4,
+            max_tokens: 800,
+          }),
+        });
+
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          const content = aiData.choices?.[0]?.message?.content || "";
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const fallbacks = JSON.parse(jsonMatch[0]) as Array<{
+              name: string;
+              score: number;
+              summary: string;
+              categories: Record<string, number>;
+            }>;
+            for (const fb of fallbacks) {
+              if (scoredCompetitors.length >= TARGET_COMPETITORS) break;
+              if (scoredCompetitors.some((c) => c.name === fb.name)) continue;
+              const cats: CategoryScores = {
+                title: Math.min(100, Math.max(0, Number(fb.categories?.title) || 0)),
+                images: Math.min(100, Math.max(0, Number(fb.categories?.images) || 0)),
+                pricing: Math.min(100, Math.max(0, Number(fb.categories?.pricing) || 0)),
+                socialProof: Math.min(100, Math.max(0, Number(fb.categories?.socialProof) || 0)),
+                cta: Math.min(100, Math.max(0, Number(fb.categories?.cta) || 0)),
+                description: Math.min(100, Math.max(0, Number(fb.categories?.description) || 0)),
+                trust: Math.min(100, Math.max(0, Number(fb.categories?.trust) || 0)),
+              };
+              const catSum = Object.values(cats).reduce((a, b) => a + b, 0);
+              if (fb.score > 0 && catSum > 0) {
+                scoredCompetitors.push({
+                  name: fb.name,
+                  url: "",
+                  score: Math.min(100, Math.max(0, Number(fb.score) || 50)),
+                  summary: fb.summary || "Scored from known brand data.",
+                  categories: cats,
+                });
+              }
+            }
+          }
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback competitor scoring failed:", fallbackErr);
       }
     }
 

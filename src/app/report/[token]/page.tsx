@@ -32,8 +32,8 @@ const SECTIONS: {
   { key: "cta", title: "CTA Strength", getScore: (c) => c.cta },
   { key: "description", title: "Description Quality", getScore: (c) => c.description },
   { key: "trust", title: "Trust Signals", getScore: (c) => c.trust },
-  { key: "mobile", title: "Mobile Experience", getScore: (c) => (c.cta < 6 ? Math.min(c.cta, 4) : Math.min(10, Math.round((c.cta + c.images) / 2))) },
-  { key: "seo", title: "SEO Discoverability", getScore: (c) => Math.min(10, Math.max(0, c.title)) },
+  { key: "mobile", title: "Mobile Experience", getScore: (c) => (c.cta < 50 ? Math.min(c.cta, 35) : Math.min(100, Math.round((c.cta + c.images) / 2))) },
+  { key: "seo", title: "SEO Discoverability", getScore: (c) => Math.min(100, Math.max(0, c.title)) },
 ];
 
 /* ── Semantic color helpers using CSS variable values ── */
@@ -51,26 +51,26 @@ function scoreColorText(score: number): string {
 }
 
 function sectionScoreColor(score: number): string {
-  if (score >= 8) return "var(--success-text)";
-  if (score >= 5) return "var(--warning-text)";
+  if (score >= 70) return "var(--success-text)";
+  if (score >= 40) return "var(--warning-text)";
   return "var(--error-text)";
 }
 
 function sectionScoreBg(score: number): string {
-  if (score >= 8) return "var(--success-light)";
-  if (score >= 5) return "var(--warning-light)";
+  if (score >= 70) return "var(--success-light)";
+  if (score >= 40) return "var(--warning-light)";
   return "var(--error-light)";
 }
 
 function sectionBorderColor(score: number): string {
-  if (score >= 8) return "var(--success)";
-  if (score >= 5) return "var(--warning)";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
   return "var(--error)";
 }
 
 function getStatusLabel(score: number): string {
-  if (score >= 8) return "Strong";
-  if (score >= 5) return "Room to improve";
+  if (score >= 70) return "Strong";
+  if (score >= 40) return "Room to improve";
   return "Critical issue";
 }
 
@@ -123,10 +123,10 @@ function getExplanation(key: string, score: number): string {
     },
   };
 
-  const level = score >= 8 ? "high" : score >= 5 ? "mid" : "low";
-  return explanations[key]?.[level] || (score >= 8
+  const level = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
+  return explanations[key]?.[level] || (score >= 70
     ? "This section is performing well."
-    : score >= 5
+    : score >= 40
     ? "There's room for improvement in this area."
     : "This needs urgent attention.");
 }
@@ -178,7 +178,7 @@ export default async function ReportTokenPage({
     .map(([key, val]) => ({ key, score: val as number }))
     .sort((a, b) => a.score - b.score);
   const actionPlanItems = sortedCategories.slice(0, 3).map((cat, i) => {
-    const tip = tips[i] || `Improve your ${cat.key} score (currently ${cat.score}/10)`;
+    const tip = tips[i] || `Improve your ${cat.key} score (currently ${cat.score}/100)`;
     return { priority: i + 1, category: cat.key, score: cat.score, tip };
   });
 
@@ -235,7 +235,7 @@ export default async function ReportTokenPage({
             <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <span
                 className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: sectionScoreBg(score >= 70 ? 8 : score >= 40 ? 5 : 2), color: scoreColorText(score) }}
+                style={{ backgroundColor: sectionScoreBg(score), color: scoreColorText(score) }}
               >
                 Your score: {score}
               </span>
@@ -266,7 +266,7 @@ export default async function ReportTokenPage({
                       className="px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto whitespace-nowrap"
                       style={{ backgroundColor: sectionScoreBg(sectionScore), color: sectionScoreColor(sectionScore) }}
                     >
-                      {sectionScore}/10 · {getStatusLabel(sectionScore)}
+                      {sectionScore}/100 · {getStatusLabel(sectionScore)}
                     </span>
                   </div>
                   <p className="text-sm sm:text-[15px] leading-relaxed text-[var(--text-secondary)]">
@@ -297,7 +297,7 @@ export default async function ReportTokenPage({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)]">{item.tip}</p>
                       <p className="text-xs mt-0.5 text-[var(--text-secondary)]">
-                        {item.category} — currently {item.score}/10
+                        {item.category} — currently {item.score}/100
                       </p>
                     </div>
                   </div>

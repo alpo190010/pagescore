@@ -37,7 +37,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as (keyof CategoryScores)[];
 
-/* ── Score color helpers (0-10 category scale) ── */
+/* ── Score color helpers (0-100 category scale) ── */
 function cellColor(val: number, isBest: boolean, isWorst: boolean): string {
   if (isBest) return "var(--success-text)";
   if (isWorst) return "var(--error-text)";
@@ -56,6 +56,18 @@ function overallScoreColor(score: number): string {
   return "var(--error)";
 }
 
+function scoreColorText(score: number): string {
+  if (score >= 70) return "var(--success-text)";
+  if (score >= 40) return "var(--warning-text)";
+  return "var(--error-text)";
+}
+
+function scoreBg(score: number): string {
+  if (score >= 70) return "var(--success-light)";
+  if (score >= 40) return "var(--warning-light)";
+  return "var(--error-light)";
+}
+
 /* ══════════════════════════════════════════════════════════ */
 
 export default function CompetitorComparison({
@@ -64,44 +76,20 @@ export default function CompetitorComparison({
   userScore,
   onBeatCompetitor,
 }: CompetitorComparisonProps) {
-  /* ── Empty state ── */
+  /* ── Empty state: no valid competitors — render nothing ── */
   if (competitors.length === 0) {
-    return (
-      <section
-        className="text-center mt-8 mb-4"
-        style={{ animation: "fade-in-up 400ms ease-out both" }}
-        aria-label="No competitors found"
-      >
-        <div
-          className="max-w-md mx-auto w-full p-8 rounded-2xl bg-[var(--surface)] border border-[var(--border)]"
-          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-        >
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--surface-dim)] border border-[var(--border)]">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M21 21l-4.35-4.35M11 6v5m0 0v5m0-5h5m-5 0H6" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="11" cy="11" r="8" stroke="var(--text-tertiary)" strokeWidth="1.5"/>
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">
-            No comparable pages found
-          </h3>
-          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            We found competitor products but their pages weren&apos;t accessible
-            for analysis. This can happen when competitor URLs have changed or are geo-restricted.
-          </p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   /* ── Build column data: You + competitors ── */
   const columns = [
-    { name: "You", score: userScore, categories: userCategories, isUser: true },
+    { name: "You", score: userScore, categories: userCategories, isUser: true, url: "" },
     ...competitors.map((c) => ({
       name: c.name,
       score: c.score,
       categories: c.categories,
       isUser: false,
+      url: c.url,
     })),
   ];
 
@@ -179,16 +167,31 @@ export default function CompetitorComparison({
                       >
                         {col.score}
                       </div>
-                      {/* Name */}
-                      <span
-                        className={`text-xs truncate max-w-[80px] sm:max-w-[100px] ${
-                          col.isUser
-                            ? "font-bold text-[var(--brand)]"
-                            : "font-medium text-[var(--text-secondary)]"
-                        }`}
-                      >
-                        {col.name}
-                      </span>
+                      {/* Name — clickable for competitors with URLs */}
+                      {!col.isUser && col.url ? (
+                        <a
+                          href={col.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[80px] sm:max-w-[100px] hover:text-[var(--brand)] hover:underline transition-colors"
+                          title={col.url}
+                        >
+                          {col.name}
+                          <svg className="inline-block w-3 h-3 ml-0.5 -mt-0.5 opacity-50" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path d="M6.22 8.72a.75.75 0 001.06 1.06l5.22-5.22v3.69a.75.75 0 001.5 0v-5.5a.75.75 0 00-.75-.75h-5.5a.75.75 0 000 1.5h3.69L6.22 8.72z"/>
+                          </svg>
+                        </a>
+                      ) : (
+                        <span
+                          className={`text-xs truncate max-w-[80px] sm:max-w-[100px] ${
+                            col.isUser
+                              ? "font-bold text-[var(--brand)]"
+                              : "font-medium text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          {col.name}
+                        </span>
+                      )}
                     </div>
                   </th>
                 ))}
@@ -224,11 +227,12 @@ export default function CompetitorComparison({
                       return (
                         <td key={col.name} className="px-3 sm:px-4 py-3.5 text-center">
                           <span
-                            className="inline-flex items-center justify-center w-10 h-7 rounded-lg text-sm font-bold font-[family-name:var(--font-mono)]"
+                            className="inline-flex items-center justify-center min-w-[36px] h-7 px-1.5 rounded-lg text-xs font-bold font-[family-name:var(--font-mono)] border"
                             style={{
                               fontVariantNumeric: "tabular-nums",
-                              color: cellColor(val, isBest, isWorst),
-                              backgroundColor: cellBg(isBest, isWorst),
+                              color: isBest ? "var(--success-text)" : isWorst ? "var(--error-text)" : scoreColorText(val),
+                              backgroundColor: isBest ? "var(--success-light)" : isWorst ? "var(--error-light)" : scoreBg(val),
+                              borderColor: isBest ? "var(--success-border)" : isWorst ? "#fca5a5" : "transparent",
                             }}
                           >
                             {val}
@@ -253,7 +257,7 @@ export default function CompetitorComparison({
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "var(--error-light)", border: "1px solid #fca5a5" }}></span>
             Weakest in category
           </span>
-          <span className="ml-auto text-[var(--text-tertiary)]">Scores out of 10</span>
+          <span className="ml-auto text-[var(--text-tertiary)]">Scores out of 100</span>
         </div>
       </div>
 

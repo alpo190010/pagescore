@@ -103,19 +103,19 @@ Analyze this HTML for a Shopify product page. Return a JSON object with:
 - "score": number 0-100 (conversion effectiveness — be harsh, most pages score 40-65)
 - "summary": one punchy sentence about the biggest issue (max 20 words, be specific)
 - "tips": array of exactly 3 specific fixes — each must reference actual content on THIS page (max 30 words each). No generic advice.
-- "categories": scores 0-10 for: title, images, pricing, socialProof, cta, description, trust
+- "categories": scores 0-100 for: title, images, pricing, socialProof, cta, description, trust
 - "productPrice": extract the product price as a number (e.g. 49.99). Return 0 if not found.
 - "productCategory": one of: "fashion", "electronics", "beauty", "home", "food", "fitness", "jewelry", "other"
 - "estimatedMonthlyVisitors": your best estimate of monthly visitors based on page signals (brand size, product type, reviews count). Return as number: 500 for small stores, 2000 for medium, 10000 for large brands.
 
 Score criteria (be STRICT):
-- Title (0-10): Does it have product name + key benefit + material/spec? Generic names = 3 or less
-- Images (0-10): Multiple angles? Lifestyle shots? On-model? Zoom? Pure white bg only = 4 or less
-- Pricing (0-10): Price anchor? Was/now pricing? Bundle offers? Just one price = 5
-- Social proof (0-10): Reviews visible above fold? Count shown? Star rating? No reviews = 2 or less
-- CTA (0-10): Prominent? Above fold on mobile? Urgency? Color contrast? Just "Add to Cart" = 5
-- Description (0-10): Benefits first? Scannable? Bullet points? Wall of text = 3 or less
-- Trust (0-10): Guarantees? Returns policy visible? Secure badges? None visible = 3 or less
+- Title (0-100): Does it have product name + key benefit + material/spec? Generic names = 30 or less
+- Images (0-100): Multiple angles? Lifestyle shots? On-model? Zoom? Pure white bg only = 40 or less
+- Pricing (0-100): Price anchor? Was/now pricing? Bundle offers? Just one price = 50
+- Social proof (0-100): Reviews visible above fold? Count shown? Star rating? No reviews = 20 or less
+- CTA (0-100): Prominent? Above fold on mobile? Urgency? Color contrast? Just "Add to Cart" = 50
+- Description (0-100): Benefits first? Scannable? Bullet points? Wall of text = 30 or less
+- Trust (0-100): Guarantees? Returns policy visible? Secure badges? None visible = 30 or less
 
 If the page is a 404 or error, return score: 0.
 
@@ -170,9 +170,9 @@ ${truncated}`;
       );
     }
 
-    // Defensive: ensure all category keys exist as numbers 0-10
+    // Defensive: ensure all category keys exist as numbers 0-100
     const rawCats = (result.categories || {}) as Record<string, unknown>;
-    const clampScore = (v: unknown) => Math.min(10, Math.max(0, Number(v) || 0));
+    const clampScore = (v: unknown) => Math.min(100, Math.max(0, Number(v) || 0));
     const safeCategories = {
       title: clampScore(rawCats.title),
       images: clampScore(rawCats.images),

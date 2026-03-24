@@ -187,7 +187,7 @@ function buildLeaks(categories: CategoryScores, tips: string[]) {
       revenue = `+$${30 + (catScore * 13) % 30}/mo`;
     }
     const problems = CATEGORY_PROBLEMS[key] || { low: `Improve your ${key} to increase conversions.`, mid: `Your ${key} needs optimization.` };
-    const problem = catScore <= 4 ? problems.low : problems.mid;
+    const problem = catScore <= 40 ? problems.low : problems.mid;
     const tip = tips[i] || `Improve your ${key} to increase conversions.`;
     return { key, catScore, impact, revenue, tip, problem, category: CATEGORY_LABELS[key] || key };
   });
@@ -995,15 +995,18 @@ export default function Home() {
                     {/* Category + severity */}
                     <div className="flex items-center gap-2 mb-3">
                       <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: style.textColor }}
-                      ></span>
+                        className="inline-flex items-center justify-center w-9 h-6 rounded-md text-xs font-bold font-[family-name:var(--font-mono)] border"
+                        style={{
+                          fontVariantNumeric: "tabular-nums",
+                          color: style.textColor,
+                          backgroundColor: style.bg,
+                          borderColor: style.borderColor,
+                        }}
+                      >
+                        {leak.catScore}
+                      </span>
                       <span className="text-sm font-semibold text-[var(--text-secondary)]">
                         {leak.category}
-                      </span>
-                      <span className="text-xs text-[var(--text-tertiary)]">·</span>
-                      <span className="text-xs font-medium" style={{ color: style.textColor }}>
-                        {leak.catScore}/10
                       </span>
                     </div>
 
