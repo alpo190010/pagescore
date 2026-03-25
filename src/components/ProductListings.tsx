@@ -8,6 +8,8 @@ import {
   buildLeaks,
   calculateRevenueLoss,
   captureEvent,
+  scoreColorTintBg,
+  scoreColorText,
 } from "@/lib/analysis";
 import AnalysisResults from "@/components/AnalysisResults";
 import AnalysisLoader from "@/components/AnalysisLoader";
@@ -118,18 +120,25 @@ export default function ProductListings({
     };
   }, []);
 
-  /* ── Pre-select product matching initialSku when products load ── */
+  /* ── Pre-select product matching initialSku, or first product by default ── */
   useEffect(() => {
-    if (products.length === 0 || !initialSku) return;
-    const matchIndex = products.findIndex((p) => p.slug === initialSku);
-    if (matchIndex === -1) return; // stale/invalid SKU — silently ignore
-    setSelectedIndex(matchIndex);
-    // If we have a cached result for this SKU, restore it immediately
-    const cached = analyzedResultsRef.current.get(initialSku);
-    if (cached) {
-      setAnalysisResult(cached);
-      setAnalyzingHandle(null);
-      setAnalysisError("");
+    if (products.length === 0) return;
+
+    if (initialSku) {
+      const matchIndex = products.findIndex((p) => p.slug === initialSku);
+      if (matchIndex === -1) return; // stale/invalid SKU — silently ignore
+      setSelectedIndex(matchIndex);
+      // If we have a cached result for this SKU, restore it immediately
+      const cached = analyzedResultsRef.current.get(initialSku);
+      if (cached) {
+        setAnalysisResult(cached);
+        setAnalyzingHandle(null);
+        setAnalysisError("");
+      }
+    } else if (selectedIndex === null) {
+      // No SKU in URL — auto-select first product
+      setSelectedIndex(0);
+      onSkuChange?.(products[0].slug);
     }
   }, [products, initialSku]);
 
@@ -408,11 +417,6 @@ export default function ProductListings({
     if (selectedUrl) fetchCompetitors(selectedUrl);
   }, [selectedUrl, fetchCompetitors]);
 
-  /* ── Truncate URL for display ── */
-  function truncateUrl(url: string, max = 48): string {
-    if (url.length <= max) return url;
-    return url.slice(0, max) + "…";
-  }
 
   /* ══════════════════════════════════════════════════════════════
      Shared content — renders in right pane (desktop) or BottomSheet
@@ -422,129 +426,87 @@ export default function ProductListings({
     <>
       {/* ── Product selected, not yet analyzed ── */}
       {selectedProduct && !analyzingHandle && !analysisResult && !analysisError && (
-        <div className="flex flex-col h-full">
-          {/* ── Header bar ── */}
+        <div className="flex flex-col items-center justify-center h-full min-h-[500px] px-6 py-12">
+          {/* Product preview + CTA — centered single column */}
           <div
-            className="px-6 sm:px-8 py-5 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white"
+            className="w-full max-w-md flex flex-col items-center text-center"
             style={{ animation: "fade-in-up 400ms var(--ease-out-quart) both" }}
           >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-[var(--brand)] font-bold text-xs mb-1.5 uppercase tracking-widest">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M15 15l5 5M10 4a6 6 0 100 12 6 6 0 000-12z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Inspector Active
-              </div>
-              <h1
-                className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] capitalize tracking-tight leading-tight"
-                style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
-              >
-                {selectedProduct.slug.replace(/-/g, " ")}
-              </h1>
-              <a
-                href={selectedProduct.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-[var(--brand)] hover:text-[var(--brand-dark)] mt-1 transition-colors group"
-              >
-                <span className="truncate max-w-[280px]">View product page</span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </a>
+            {/* Product image */}
+            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl overflow-hidden bg-[var(--surface-container-low)] border border-[var(--border)] shadow-lg mb-6">
+              {selectedProduct.image ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={selectedProduct.image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-variant)" strokeWidth="0.75" aria-hidden="true" style={{ opacity: 0.3 }}>
+                    <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
             </div>
+
+            {/* Product name + link */}
+            <h1
+              className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] capitalize tracking-tight leading-tight mb-1"
+              style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+            >
+              {selectedProduct.slug.replace(/-/g, " ")}
+            </h1>
+            <a
+              href={selectedProduct.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--on-surface-variant)] hover:text-[var(--brand)] transition-colors group mb-8"
+            >
+              <span>{domain}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+
+            {/* What you'll get — value props */}
+            <div
+              className="w-full grid grid-cols-3 gap-3 mb-8"
+              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 100ms both" }}
+            >
+              {[
+                { icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", label: "Score" },
+                { icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z", label: "Revenue leaks" },
+                { icon: "M13 10V3L4 14h7v7l9-11h-7z", label: "Quick fixes" },
+              ].map(({ icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" aria-hidden="true">
+                    <path d={icon} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-[11px] font-semibold text-[var(--on-surface-variant)]">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
             <button
               type="button"
               onClick={handleDeepAnalyze}
-              className="cursor-pointer shrink-0 inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm font-bold text-white bg-[var(--brand)] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20"
+              className="cursor-pointer inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-base font-bold text-white bg-[var(--brand)] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20"
+              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 200ms both" }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="M3 3v5h5M21 21v-5h-5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M16 3.13a9 9 0 010 17.74M8 20.87A9 9 0 018 3.13" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 3v1.5M12 19.5V21M4.22 4.22l1.06 1.06M17.72 17.72l1.06 1.06M3 12h1.5M19.5 12H21M4.22 19.78l1.06-1.06M17.72 6.28l1.06-1.06" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 8l1.12 2.26L15.5 11.5l-2.38 1.24L12 15l-1.12-2.26L8.5 11.5l2.38-1.24L12 8z" fill="currentColor" stroke="none" />
               </svg>
               Run Deep Analysis
             </button>
-          </div>
-
-          {/* ── Content body ── */}
-          <div className="px-6 sm:px-8 py-6 sm:py-8 space-y-10 max-w-4xl">
-            {/* Image + info grid */}
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start"
-              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 80ms both" }}
+            <p
+              className="text-xs text-[var(--on-surface-variant)] mt-3 opacity-60"
+              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 280ms both" }}
             >
-              {/* Product image */}
-              <div className="aspect-square rounded-[2rem] overflow-hidden bg-[var(--surface-container-low)] border border-[var(--border)] shadow-xl">
-                {selectedProduct.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={selectedProduct.image}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-variant)" strokeWidth="0.75" aria-hidden="true" style={{ opacity: 0.3 }}>
-                      <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* Info column */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest mb-2">
-                    Product
-                  </h3>
-                  <a
-                    href={selectedProduct.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-dark)] transition-colors group"
-                  >
-                    <span className="capitalize">{selectedProduct.slug.replace(/-/g, " ")}</span>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true">
-                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </a>
-                </div>
-
-                {/* Pending analysis card */}
-                <div className="p-6 sm:p-8 border-2 border-dashed border-[var(--border)] rounded-[2rem] bg-[var(--surface-container-low)]/50 flex flex-col items-center justify-center text-center">
-                  <div className="h-12 w-12 rounded-full bg-[var(--brand-light)] text-[var(--brand)] flex items-center justify-center mb-4">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <h4
-                    className="font-bold text-[var(--on-surface)]"
-                    style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
-                  >
-                    Pending Detailed Analysis
-                  </h4>
-                  <p className="text-sm text-[var(--on-surface-variant)] mt-2 max-w-xs leading-relaxed">
-                    Click &ldquo;Run Deep Analysis&rdquo; to identify conversion leaks and
-                    actionable improvements for this product page.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Skeleton placeholders — hint at what analysis will reveal */}
-            <div
-              className="space-y-4 opacity-30"
-              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 200ms both" }}
-              aria-hidden="true"
-            >
-              <div className="h-3 w-1/4 bg-[var(--surface-container)] rounded-full" />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
-                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
-                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
-              </div>
-            </div>
+              Takes about 15–30 seconds
+            </p>
           </div>
         </div>
       )}
@@ -713,11 +675,13 @@ export default function ProductListings({
         </div>
 
         {/* Scrollable product list */}
-        <div className="flex-1 overflow-y-auto" role="list" aria-label="Products">
-          {products.map((product, i) => {
+        <div className="flex-1 overflow-y-auto p-3 space-y-2" role="list" aria-label="Products">
+          {[...products.map((p, i) => ({ ...p, _i: i }))]
+            .sort((a, b) => (a.image ? 0 : 1) - (b.image ? 0 : 1))
+            .map(({ _i: i, ...product }) => {
             const isSelected = selectedIndex === i;
             const isAnalyzing = analyzingHandle === product.slug;
-            const isAnalyzed = analyzedResults.has(product.slug);
+            const cachedResult = analyzedResults.get(product.slug);
 
             return (
               <button
@@ -725,82 +689,108 @@ export default function ProductListings({
                 type="button"
                 role="listitem"
                 onClick={() => handleSelectProduct(i)}
-                className={`cursor-pointer w-full text-left px-4 py-3.5 border-b border-[var(--surface-container-low)] transition-colors duration-150 ${
+                className={`cursor-pointer w-full text-left p-4 rounded-2xl transition-all duration-150 relative ${
                   isSelected
-                    ? "bg-[var(--brand-light)] border-l-[3px] border-l-[var(--brand)]"
-                    : "hover:bg-[var(--surface-container-low)] border-l-[3px] border-l-transparent"
+                    ? "bg-white border-2 border-[var(--brand)]"
+                    : "bg-transparent border-2 border-transparent hover:bg-[var(--surface-container-low)] hover:border-[var(--border)]"
                 }`}
+                style={isSelected ? {
+                  boxShadow: "0 0 0 4px rgba(111, 50, 213, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05)",
+                } : undefined}
                 aria-current={isSelected ? "true" : undefined}
               >
-                <div className="flex items-center gap-3">
-                  {/* Thumbnail */}
-                  {product.image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={product.image}
-                      alt=""
-                      className="w-12 h-12 rounded-xl object-cover bg-[var(--surface)] border border-[var(--border)] shrink-0"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center shrink-0">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--on-surface-variant)"
-                        strokeWidth="1.5"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  )}
+                <div className="flex items-start gap-4">
+                  {/* Thumbnail — 64px circle */}
+                  <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                    {product.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={product.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#94a3b8"
+                          strokeWidth="1.5"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Product info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold text-[var(--on-surface)] truncate capitalize leading-tight">
+                  {/* Info column */}
+                  <div className="min-w-0 flex-1 flex flex-col gap-2">
+                    {/* Top row: name + status label */}
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className="text-base font-bold text-slate-900 truncate capitalize leading-snug"
+                        style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                      >
                         {product.slug.replace(/-/g, " ")}
                       </p>
-                      {isAnalyzed && (
+                      {isAnalyzing ? (
                         <span
-                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--success-light)] text-[var(--success)] shrink-0"
-                          title="Analyzed"
-                          aria-label="Analyzed"
+                          className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1.5"
+                          style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
                         >
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                            <path d="M2.5 6l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          <span
+                            className="w-3 h-3 rounded-full border-[1.5px] border-[var(--brand)] border-t-transparent inline-block"
+                            style={{ animation: "spin 0.8s linear infinite" }}
+                          />
+                          Scanning
+                        </span>
+                      ) : cachedResult ? (
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0"
+                          style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif", letterSpacing: "1px" }}
+                        >
+                          Scanned
+                        </span>
+                      ) : (
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0"
+                          style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif", letterSpacing: "1px" }}
+                        >
+                          Pending
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-[var(--on-surface-variant)] truncate mt-0.5">
-                      {truncateUrl(product.url)}
-                    </p>
-                  </div>
 
-                  {/* Status indicator */}
-                  {isAnalyzing && (
-                    <span
-                      className="w-4 h-4 rounded-full border-[1.5px] border-[var(--brand)] border-t-transparent shrink-0"
-                      style={{ animation: "spin 0.8s linear infinite" }}
-                      aria-label="Analyzing"
-                    />
-                  )}
-                  {!isAnalyzing && isSelected && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" className="shrink-0" aria-hidden="true">
-                      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                    {/* Bottom row: score badge + domain */}
+                    <div className="flex items-center gap-2">
+                      {cachedResult ? (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0"
+                          style={{
+                            fontFamily: "var(--font-manrope), Manrope, sans-serif",
+                            background: scoreColorTintBg(cachedResult.score),
+                            color: scoreColorText(cachedResult.score),
+                          }}
+                        >
+                          Score {cachedResult.score}/100
+                        </span>
+                      ) : null}
+                      <span className="text-[10px] text-slate-500 truncate">
+                        {domain}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </button>
             );
