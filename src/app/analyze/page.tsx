@@ -549,9 +549,9 @@ function EmailModal({
     >
       <div
         className={`relative w-full bg-[var(--surface)] overflow-hidden overflow-y-auto
-          max-md:fixed max-md:inset-y-0 max-md:right-0 max-md:max-w-[85vw] max-md:rounded-l-3xl max-md:rounded-r-none
+          max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[85vh] max-md:rounded-t-3xl max-md:rounded-b-none
           md:max-w-md md:rounded-3xl md:max-h-[90vh]
-          ${modalClosing ? "max-md:translate-x-full md:modal-content-exit" : "max-md:translate-x-0 md:modal-content-enter"}
+          ${modalClosing ? "max-md:translate-y-full md:modal-content-exit" : "max-md:translate-y-0 md:modal-content-enter"}
           transition-transform duration-300 ease-out`}
         style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
       >
