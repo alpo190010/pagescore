@@ -286,3 +286,26 @@ export function isProductPageUrl(url: string): boolean {
 export function extractDomain(url: string): string {
   try { return new URL(url).hostname; } catch { return ""; }
 }
+
+export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult {
+  const cats = data.categories as Record<string, unknown> | undefined;
+  const safeCategories: CategoryScores = {
+    title: Number(cats?.title) || 0,
+    images: Number(cats?.images) || 0,
+    pricing: Number(cats?.pricing) || 0,
+    socialProof: Number(cats?.socialProof) || 0,
+    cta: Number(cats?.cta) || 0,
+    description: Number(cats?.description) || 0,
+    trust: Number(cats?.trust) || 0,
+  };
+
+  return {
+    score: Math.min(100, Math.max(0, Number(data.score) || 0)),
+    summary: String(data.summary || "Analysis complete."),
+    tips: Array.isArray(data.tips) ? data.tips.map(String).slice(0, 7) : [],
+    categories: safeCategories,
+    productPrice: Number(data.productPrice) || 0,
+    productCategory: String(data.productCategory || "other"),
+    estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
+  };
+}

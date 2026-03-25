@@ -481,7 +481,7 @@ function IssueCard({ leak, index, onClick }: { leak: LeakCard; index: number; on
     HIGH: { textColor: "var(--error-text)" },
     MED: { textColor: "var(--warning-text)" },
     LOW: { textColor: "var(--success-text)" },
-  }[leak.impact];
+  }[leak.impact] || { textColor: "var(--on-surface)" };
 
   return (
     <button
