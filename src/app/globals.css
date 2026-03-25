@@ -267,6 +267,17 @@ h1, h2, h3 {
 .modal-content-enter { animation: modal-enter 300ms var(--ease-out-quart) both; }
 .modal-content-exit { animation: modal-exit 200ms var(--ease-out-quart) both; }
 
+@keyframes drawer-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes drawer-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+.drawer-enter { animation: drawer-slide-up 300ms var(--ease-out-quart) both; }
+.drawer-exit { animation: drawer-slide-down 200ms var(--ease-out-quart) both; }
+
 /* ── Score Card ── */
 @keyframes score-card-collapse {
   from { opacity: 0; transform: translateY(-8px); }

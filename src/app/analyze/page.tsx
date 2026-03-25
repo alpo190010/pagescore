@@ -551,8 +551,7 @@ function EmailModal({
         className={`relative w-full bg-[var(--surface)] overflow-hidden overflow-y-auto
           max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[85vh] max-md:rounded-t-3xl max-md:rounded-b-none
           md:max-w-md md:rounded-3xl md:max-h-[90vh]
-          ${modalClosing ? "max-md:translate-y-full md:modal-content-exit" : "max-md:translate-y-0 md:modal-content-enter"}
-          transition-transform duration-300 ease-out`}
+          ${modalClosing ? "max-md:drawer-exit md:modal-content-exit" : "max-md:drawer-enter md:modal-content-enter"}`}
         style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
       >
         <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
