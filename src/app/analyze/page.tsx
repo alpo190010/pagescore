@@ -540,7 +540,7 @@ function EmailModal({
 }) {
   return (
     <div
-      className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+      className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center md:p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
       style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
@@ -548,7 +548,11 @@ function EmailModal({
       aria-label="Get detailed fix"
     >
       <div
-        className={`relative w-full max-w-md bg-[var(--surface)] rounded-3xl overflow-hidden ${modalClosing ? "modal-content-exit" : "modal-content-enter"}`}
+        className={`relative w-full bg-[var(--surface)] overflow-hidden overflow-y-auto
+          max-md:fixed max-md:inset-y-0 max-md:right-0 max-md:max-w-[85vw] max-md:rounded-l-3xl max-md:rounded-r-none
+          md:max-w-md md:rounded-3xl md:max-h-[90vh]
+          ${modalClosing ? "max-md:translate-x-full md:modal-content-exit" : "max-md:translate-x-0 md:modal-content-enter"}
+          transition-transform duration-300 ease-out`}
         style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
       >
         <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
