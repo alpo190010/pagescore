@@ -606,6 +606,7 @@ export default function ProductListings({
             competitorError=""
             onRetryCompetitors={() => {}}
             onBeatCompetitor={() => {}}
+            onReanalyze={handleDeepAnalyze}
           />
 
           {/* Email Modal — sibling to results */}
