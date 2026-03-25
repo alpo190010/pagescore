@@ -85,10 +85,7 @@ function ScanPageContent() {
       <div className="min-h-screen bg-[var(--bg)]">
         <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
           <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-            <div className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
-            <button type="button" onClick={() => router.push("/")} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm">
-              Scan Another
-            </button>
+            <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
           </div>
         </nav>
         <div className="pt-[72px] flex flex-col items-center justify-center min-h-screen px-6">
@@ -107,10 +104,7 @@ function ScanPageContent() {
       <div className="min-h-screen bg-[var(--bg)]">
         <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
           <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-            <div className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
-            <button type="button" onClick={() => router.push("/")} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm">
-              Scan Another
-            </button>
+            <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
           </div>
         </nav>
         <div className="pt-[72px] flex flex-col items-center justify-center min-h-screen px-6 text-center">
@@ -149,10 +143,7 @@ function ScanPageContent() {
     <div className="min-h-screen bg-[var(--bg)]">
       <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
         <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-          <div className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
-          <button type="button" onClick={() => router.push("/")} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm">
-            Scan Another
-          </button>
+          <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>PageLeaks</div>
         </div>
       </nav>
       <div className="pt-[72px] min-h-screen">

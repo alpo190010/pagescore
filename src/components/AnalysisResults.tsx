@@ -27,7 +27,7 @@ interface AnalysisResultsProps {
   domain: string;
   url: string;
   onIssueClick: (key: string) => void;
-  onScanAnother: () => void;
+  onAnalyzeAgain: () => void;
   onFetchCompetitors: () => void;
   competitorLoading: boolean;
   competitorResult: CompetitorResult | null;
@@ -44,7 +44,7 @@ export default function AnalysisResults({
   domain,
   url,
   onIssueClick,
-  onScanAnother,
+  onAnalyzeAgain,
   onFetchCompetitors,
   competitorLoading,
   competitorResult,
@@ -62,10 +62,7 @@ export default function AnalysisResults({
     setShowCard(true);
     const t1 = setTimeout(() => setShowRevenue(true), 1500);
     const t2 = setTimeout(() => setShowLeaks(true), 1800);
-    const t3 = setTimeout(() => {
-      issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 2800);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   const animatedScore = useCountUp(showCard ? result.score : 0);
@@ -494,15 +491,19 @@ export default function AnalysisResults({
             />
           </div>
 
-          {/* Scan another CTA */}
+          {/* Analyze again CTA */}
           <div className="text-center mt-8">
             <button
               type="button"
-              onClick={onScanAnother}
+              onClick={onAnalyzeAgain}
               className="cursor-pointer inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
               style={{ boxShadow: "0 8px 32px rgba(124, 58, 237, 0.2)" }}
             >
-              Analyze Another Page
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M1 4v6h6M23 20v-6h-6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Analyze Again
             </button>
           </div>
         </section>
