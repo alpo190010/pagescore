@@ -422,43 +422,130 @@ export default function ProductListings({
     <>
       {/* ── Product selected, not yet analyzed ── */}
       {selectedProduct && !analyzingHandle && !analysisResult && !analysisError && (
-        <div className="flex flex-col items-center px-6 py-10 text-center">
-          {selectedProduct.image ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={selectedProduct.image}
-              alt=""
-              className="w-full aspect-square max-w-[180px] rounded-2xl object-cover bg-[var(--surface)] border border-[var(--border)] mb-5"
-            />
-          ) : (
-            <div className="w-full aspect-square max-w-[180px] rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-5">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-variant)" strokeWidth="1" aria-hidden="true" style={{ opacity: 0.4 }}>
-                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+        <div className="flex flex-col h-full">
+          {/* ── Header bar ── */}
+          <div
+            className="px-6 sm:px-8 py-5 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white"
+            style={{ animation: "fade-in-up 400ms var(--ease-out-quart) both" }}
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[var(--brand)] font-bold text-xs mb-1.5 uppercase tracking-widest">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M15 15l5 5M10 4a6 6 0 100 12 6 6 0 000-12z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Inspector Active
+              </div>
+              <h1
+                className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] capitalize tracking-tight leading-tight"
+                style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+              >
+                {selectedProduct.slug.replace(/-/g, " ")}
+              </h1>
+              <a
+                href={selectedProduct.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--brand)] hover:text-[var(--brand-dark)] mt-1 transition-colors group"
+              >
+                <span className="truncate max-w-[280px]">View product page</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
             </div>
-          )}
-          <h2
-            className="text-lg font-bold text-[var(--on-surface)] capitalize mb-1"
-            style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
-          >
-            {selectedProduct.slug.replace(/-/g, " ")}
-          </h2>
-          <p className="text-xs text-[var(--on-surface-variant)] truncate max-w-[280px] mb-5">
-            {selectedProduct.url}
-          </p>
-          <button
-            type="button"
-            onClick={handleDeepAnalyze}
-            className="cursor-pointer inline-flex items-center gap-2.5 px-7 py-3 rounded-xl text-sm font-bold text-white bg-[var(--brand)] hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M15 15l5 5M10 4a6 6 0 100 12 6 6 0 000-12z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Deep Analyze
-          </button>
-          <p className="text-[11px] text-[var(--on-surface-variant)] mt-3 leading-relaxed">
-            Get conversion score, revenue loss estimate &amp; actionable fixes
-          </p>
+            <button
+              type="button"
+              onClick={handleDeepAnalyze}
+              className="cursor-pointer shrink-0 inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm font-bold text-white bg-[var(--brand)] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M3 3v5h5M21 21v-5h-5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M16 3.13a9 9 0 010 17.74M8 20.87A9 9 0 018 3.13" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Run Deep Analysis
+            </button>
+          </div>
+
+          {/* ── Content body ── */}
+          <div className="px-6 sm:px-8 py-6 sm:py-8 space-y-10 max-w-4xl">
+            {/* Image + info grid */}
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start"
+              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 80ms both" }}
+            >
+              {/* Product image */}
+              <div className="aspect-square rounded-[2rem] overflow-hidden bg-[var(--surface-container-low)] border border-[var(--border)] shadow-xl">
+                {selectedProduct.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={selectedProduct.image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-variant)" strokeWidth="0.75" aria-hidden="true" style={{ opacity: 0.3 }}>
+                      <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Info column */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest mb-2">
+                    Product
+                  </h3>
+                  <a
+                    href={selectedProduct.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-dark)] transition-colors group"
+                  >
+                    <span className="capitalize">{selectedProduct.slug.replace(/-/g, " ")}</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true">
+                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </a>
+                </div>
+
+                {/* Pending analysis card */}
+                <div className="p-6 sm:p-8 border-2 border-dashed border-[var(--border)] rounded-[2rem] bg-[var(--surface-container-low)]/50 flex flex-col items-center justify-center text-center">
+                  <div className="h-12 w-12 rounded-full bg-[var(--brand-light)] text-[var(--brand)] flex items-center justify-center mb-4">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <h4
+                    className="font-bold text-[var(--on-surface)]"
+                    style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                  >
+                    Pending Detailed Analysis
+                  </h4>
+                  <p className="text-sm text-[var(--on-surface-variant)] mt-2 max-w-xs leading-relaxed">
+                    Click &ldquo;Run Deep Analysis&rdquo; to identify conversion leaks and
+                    actionable improvements for this product page.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton placeholders — hint at what analysis will reveal */}
+            <div
+              className="space-y-4 opacity-30"
+              style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 200ms both" }}
+              aria-hidden="true"
+            >
+              <div className="h-3 w-1/4 bg-[var(--surface-container)] rounded-full" />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
+                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
+                <div className="h-24 bg-[var(--surface-container-low)] rounded-2xl" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
