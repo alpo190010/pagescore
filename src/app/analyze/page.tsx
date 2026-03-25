@@ -101,7 +101,7 @@ function AnalyzePageContent() {
   const [emailError, setEmailError] = useState("");
   const [selectedLeak, setSelectedLeak] = useState<string | null>(null);
   const [competitorCTAName, setCompetitorCTAName] = useState<string | null>(null);
-  const [emailStep, setEmailStep] = useState<"form" | "queued" | null>(null);
+  const [emailStep, setEmailStep] = useState<"form" | "queued" | "pricing" | "sent" | null>(null);
   const [modalClosing, setModalClosing] = useState(false);
 
   // Reveal state
@@ -468,6 +468,7 @@ function AnalyzePageContent() {
             onEmailChange={setEmail}
             onSubmit={submitEmail}
             onClose={closeModal}
+            onStepChange={setEmailStep}
           />
         )}
       </main>
@@ -522,9 +523,9 @@ function IssueCard({ leak, index, onClick }: { leak: LeakCard; index: number; on
 function EmailModal({
   emailStep, modalClosing, email, emailSubmitting, emailError,
   leaks, selectedLeak, competitorCTAName, url, score,
-  onEmailChange, onSubmit, onClose,
+  onEmailChange, onSubmit, onClose, onStepChange,
 }: {
-  emailStep: "form" | "queued";
+  emailStep: "form" | "queued" | "pricing" | "sent";
   modalClosing: boolean;
   email: string;
   emailSubmitting: boolean;
@@ -537,6 +538,7 @@ function EmailModal({
   onEmailChange: (v: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
+  onStepChange: (step: "form" | "queued" | "pricing" | "sent") => void;
 }) {
   return (
     <div
@@ -609,17 +611,95 @@ function EmailModal({
                   type="button"
                   onClick={() => {
                     captureEvent("priority_report_clicked", { url, score, email });
-                    alert("Stripe checkout coming soon!");
+                    // Send the actual report immediately via API
+                    fetch("/api/send-report-now", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email, url, score, summary: leaks.map(l => `${l.category}: ${l.problem}`).join("\n"), tips: leaks.map(l => l.tip), categories: leaks.reduce((acc, l) => ({ ...acc, [l.key]: l.catScore }), {}) }),
+                    }).catch(() => {});
+                    onStepChange("pricing");
                   }}
                   className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
                   style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)" }}
                 >
-                  Get Priority Report — $0.99
+                  Get Priority Report — Instant
                 </button>
-                <p className="text-xs text-center mt-2 text-[var(--text-tertiary)]">Full report • Instant delivery</p>
+                <p className="text-xs text-center mt-2 text-[var(--text-tertiary)]">Full report • Sent to your email now</p>
               </div>
               <button type="button" onClick={onClose} className="cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors mt-2">
                 I&apos;ll wait for the free report →
+              </button>
+            </div>
+          )}
+
+          {emailStep === "pricing" && (
+            <div className="modal-step-enter" key="pricing-step">
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--success-light)] border border-[var(--success-border)]">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <h3 className="text-lg font-bold mb-1 text-[var(--text-primary)]">Your fixes are on the way!</h3>
+                <p className="text-sm text-[var(--text-secondary)]">Check your inbox in a few minutes.</p>
+              </div>
+
+              <div className="border-t border-[var(--border)] pt-5">
+                <p className="text-sm font-semibold text-[var(--text-primary)] mb-1">Quick question to help us build better:</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">How much would you pay for a full report with AI-written fixes?</p>
+
+                <p className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">One-time report</p>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[{ price: "$2.99", label: "Basic" }, { price: "$4.99", label: "Standard" }, { price: "$9.99", label: "Full" }].map((opt) => (
+                    <button
+                      key={opt.price}
+                      type="button"
+                      onClick={() => {
+                        captureEvent("pricing_vote", { type: "one_time", price: opt.price, url, email });
+                        onStepChange("sent");
+                      }}
+                      className="cursor-pointer p-3 rounded-xl border border-[var(--border)] hover:border-[var(--brand)] hover:bg-[var(--brand-light)] transition-all text-center"
+                    >
+                      <div className="text-lg font-bold text-[var(--text-primary)]">{opt.price}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <p className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">Monthly monitoring</p>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[{ price: "$9/mo", label: "1 store" }, { price: "$29/mo", label: "3 stores" }, { price: "$79/mo", label: "Unlimited" }].map((opt) => (
+                    <button
+                      key={opt.price}
+                      type="button"
+                      onClick={() => {
+                        captureEvent("pricing_vote", { type: "subscription", price: opt.price, url, email });
+                        onStepChange("sent");
+                      }}
+                      className="cursor-pointer p-3 rounded-xl border border-[var(--border)] hover:border-[var(--brand)] hover:bg-[var(--brand-light)] transition-all text-center"
+                    >
+                      <div className="text-lg font-bold text-[var(--text-primary)]">{opt.price}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <button type="button" onClick={() => { captureEvent("pricing_vote", { type: "skip", url, email }); onStepChange("sent"); }} className="cursor-pointer w-full text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors py-2">
+                  I wouldn&apos;t pay for this
+                </button>
+              </div>
+            </div>
+          )}
+
+          {emailStep === "sent" && (
+            <div className="text-center modal-step-enter" key="sent-step">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--success-light)] border border-[var(--success-border)]">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Thank you!</h3>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                Your report has been sent. We&apos;re building premium features based on your feedback.
+              </p>
+              <button type="button" onClick={onClose} className="cursor-pointer px-6 py-2.5 rounded-xl text-sm font-semibold text-white polish-hover-lift" style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))" }}>
+                Done
               </button>
             </div>
           )}

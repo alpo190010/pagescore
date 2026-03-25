@@ -82,20 +82,7 @@ export async function POST(req: NextRequest) {
     const safeScore = Math.min(100, Math.max(0, Number(score) || 0));
     const safeTips = Array.isArray(tips) ? tips.map((t: unknown) => String(t).slice(0, 300)).slice(0, 7) : [];
 
-    // Send email
-    const { error: emailError } = await resend.emails.send({
-      from: "PageScore <noreply@alpo.ai>",
-      to: email.trim(),
-      subject: `Your product page scored ${safeScore}/100 — here are your fixes`,
-      html: buildEmail(safeScore, safeTips),
-    });
-
-    if (emailError) {
-      console.error("Resend error:", emailError);
-      return NextResponse.json({ error: "Failed to send email. Please check your address and try again." }, { status: 500 });
-    }
-
-    // Save to DB (non-blocking)
+    // Save to DB — email will be sent later (48h queue) or instantly via /api/send-report-now
     const safeCompetitorName = typeof competitorName === "string" && competitorName.trim() ? competitorName.trim() : null;
     db.insert(reports).values({
       email: email.trim(),
