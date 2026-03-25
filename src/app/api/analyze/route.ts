@@ -100,22 +100,36 @@ export async function POST(req: NextRequest) {
     const prompt = `You are a ruthless e-commerce conversion expert. You have analyzed thousands of Shopify product pages. You are HONEST and SPECIFIC — you never give vague feedback.
 
 Analyze this HTML for a Shopify product page. Return a JSON object with:
-- "score": number 0-100 (conversion effectiveness — be harsh, most pages score 40-65)
+- "score": number 0-100 (conversion effectiveness — be harsh, most pages score 30-55)
 - "summary": one punchy sentence about the biggest issue (max 20 words, be specific)
-- "tips": array of exactly 3 specific fixes — each must reference actual content on THIS page (max 30 words each). No generic advice.
-- "categories": scores 0-100 for: title, images, pricing, socialProof, cta, description, trust
+- "tips": array of up to 10 specific fixes — each must reference actual content on THIS page (max 30 words each). No generic advice.
+- "categories": scores 0-100 for ALL 20 dimensions below
 - "productPrice": extract the product price as a number (e.g. 49.99). Return 0 if not found.
 - "productCategory": one of: "fashion", "electronics", "beauty", "home", "food", "fitness", "jewelry", "other"
-- "estimatedMonthlyVisitors": your best estimate of monthly visitors based on page signals (brand size, product type, reviews count). Return as number: 500 for small stores, 2000 for medium, 10000 for large brands.
+- "estimatedMonthlyVisitors": your best estimate based on page signals. 500 small, 2000 medium, 10000 large.
 
-Score criteria (be STRICT):
-- Title (0-100): Does it have product name + key benefit + material/spec? Generic names = 30 or less
-- Images (0-100): Multiple angles? Lifestyle shots? On-model? Zoom? Pure white bg only = 40 or less
-- Pricing (0-100): Price anchor? Was/now pricing? Bundle offers? Just one price = 50
-- Social proof (0-100): Reviews visible above fold? Count shown? Star rating? No reviews = 20 or less
-- CTA (0-100): Prominent? Above fold on mobile? Urgency? Color contrast? Just "Add to Cart" = 50
-- Description (0-100): Benefits first? Scannable? Bullet points? Wall of text = 30 or less
-- Trust (0-100): Guarantees? Returns policy visible? Secure badges? None visible = 30 or less
+Score ALL 20 dimensions (0-100, be STRICT):
+
+1. pageSpeed (Very High impact): Check for large unoptimized images, render-blocking scripts, excessive apps. Most Shopify stores score 40-60.
+2. images (Very High): 5-7 images minimum across types (white bg, lifestyle, scale, texture, UGC). Only 1-2 basic photos = 30 or less.
+3. socialProof (Very High): Reviews visible above fold? Count shown? Star rating? Photo reviews? No reviews = 15 or less.
+4. checkout (Very High): Shop Pay? BNPL? Multiple payment icons? Apple/Google Pay? Only basic checkout = 40.
+5. mobileCta (High): Is CTA above fold on mobile? Sticky? Proper size (44-48px)? Thumb-zone? Hidden CTA = 20.
+6. title (High): Product name + key benefit + keyword in first 3-5 words? 55-70 chars? Generic name = 25.
+7. aiDiscoverability (High): Structured data for AI? Clear product attributes? FAQ schema? Most stores score 10-30.
+8. structuredData (High): Product schema? Review schema? FAQ? Breadcrumbs? Offer markup? Missing = 15.
+9. pricing (High): Charm pricing? Compare-at anchor? Installment framing? Just one price = 40.
+10. description (Medium-High): Benefits first? Scannable? Bullet points? Layered architecture? Wall of text = 25.
+11. shipping (Medium-High): Delivery date visible? Free shipping threshold? Costs shown? Hidden costs = 20.
+12. crossSell (Medium-High): "Frequently bought together"? Recommendations near buy button? 4-6 items? None = 15.
+13. cartRecovery (Medium-High): Evidence of email capture? Cart recovery signals? Hard to detect from HTML, score 40-50 if unclear.
+14. trust (Medium): Money-back guarantee? Return policy visible? Phone number? "As seen in" logos? None = 25.
+15. merchantFeed (Medium): Google Shopping markup? GTIN present? Clean product data? Hard to detect, score 40-50 if unclear.
+16. socialCommerce (Medium): TikTok/Instagram/Pinterest integration? Social sharing? Social proof from platforms? None = 20.
+17. sizeGuide (Medium, category-dependent): Size chart? Fit finder? Model measurements? For non-apparel, score 60-70 (N/A boost).
+18. variantUx (Medium): Color swatches vs dropdowns? Stock indicators? Out-of-stock handling? Basic dropdown = 35.
+19. accessibility (Low-Medium): Color contrast? Alt text on images? Semantic HTML? ARIA labels? Most stores score 30-50.
+20. contentFreshness (Low-Medium): Updated dates? Current year? Fresh badges? Stale content = 30.
 
 If the page is a 404 or error, return score: 0.
 
@@ -170,23 +184,36 @@ ${truncated}`;
       );
     }
 
-    // Defensive: ensure all category keys exist as numbers 0-100
+    // Defensive: ensure all 20 category keys exist as numbers 0-100
     const rawCats = (result.categories || {}) as Record<string, unknown>;
     const clampScore = (v: unknown) => Math.min(100, Math.max(0, Number(v) || 0));
     const safeCategories = {
-      title: clampScore(rawCats.title),
+      pageSpeed: clampScore(rawCats.pageSpeed),
       images: clampScore(rawCats.images),
-      pricing: clampScore(rawCats.pricing),
       socialProof: clampScore(rawCats.socialProof),
-      cta: clampScore(rawCats.cta),
+      checkout: clampScore(rawCats.checkout),
+      mobileCta: clampScore(rawCats.mobileCta),
+      title: clampScore(rawCats.title),
+      aiDiscoverability: clampScore(rawCats.aiDiscoverability),
+      structuredData: clampScore(rawCats.structuredData),
+      pricing: clampScore(rawCats.pricing),
       description: clampScore(rawCats.description),
+      shipping: clampScore(rawCats.shipping),
+      crossSell: clampScore(rawCats.crossSell),
+      cartRecovery: clampScore(rawCats.cartRecovery),
       trust: clampScore(rawCats.trust),
+      merchantFeed: clampScore(rawCats.merchantFeed),
+      socialCommerce: clampScore(rawCats.socialCommerce),
+      sizeGuide: clampScore(rawCats.sizeGuide),
+      variantUx: clampScore(rawCats.variantUx),
+      accessibility: clampScore(rawCats.accessibility),
+      contentFreshness: clampScore(rawCats.contentFreshness),
     };
 
     const response = {
       score: Math.min(100, Math.max(0, Number(result.score) || 50)),
       summary: String(result.summary || "Analysis complete.").slice(0, 200),
-      tips: (Array.isArray(result.tips) ? result.tips : []).map((t: unknown) => String(t).slice(0, 300)).slice(0, 7),
+      tips: (Array.isArray(result.tips) ? result.tips : []).map((t: unknown) => String(t).slice(0, 300)).slice(0, 20),
       categories: safeCategories,
       productPrice: Math.max(0, Number(result.productPrice) || 0),
       productCategory: String(result.productCategory || "other"),

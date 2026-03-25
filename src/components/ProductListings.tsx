@@ -301,15 +301,17 @@ export default function ProductListings({
         }
         const data = await res.json();
 
-        // Defensive: ensure categories has all expected keys
+        // Defensive: ensure categories has all 20 expected keys
+        const sc = (k: string) => Number(data.categories?.[k]) || 0;
         const safeCategories: CategoryScores = {
-          title: Number(data.categories?.title) || 0,
-          images: Number(data.categories?.images) || 0,
-          pricing: Number(data.categories?.pricing) || 0,
-          socialProof: Number(data.categories?.socialProof) || 0,
-          cta: Number(data.categories?.cta) || 0,
-          description: Number(data.categories?.description) || 0,
-          trust: Number(data.categories?.trust) || 0,
+          pageSpeed: sc("pageSpeed"), images: sc("images"), socialProof: sc("socialProof"),
+          checkout: sc("checkout"), mobileCta: sc("mobileCta"), title: sc("title"),
+          aiDiscoverability: sc("aiDiscoverability"), structuredData: sc("structuredData"),
+          pricing: sc("pricing"), description: sc("description"), shipping: sc("shipping"),
+          crossSell: sc("crossSell"), cartRecovery: sc("cartRecovery"), trust: sc("trust"),
+          merchantFeed: sc("merchantFeed"), socialCommerce: sc("socialCommerce"),
+          sizeGuide: sc("sizeGuide"), variantUx: sc("variantUx"),
+          accessibility: sc("accessibility"), contentFreshness: sc("contentFreshness"),
         };
 
         const result: FreeResult = {

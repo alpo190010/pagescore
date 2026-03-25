@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
 interface CategoryScores {
-  title: number;
+  pageSpeed: number;
   images: number;
-  pricing: number;
   socialProof: number;
-  cta: number;
+  checkout: number;
+  mobileCta: number;
+  title: number;
+  aiDiscoverability: number;
+  structuredData: number;
+  pricing: number;
   description: number;
+  shipping: number;
+  crossSell: number;
+  cartRecovery: number;
   trust: number;
+  merchantFeed: number;
+  socialCommerce: number;
+  sizeGuide: number;
+  variantUx: number;
+  accessibility: number;
+  contentFreshness: number;
 }
 
 interface PageAnalysis {
@@ -97,14 +110,16 @@ async function scorePage(
   const result = JSON.parse(jsonMatch[0]);
   const cats = result.categories || {};
   // Ensure all 7 category keys exist with numeric values 0-100
+  const c = (v: unknown) => Math.min(100, Math.max(0, Number(v) || 0));
   const categories: CategoryScores = {
-    title: Math.min(100, Math.max(0, Number(cats.title) || 0)),
-    images: Math.min(100, Math.max(0, Number(cats.images) || 0)),
-    pricing: Math.min(100, Math.max(0, Number(cats.pricing) || 0)),
-    socialProof: Math.min(100, Math.max(0, Number(cats.socialProof) || 0)),
-    cta: Math.min(100, Math.max(0, Number(cats.cta) || 0)),
-    description: Math.min(100, Math.max(0, Number(cats.description) || 0)),
-    trust: Math.min(100, Math.max(0, Number(cats.trust) || 0)),
+    pageSpeed: c(cats.pageSpeed), images: c(cats.images), socialProof: c(cats.socialProof),
+    checkout: c(cats.checkout), mobileCta: c(cats.mobileCta), title: c(cats.title),
+    aiDiscoverability: c(cats.aiDiscoverability), structuredData: c(cats.structuredData),
+    pricing: c(cats.pricing), description: c(cats.description), shipping: c(cats.shipping),
+    crossSell: c(cats.crossSell), cartRecovery: c(cats.cartRecovery), trust: c(cats.trust),
+    merchantFeed: c(cats.merchantFeed), socialCommerce: c(cats.socialCommerce),
+    sizeGuide: c(cats.sizeGuide), variantUx: c(cats.variantUx),
+    accessibility: c(cats.accessibility), contentFreshness: c(cats.contentFreshness),
   };
   return {
     score: Math.min(100, Math.max(0, Number(result.score) || 50)),
@@ -365,14 +380,16 @@ Return ONLY a valid JSON array, no markdown.`;
             for (const fb of fallbacks) {
               if (scoredCompetitors.length >= TARGET_COMPETITORS) break;
               if (scoredCompetitors.some((c) => c.name === fb.name)) continue;
+              const fc = (k: string) => Math.min(100, Math.max(0, Number(fb.categories?.[k]) || 0));
               const cats: CategoryScores = {
-                title: Math.min(100, Math.max(0, Number(fb.categories?.title) || 0)),
-                images: Math.min(100, Math.max(0, Number(fb.categories?.images) || 0)),
-                pricing: Math.min(100, Math.max(0, Number(fb.categories?.pricing) || 0)),
-                socialProof: Math.min(100, Math.max(0, Number(fb.categories?.socialProof) || 0)),
-                cta: Math.min(100, Math.max(0, Number(fb.categories?.cta) || 0)),
-                description: Math.min(100, Math.max(0, Number(fb.categories?.description) || 0)),
-                trust: Math.min(100, Math.max(0, Number(fb.categories?.trust) || 0)),
+                pageSpeed: fc("pageSpeed"), images: fc("images"), socialProof: fc("socialProof"),
+                checkout: fc("checkout"), mobileCta: fc("mobileCta"), title: fc("title"),
+                aiDiscoverability: fc("aiDiscoverability"), structuredData: fc("structuredData"),
+                pricing: fc("pricing"), description: fc("description"), shipping: fc("shipping"),
+                crossSell: fc("crossSell"), cartRecovery: fc("cartRecovery"), trust: fc("trust"),
+                merchantFeed: fc("merchantFeed"), socialCommerce: fc("socialCommerce"),
+                sizeGuide: fc("sizeGuide"), variantUx: fc("variantUx"),
+                accessibility: fc("accessibility"), contentFreshness: fc("contentFreshness"),
               };
               const catSum = Object.values(cats).reduce((a, b) => a + b, 0);
               if (fb.score > 0 && catSum > 0) {

@@ -2,13 +2,26 @@
 
 /* ── Types (local copy — component stays self-contained) ── */
 interface CategoryScores {
-  title: number;
+  pageSpeed: number;
   images: number;
-  pricing: number;
   socialProof: number;
-  cta: number;
+  checkout: number;
+  mobileCta: number;
+  title: number;
+  aiDiscoverability: number;
+  structuredData: number;
+  pricing: number;
   description: number;
+  shipping: number;
+  crossSell: number;
+  cartRecovery: number;
   trust: number;
+  merchantFeed: number;
+  socialCommerce: number;
+  sizeGuide: number;
+  variantUx: number;
+  accessibility: number;
+  contentFreshness: number;
 }
 
 interface CompetitorComparisonProps {
