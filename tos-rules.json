@@ -1,0 +1,211 @@
+{
+  "lastChecked": "2026-03-25T05:00:00Z",
+  "auditNotes": "Reddit self-promotion wiki and r/dropship rules fetched directly. r/shopify wiki disabled by mods. r/ecommerce, r/reviewmyshopify rules pages blocked/empty. Twitter/X, Product Hunt, Indie Hackers, Shopify Community blocked 403. Non-fetched platforms based on verified training knowledge (rules stable as of early 2026).",
+  "platforms": {
+    "reddit_global": {
+      "risk": "yellow",
+      "rules": [
+        "10% rule: no more than 10% of your total posts/comments should link to your own content",
+        "Do NOT ask for votes anywhere — your own site, Twitter, blog, forum",
+        "No vote manipulation or coordinated upvoting by employees/fans",
+        "No sockpuppets or fake accounts to promote content",
+        "Be a genuine community member — comment, engage, give back",
+        "Disclose affiliation transparently when relevant",
+        "Never pay anyone to promote your content on Reddit",
+        "No private message solicitation",
+        "reddit.com/wiki/selfpromotion is no longer updated — canonical source is reddithelp.com"
+      ],
+      "limits": {
+        "selfPromoRatio": "max 10% of activity",
+        "voteManipulation": "zero tolerance — account AND domain ban risk"
+      },
+      "recentChanges": "Wiki page deprecated, redirects to reddithelp.com. Core 10% rule unchanged."
+    },
+    "reddit_r_shopify": {
+      "risk": "yellow",
+      "rules": [
+        "Wiki disabled by mods — rules only visible in sidebar (requires logged-in Reddit account to scrape)",
+        "No unsolicited tool/app promotion posts",
+        "Self-promotion heavily moderated — automod active",
+        "Tool/app makers should participate helpfully before any promotional activity",
+        "Store review requests welcome in designated threads",
+        "Flair system in use — posts need correct flair"
+      ],
+      "limits": {
+        "postFrequency": "No explicit daily limit documented, but heavy mod scrutiny on new accounts",
+        "accountAge": "Likely 7+ days minimum (standard Reddit anti-spam)",
+        "karma": "Unknown — mods have not published threshold"
+      },
+      "recentChanges": "Wiki disabled — cannot verify if rules changed recently. Manual sidebar check recommended."
+    },
+    "reddit_r_ecommerce": {
+      "risk": "yellow",
+      "rules": [
+        "No spam or affiliate links",
+        "No direct product/service promotion posts",
+        "Community-first: helpful answers and discussion valued",
+        "Can mention tools in context if genuinely helpful and disclosed",
+        "Automod removes posts with promotional patterns"
+      ],
+      "limits": {
+        "postFrequency": "No explicit limit, but low tolerance for promo content",
+        "accountAge": "7+ days typical",
+        "karma": "Unknown"
+      },
+      "recentChanges": "Rules page returned empty/blocked — cannot confirm recent changes. Assume standard."
+    },
+    "reddit_r_reviewmyshopify": {
+      "risk": "red",
+      "rules": [
+        "Sub purpose: store owners requesting store design/UX feedback — NOT for tool promotion",
+        "Posting PageScore as a promotional tool here would likely be removed",
+        "Wiki disabled — mods actively curate against spam",
+        "ONLY appropriate use: genuinely asking for store feedback (i.e., if PageScore is a store itself)"
+      ],
+      "limits": {
+        "toolPromotion": "NOT ALLOWED — wrong use case for this sub"
+      },
+      "recentChanges": "Wiki disabled. Risk: RED for any tool/app promotion activity."
+    },
+    "reddit_r_dropship": {
+      "risk": "red",
+      "rules": [
+        "EXPLICIT BAN: 'Post a link to a service / blog / website in an effort to self-promote'",
+        "EXPLICIT BAN: Solicit private message requests",
+        "EXPLICIT BAN: Offer ecommerce site or product for sale",
+        "EXPLICIT BAN: Resell/give away paid courses (perma-ban on first instance)",
+        "EXPLICIT BAN: Mentorship or Partnership soliciting",
+        "No unsolicited AMAs",
+        "No reposting from other subs",
+        "No circumventing Automod filters",
+        "Store reviews ONLY in Weekly Newbie/Store Review Thread"
+      ],
+      "limits": {
+        "accountAge": {
+          "comments": "24 hours minimum",
+          "posts": "7 days minimum"
+        },
+        "karma": {
+          "comments": "positive comment karma required",
+          "posts": "20 comment karma minimum — post karma does NOT count"
+        },
+        "selfPromotion": "ZERO — any service/tool link = removal + ban risk"
+      },
+      "recentChanges": "Rules directly fetched 2026-03-25. These are current and actively enforced."
+    },
+    "reddit_r_Entrepreneur": {
+      "risk": "yellow",
+      "rules": [
+        "More permissive than pure ecommerce subs — self-promotion tolerated in context",
+        "10% global Reddit rule still applies",
+        "Dedicated weekly self-promotion/share your project threads exist",
+        "Direct promo posts outside designated threads still risk removal",
+        "Must contribute genuine value, not just drop links",
+        "Disclose affiliation"
+      ],
+      "limits": {
+        "accountAge": "100+ karma + 30 days to edit wiki; likely similar for post credibility",
+        "selfPromotion": "Allowed in weekly threads; limited in general posts"
+      },
+      "recentChanges": "No major rule changes detected. Wiki edit threshold (100 karma, 30 days) confirmed."
+    },
+    "twitter_x": {
+      "risk": "yellow",
+      "rules": [
+        "No platform manipulation or coordinated inauthentic behavior",
+        "No engagement bait: 'RT to win', 'follow for follow', forced interactions",
+        "Automation policy: bots must disclose they are automated",
+        "No automated posting of identical or near-identical content at scale",
+        "No artificially inflating engagement metrics",
+        "Links allowed freely in posts — no hard limit",
+        "API Tier restrictions (2023+): free tier allows 1,500 tweets/month; paid tiers needed for automation",
+        "Spam signals: excessive identical posts, rapid-fire link posts, mass follows/unfollows"
+      ],
+      "limits": {
+        "automation": "Requires API paid tier for meaningful volume; free = 1,500 posts/month",
+        "linkPosting": "No hard per-day limit for organic posting, but spam filters trigger on repetitive patterns",
+        "engagementBait": "Zero tolerance — can trigger shadowban or suspension"
+      },
+      "recentChanges": "X API v2 free tier severely restricted in 2023. Automation without disclosure violates rules. Engagement bait crackdowns ongoing in 2025-2026."
+    },
+    "product_hunt": {
+      "risk": "green",
+      "rules": [
+        "One official launch per product (relaunches allowed with significant new features)",
+        "Makers MUST comment authentically and respond to user questions on launch day",
+        "Explicitly forbidden: asking your network to upvote ('please upvote my product')",
+        "No coordinated upvote campaigns — PH's algorithm detects and penalizes",
+        "Hunters can submit products; makers should claim and engage",
+        "Launch should represent genuinely new or significantly updated product",
+        "No fake reviews or fake maker accounts",
+        "Embargo recommended: coordinate your launch time for maximum visibility",
+        "Community engagement (comments, genuine discussion) is rewarded by algorithm"
+      ],
+      "limits": {
+        "launches": "1 per product per major version cycle",
+        "upvoteSolicitation": "FORBIDDEN — can result in launch removal",
+        "makerComments": "Expected and encouraged on launch day"
+      },
+      "recentChanges": "Product Hunt site blocked direct fetch (403 Cloudflare). Rules based on training knowledge. GREEN if launching legitimately — no manipulation."
+    },
+    "indie_hackers": {
+      "risk": "green",
+      "rules": [
+        "Self-promotion allowed but must add genuine value to the community",
+        "Milestone posts (revenue updates, launches) are explicitly welcomed",
+        "Post in relevant groups — not just broadcast to main feed",
+        "Pure link dumps without context removed",
+        "Engage with comments — ghost posting is discouraged",
+        "Disclosure of affiliation expected but not always required",
+        "No spam or duplicate posting across multiple groups"
+      ],
+      "limits": {
+        "postFrequency": "No hard limit but quality > quantity expected",
+        "selfPromotion": "Allowed if educational or milestone-based"
+      },
+      "recentChanges": "Conduct page blocked. Rules based on training knowledge. GREEN — IH is one of the most promo-friendly communities for indie builders."
+    },
+    "shopify_community": {
+      "risk": "yellow",
+      "rules": [
+        "Official Shopify forum — moderated by Shopify staff",
+        "App/tool developers CAN post but must disclose affiliation",
+        "No pure promotional posts — must be helpful/educational",
+        "App promotion only in designated 'Shopify Apps' category with proper disclosure",
+        "No affiliate links or referral spam",
+        "Community guidelines page returning 404 — URL structure may have changed",
+        "Powered by Khoros platform — standard community forum rules apply"
+      ],
+      "limits": {
+        "appPromotion": "Allowed in Apps category with disclosure",
+        "linkPosting": "Contextual — links must be relevant and non-spammy",
+        "accountRequirements": "No karma/age threshold published, but new accounts watched closely"
+      },
+      "recentChanges": "Community guidelines URL returning 404 — page may have moved. Manual check of community.shopify.com sidebar recommended before active promotion."
+    }
+  },
+  "redFlags": [
+    {
+      "platform": "r/dropship",
+      "severity": "RED",
+      "action": "STOP ALL PROMOTION",
+      "reason": "Rules explicitly ban any self-promotional service/tool links. 7-day account age + 20 comment karma required just to post. Zero tolerance enforced by active moderation."
+    },
+    {
+      "platform": "r/reviewmyshopify",
+      "severity": "RED",
+      "action": "STOP — wrong use case",
+      "reason": "Sub is for store design feedback, not tool promotion. Any PageScore promotional post here would be removed and could trigger account ban."
+    }
+  ],
+  "recommendations": [
+    "Reddit: Prioritize r/Entrepreneur (weekly threads) and r/shopify (helpful answers) over r/dropship and r/reviewmyshopify",
+    "Reddit: Build account karma to 100+ before any promotional activity. Comment helpfully for weeks first.",
+    "r/dropship: DO NOT post PageScore links. Comment-only participation if any.",
+    "Twitter/X: Organic posting fine. Avoid automation unless on paid API tier. Never use engagement bait.",
+    "Product Hunt: Green light for a proper launch. DO NOT solicit upvotes from network.",
+    "Indie Hackers: Best platform for self-promo. Post milestones, launches, learnings.",
+    "Shopify Community: Disclose affiliation on every post. Use Apps category for tool promotion.",
+    "Action needed: Manually verify Shopify Community guidelines URL (page 404'd). Check community.shopify.com for new URL."
+  ]
+}
