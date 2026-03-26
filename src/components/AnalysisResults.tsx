@@ -497,9 +497,6 @@ export default function AnalysisResults({
                 ))}
               </div>
             </div>
-
-            {/* Decorative blur */}
-            <div
           </div>
 
           {/* Analyze again CTA */}
