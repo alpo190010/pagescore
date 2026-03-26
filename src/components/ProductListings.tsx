@@ -75,6 +75,7 @@ export default function ProductListings({
     handleIssueClick,
     handleCloseModal,
     setEmail,
+    setEmailStep,
     submitEmail,
   } = useProductAnalysis({
     products,
@@ -141,6 +142,7 @@ export default function ProductListings({
       onCloseModal: handleCloseModal,
       onEmailChange: setEmail,
       onSubmitEmail: submitEmail,
+      onStepChange: setEmailStep,
     }),
     [
       selectedProduct, selectedIndex, domain, analyzingHandle,
@@ -148,7 +150,7 @@ export default function ProductListings({
       lossLow, lossHigh, contentFading, email, emailStep,
       emailSubmitting, emailError, selectedLeak, competitorCTAName,
       handleDeepAnalyzeAndCollapse, handleRetryAnalysis, handleIssueClick,
-      handleCloseModal, setEmail, submitEmail,
+      handleCloseModal, setEmail, setEmailStep, submitEmail,
     ],
   );
 

@@ -76,6 +76,7 @@ export function useProductAnalysis({
     competitorCTAName,
     emailStep,
     setEmail,
+    setEmailStep,
     submitEmail,
     handleIssueClick,
     handleCloseModal,
@@ -288,6 +289,7 @@ export function useProductAnalysis({
     handleIssueClick,
     handleCloseModal,
     setEmail,
+    setEmailStep,
     submitEmail,
   };
 }

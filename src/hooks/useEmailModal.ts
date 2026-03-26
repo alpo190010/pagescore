@@ -19,7 +19,7 @@ export function useEmailModal({ selectedUrl, analysisResult }: UseEmailModalPara
   const [emailError, setEmailError] = useState("");
   const [selectedLeak, setSelectedLeak] = useState<string | null>(null);
   const [competitorCTAName, setCompetitorCTAName] = useState<string | null>(null);
-  const [emailStep, setEmailStep] = useState<"form" | "queued" | null>(null);
+  const [emailStep, setEmailStep] = useState<"form" | "queued" | "pricing" | "sent" | null>(null);
 
   /** Reset all email / modal state (called on product switch & new analysis). */
   const resetEmailState = useCallback(() => {
@@ -92,6 +92,7 @@ export function useEmailModal({ selectedUrl, analysisResult }: UseEmailModalPara
     competitorCTAName,
     emailStep,
     setEmail,
+    setEmailStep,
     submitEmail,
     handleIssueClick,
     handleCloseModal,

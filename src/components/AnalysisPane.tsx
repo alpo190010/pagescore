@@ -41,7 +41,7 @@ export interface AnalysisPaneProps {
 
   /* ── Email / modal state ── */
   email: string;
-  emailStep: "form" | "queued" | null;
+  emailStep: "form" | "queued" | "pricing" | "sent" | null;
   emailSubmitting: boolean;
   emailError: string;
   selectedLeak: string | null;
@@ -54,6 +54,7 @@ export interface AnalysisPaneProps {
   onCloseModal: () => void;
   onEmailChange: (email: string) => void;
   onSubmitEmail: (e: React.FormEvent) => void;
+  onStepChange: (step: "form" | "queued" | "pricing" | "sent") => void;
 }
 
 export default function AnalysisPane({
@@ -80,6 +81,7 @@ export default function AnalysisPane({
   onCloseModal,
   onEmailChange,
   onSubmitEmail,
+  onStepChange,
 }: AnalysisPaneProps) {
   return (
     <div
@@ -239,6 +241,7 @@ export default function AnalysisPane({
             emailStep={emailStep}
             url={selectedUrl}
             score={analysisResult.score}
+            onStepChange={onStepChange}
           />
         </div>
       )}
