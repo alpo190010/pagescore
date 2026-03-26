@@ -23,14 +23,14 @@
   --on-tertiary:        #ffffff;
 
   /* ── Surfaces: clean warm neutrals ── */
-  --background:                #fcf9f8;
-  --surface-base:              #fcf9f8;
+  --background:                #faf8ff;
+  --surface-base:              #faf8ff;
   --surface-container-lowest:  #ffffff;
-  --surface-container-low:     #f6f3f2;
-  --surface-container:         #f0edec;
-  --surface-container-high:    #ebe7e7;
-  --surface-container-highest: #e5e2e1;
-  --surface-variant:           #e5e2e1;
+  --surface-container-low:     #f5f3ff;
+  --surface-container:         #ede9fe;
+  --surface-container-high:    #e4e0f5;
+  --surface-container-highest: #ddd6fe;
+  --surface-variant:           #ddd6fe;
   --surface-tint:              #7c3aed;
 
   /* ── Text / On-colors ── */
