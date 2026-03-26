@@ -714,7 +714,7 @@ export default function ProductListings({
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
                 style={isSelected ? {
-                  boxShadow: "0 0 0 3px rgba(111, 50, 213, 0.15), 0 4px 12px rgba(111, 50, 213, 0.1)",
+                  boxShadow: "var(--shadow-brand-ring)",
                 } : undefined}
                 aria-current={isSelected ? "true" : undefined}
               >
@@ -739,7 +739,7 @@ export default function ProductListings({
                           height="24"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#94a3b8"
+                          stroke="var(--outline)"
                           strokeWidth="1.5"
                           aria-hidden="true"
                         >
@@ -770,7 +770,7 @@ export default function ProductListings({
                           className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0"
                           style={{
                             fontFamily: "var(--font-manrope), Manrope, sans-serif",
-                            background: "rgba(111, 50, 213, 0.08)",
+                            background: "var(--surface-brand-subtle)",
                             color: "var(--brand)",
                           }}
                         >
@@ -796,8 +796,8 @@ export default function ProductListings({
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0"
                           style={{
                             fontFamily: "var(--font-manrope), Manrope, sans-serif",
-                            background: "rgba(100, 116, 139, 0.08)",
-                            color: "rgb(100, 116, 139)",
+                            background: "var(--surface-muted)",
+                            color: "var(--text-tertiary)",
                           }}
                         >
                           Ready to scan

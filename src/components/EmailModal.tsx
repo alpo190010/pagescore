@@ -62,7 +62,7 @@ export default function EmailModal({
       className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center p-4 ${
         modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"
       }`}
-      style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+      style={{ backgroundColor: "var(--overlay-backdrop)", backdropFilter: "blur(4px)" }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -72,7 +72,7 @@ export default function EmailModal({
         className={`relative w-full max-w-md bg-[var(--surface)] rounded-3xl overflow-hidden ${
           modalClosing ? "modal-content-exit" : "modal-content-enter"
         }`}
-        style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
+        style={{ boxShadow: "var(--shadow-modal)" }}
       >
         {/* Top accent */}
         <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
@@ -132,7 +132,7 @@ export default function EmailModal({
                   className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
                   style={{
                     background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))",
-                    boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)",
+                    boxShadow: "var(--shadow-brand-sm)",
                   }}
                 >
                   {emailSubmitting ? "Submitting..." : "Send Me the Fixes →"}
@@ -168,7 +168,7 @@ export default function EmailModal({
                 className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
                 style={{
                   background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
-                  boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)",
+                  boxShadow: "var(--shadow-brand-sm)",
                 }}
               >
                 Got it

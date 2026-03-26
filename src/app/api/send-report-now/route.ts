@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { emailPalette } from "@/lib/email-palette";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -10,7 +11,7 @@ function escapeHtml(str: string): string {
 }
 
 function buildFullReport(score: number, tips: string[], categories: Record<string, number>): string {
-  const scoreColor = score >= 70 ? "#16A34A" : score >= 40 ? "#D97706" : "#DC2626";
+  const scoreColor = score >= 70 ? emailPalette.success : score >= 40 ? emailPalette.warning : emailPalette.error;
 
   const categoryLabels: Record<string, string> = {
     pageSpeed: "Page Speed", images: "Product Images", socialProof: "Reviews & Social Proof",
@@ -39,61 +40,61 @@ function buildFullReport(score: number, tips: string[], categories: Record<strin
 
   const categoryRows = sorted.map(([key, val]) => {
     const catScore = Number(val) || 0;
-    const color = catScore >= 70 ? "#16A34A" : catScore >= 40 ? "#D97706" : "#DC2626";
+    const color = catScore >= 70 ? emailPalette.success : catScore >= 40 ? emailPalette.warning : emailPalette.error;
     const label = categoryLabels[key] || key;
     const impact = impactLevels[key] || "Medium";
     return `<tr>
-      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-size:14px;color:#374151;">${escapeHtml(label)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;text-align:center;"><span style="font-weight:700;color:${color};font-size:16px;">${catScore}</span><span style="color:#9CA3AF;font-size:12px;">/100</span></td>
-      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-size:12px;color:#6B7280;">${impact}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${emailPalette.tableBorder};font-size:14px;color:${emailPalette.textBody};">${escapeHtml(label)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${emailPalette.tableBorder};text-align:center;"><span style="font-weight:700;color:${color};font-size:16px;">${catScore}</span><span style="color:${emailPalette.textSecondary};font-size:12px;">/100</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${emailPalette.tableBorder};font-size:12px;color:${emailPalette.textLabel};">${impact}</td>
     </tr>`;
   }).join("");
 
   const tipItems = (tips || []).slice(0, 20).map((t, i) =>
-    `<li style="margin-bottom:10px;color:#374151;font-size:14px;line-height:1.5;">${i + 1}. ${escapeHtml(String(t))}</li>`
+    `<li style="margin-bottom:10px;color:${emailPalette.textBody};font-size:14px;line-height:1.5;">${i + 1}. ${escapeHtml(String(t))}</li>`
   ).join("");
 
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F8F7F4;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;">
+<body style="margin:0;padding:0;background:${emailPalette.background};font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr><td align="center" style="padding:48px 20px;">
 <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
   <tr><td style="text-align:center;padding-bottom:32px;">
-    <span style="font-size:20px;font-weight:700;color:#111111;">alpo.ai</span>
-    <span style="font-size:12px;color:#9CA3AF;margin-left:8px;">Priority Report</span>
+    <span style="font-size:20px;font-weight:700;color:${emailPalette.textHeading};">alpo.ai</span>
+    <span style="font-size:12px;color:${emailPalette.textSecondary};margin-left:8px;">Priority Report</span>
   </td></tr>
-  <tr><td style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:40px 36px;">
+  <tr><td style="background:${emailPalette.cardBg};border:1.5px solid ${emailPalette.cardBorder};border-radius:12px;padding:40px 36px;">
     <div style="text-align:center;margin-bottom:32px;">
-      <p style="margin:0 0 8px;font-size:13px;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;">Overall Score</p>
+      <p style="margin:0 0 8px;font-size:13px;color:${emailPalette.textTertiary};text-transform:uppercase;letter-spacing:0.05em;">Overall Score</p>
       <span style="font-size:72px;font-weight:800;color:${scoreColor};line-height:1;">${score}</span>
-      <span style="font-size:20px;color:#9E9E9E;">/100</span>
+      <span style="font-size:20px;color:${emailPalette.textTertiary};">/100</span>
     </div>
 
-    <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:#111111;">All 20 Dimensions Scored</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;margin-bottom:32px;">
-      <tr style="background:#F9FAFB;">
-        <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;">Dimension</th>
-        <th style="padding:10px 12px;text-align:center;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Score</th>
-        <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Revenue Impact</th>
+    <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:${emailPalette.textHeading};">All 20 Dimensions Scored</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${emailPalette.cardBorder};border-radius:8px;overflow:hidden;margin-bottom:32px;">
+      <tr style="background:${emailPalette.tableHeaderBg};">
+        <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:${emailPalette.textLabel};text-transform:uppercase;letter-spacing:0.05em;">Dimension</th>
+        <th style="padding:10px 12px;text-align:center;font-size:12px;font-weight:600;color:${emailPalette.textLabel};text-transform:uppercase;">Score</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:${emailPalette.textLabel};text-transform:uppercase;">Revenue Impact</th>
       </tr>
       ${categoryRows}
     </table>
 
-    <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:#111111;">Your Fix List</h2>
+    <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:${emailPalette.textHeading};">Your Fix List</h2>
     <ul style="margin:0;padding:0;list-style:none;">
       ${tipItems}
     </ul>
 
-    <div style="margin-top:32px;padding:24px;background:#EFF6FF;border-radius:8px;text-align:center;">
-      <p style="margin:0 0 4px;font-size:15px;color:#111111;font-weight:600;">Want weekly monitoring?</p>
-      <p style="margin:0 0 16px;font-size:14px;color:#6B6B6B;">Get alerted when your scores drop. Track all 20 dimensions over time.</p>
-      <a href="https://alpo.ai" style="display:inline-block;padding:12px 28px;background:#7C3AED;color:#fff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Coming Soon — Join Waitlist</a>
+    <div style="margin-top:32px;padding:24px;background:${emailPalette.promoBg};border-radius:8px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:15px;color:${emailPalette.textHeading};font-weight:600;">Want weekly monitoring?</p>
+      <p style="margin:0 0 16px;font-size:14px;color:${emailPalette.textMuted};">Get alerted when your scores drop. Track all 20 dimensions over time.</p>
+      <a href="https://alpo.ai" style="display:inline-block;padding:12px 28px;background:${emailPalette.brandCta};color:${emailPalette.cardBg};font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Coming Soon — Join Waitlist</a>
     </div>
   </td></tr>
   <tr><td style="text-align:center;padding-top:24px;">
-    <p style="color:#9CA3AF;font-size:12px;">alpo.ai by alpo.ai — Stop losing sales to fixable page issues.</p>
+    <p style="color:${emailPalette.textSecondary};font-size:12px;">alpo.ai by alpo.ai — Stop losing sales to fixable page issues.</p>
   </td></tr>
 </table>
 </td></tr>

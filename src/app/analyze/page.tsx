@@ -323,7 +323,7 @@ function AnalyzePageContent() {
                 {showRevenue && (
                   <div
                     className="md:col-span-4 p-8 rounded-3xl text-white flex flex-col justify-between"
-                    style={{ background: "linear-gradient(135deg, #DC2626, #991B1B)", boxShadow: "0 20px 60px rgba(220, 38, 38, 0.25)", animation: "fade-in-up 500ms var(--ease-out-quart) both" }}
+                    style={{ background: "var(--gradient-error)", boxShadow: "var(--shadow-error)", animation: "fade-in-up 500ms var(--ease-out-quart) both" }}
                   >
                     <div className="space-y-2">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-50" aria-hidden="true">
@@ -387,7 +387,7 @@ function AnalyzePageContent() {
                   captureEvent("cta_card_clicked", { url });
                 }}
                 className="cursor-pointer group relative rounded-[1.5rem] p-7 flex flex-col items-center justify-center text-center overflow-hidden text-white min-h-[280px]"
-                style={{ background: "linear-gradient(135deg, var(--on-surface) 0%, #2d1b42 100%)", animation: `fade-in-up 400ms ease-out ${leaks.length * 70}ms both` }}
+                style={{ background: "var(--gradient-dark-cta)", animation: `fade-in-up 400ms ease-out ${leaks.length * 70}ms both` }}
               >
                 <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: "linear-gradient(var(--brand) 1px, transparent 1px), linear-gradient(90deg, var(--brand) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
                 <div className="relative z-10 space-y-4">
@@ -445,7 +445,7 @@ function AnalyzePageContent() {
             </div>
 
             <div className="text-center mt-12">
-              <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800" style={{ boxShadow: "0 8px 32px rgba(124, 58, 237, 0.2)" }}>
+              <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800" style={{ boxShadow: "var(--shadow-brand-md)" }}>
                 Analyze Another Page
               </button>
             </div>
@@ -488,7 +488,7 @@ function IssueCard({ leak, index, onClick }: { leak: LeakCard; index: number; on
     <button
       type="button"
       onClick={onClick}
-      className="cursor-pointer group text-left bg-[var(--surface)] rounded-[1.5rem] p-6 sm:p-7 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+      className="cursor-pointer group text-left bg-[var(--surface)] rounded-[1.5rem] p-6 sm:p-7 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
       style={{ boxShadow: "var(--shadow-subtle)", animation: `fade-in-up 400ms ease-out ${index * 70}ms both` }}
     >
       <div className="space-y-5">
@@ -543,7 +543,7 @@ function EmailModal({
   return (
     <div
       className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center md:p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
-      style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+      style={{ backgroundColor: "var(--overlay-backdrop)", backdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -554,7 +554,7 @@ function EmailModal({
           max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[85vh] max-md:rounded-t-3xl max-md:rounded-b-none
           md:max-w-md md:rounded-3xl md:max-h-[90vh]
           ${modalClosing ? "max-md:drawer-exit md:modal-content-exit" : "max-md:drawer-enter md:modal-content-enter"}`}
-        style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}
+        style={{ boxShadow: "var(--shadow-modal)" }}
       >
         <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
         <button type="button" onClick={onClose} className="cursor-pointer absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Close">
@@ -583,7 +583,7 @@ function EmailModal({
                 <div className="mb-3">
                   <input id="modal-email-input" type="email" required placeholder="your@email.com" value={email} onChange={(e) => onEmailChange(e.target.value)} aria-label="Your email address" autoFocus className="w-full px-4 py-3.5 text-base rounded-xl outline-none border-[1.5px] border-[var(--border)] text-[var(--text-primary)] bg-[var(--bg)] polish-focus-ring" />
                 </div>
-                <button type="submit" disabled={emailSubmitting} className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50" style={{ background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)" }}>
+                <button type="submit" disabled={emailSubmitting} className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50" style={{ background: emailSubmitting ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))", boxShadow: "var(--shadow-brand-sm)" }}>
                   {emailSubmitting ? "Submitting..." : "Send Me the Fixes →"}
                 </button>
                 {emailError && <p className="text-sm mt-3 text-center text-[var(--error)] font-medium" role="alert">{emailError}</p>}
@@ -601,7 +601,7 @@ function EmailModal({
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
                 Your detailed report will arrive within <strong className="text-[var(--text-primary)]">48 hours</strong>.
               </p>
-              <div className="p-5 rounded-2xl border-2 border-dashed mb-4" style={{ borderColor: "var(--brand-border)", background: "linear-gradient(135deg, var(--brand-light), #EEF2FF)" }}>
+              <div className="p-5 rounded-2xl border-2 border-dashed mb-4" style={{ borderColor: "var(--brand-border)", background: "linear-gradient(135deg, var(--brand-light), var(--surface-brand-tint))" }}>
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 10V3L4 14h7v7l9-11h-7z" fill="var(--brand)"/></svg>
                   <span className="text-sm font-bold text-[var(--brand)]">Skip the wait</span>
@@ -620,7 +620,7 @@ function EmailModal({
                     onStepChange("pricing");
                   }}
                   className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
-                  style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)" }}
+                  style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))", boxShadow: "var(--shadow-brand-sm)" }}
                 >
                   Get Priority Report — Instant
                 </button>

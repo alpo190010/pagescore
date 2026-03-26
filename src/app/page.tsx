@@ -90,7 +90,7 @@ export default function Home() {
 
             {/* URL Input */}
             <form id="hero-form" onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-              <div className="flex flex-col sm:flex-row p-2 bg-[var(--surface-container-lowest)] rounded-full shadow-[0_20px_40px_rgba(124,58,237,0.06)] border border-[var(--outline-variant)]/15 focus-within:border-[var(--brand)]/40 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row p-2 bg-[var(--surface-container-lowest)] rounded-full shadow-[var(--shadow-ambient)] border border-[var(--outline-variant)]/15 focus-within:border-[var(--brand)]/40 transition-all duration-300">
                 <div className="hidden sm:flex items-center pl-6 pr-2 text-[var(--outline)]">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 </div>
@@ -171,7 +171,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="md:col-span-4 rounded-3xl p-8 text-white flex flex-col justify-between" style={{ background: "linear-gradient(135deg, #DC2626, #991B1B)", animation: "fade-in-up 400ms ease-out 80ms both" }}>
+              <div className="md:col-span-4 rounded-3xl p-8 text-white flex flex-col justify-between" style={{ background: "var(--gradient-error)", animation: "fade-in-up 400ms ease-out 80ms both" }}>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider opacity-70 mb-1">Estimated Monthly Loss for This Product</p>
                   <div className="text-4xl sm:text-5xl font-extrabold" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { db } from "@/db";
 import { reports, subscribers } from "@/db/schema";
+import { emailPalette } from "@/lib/email-palette";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -18,39 +19,39 @@ function escapeHtml(str: string): string {
 }
 
 function buildEmail(score: number, tips: string[]): string {
-  const scoreColor = score >= 70 ? "#16A34A" : score >= 40 ? "#D97706" : "#DC2626";
+  const scoreColor = score >= 70 ? emailPalette.success : score >= 40 ? emailPalette.warning : emailPalette.error;
   const tipItems = (tips || []).slice(0, 7).map((t, i) =>
-    `<li style="margin-bottom:12px;color:#374151;font-size:15px;line-height:1.5;">${i + 1}. ${escapeHtml(String(t))}</li>`
+    `<li style="margin-bottom:12px;color:${emailPalette.textBody};font-size:15px;line-height:1.5;">${i + 1}. ${escapeHtml(String(t))}</li>`
   ).join("");
 
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F8F7F4;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;">
+<body style="margin:0;padding:0;background:${emailPalette.background};font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr><td align="center" style="padding:48px 20px;">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
   <tr><td style="text-align:center;padding-bottom:32px;">
-    <span style="font-size:20px;font-weight:700;color:#111111;">alpo.ai</span>
+    <span style="font-size:20px;font-weight:700;color:${emailPalette.textHeading};">alpo.ai</span>
   </td></tr>
-  <tr><td style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:40px 36px;">
-    <p style="margin:0 0 8px;font-size:13px;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;">Your conversion audit</p>
+  <tr><td style="background:${emailPalette.cardBg};border:1.5px solid ${emailPalette.cardBorder};border-radius:12px;padding:40px 36px;">
+    <p style="margin:0 0 8px;font-size:13px;color:${emailPalette.textTertiary};text-transform:uppercase;letter-spacing:0.05em;">Your conversion audit</p>
     <div style="text-align:center;margin:24px 0;">
       <span style="font-size:80px;font-weight:800;color:${scoreColor};line-height:1;">${score}</span>
-      <span style="font-size:20px;color:#9E9E9E;">/100</span>
+      <span style="font-size:20px;color:${emailPalette.textTertiary};">/100</span>
     </div>
-    <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#111111;">Your fix list:</h2>
+    <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:${emailPalette.textHeading};">Your fix list:</h2>
     <ul style="margin:0;padding:0;list-style:none;">
       ${tipItems}
     </ul>
-    <div style="margin-top:32px;padding:24px;background:#EFF6FF;border-radius:8px;text-align:center;">
-      <p style="margin:0 0 4px;font-size:15px;color:#111111;font-weight:600;">Want weekly monitoring + AI rewrites?</p>
-      <p style="margin:0 0 16px;font-size:14px;color:#6B6B6B;">Get alerted when your score drops and get AI fixes automatically.</p>
-      <a href="https://alpo.ai" style="display:inline-block;padding:12px 28px;background:#2563EB;color:#fff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Upgrade to Pro — $49/mo</a>
+    <div style="margin-top:32px;padding:24px;background:${emailPalette.promoBg};border-radius:8px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:15px;color:${emailPalette.textHeading};font-weight:600;">Want weekly monitoring + AI rewrites?</p>
+      <p style="margin:0 0 16px;font-size:14px;color:${emailPalette.textMuted};">Get alerted when your score drops and get AI fixes automatically.</p>
+      <a href="https://alpo.ai" style="display:inline-block;padding:12px 28px;background:${emailPalette.brandCta};color:${emailPalette.cardBg};font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Upgrade to Pro — $49/mo</a>
     </div>
   </td></tr>
   <tr><td style="text-align:center;padding-top:24px;">
-    <p style="margin:0;font-size:12px;color:#9E9E9E;">alpo.ai · alpo.ai</p>
+    <p style="margin:0;font-size:12px;color:${emailPalette.textTertiary};">alpo.ai · alpo.ai</p>
   </td></tr>
 </table>
 </td></tr>

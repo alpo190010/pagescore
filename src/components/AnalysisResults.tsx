@@ -206,8 +206,8 @@ export default function AnalysisResults({
               <div
                 className="md:col-span-5 p-6 sm:p-8 rounded-3xl text-white flex flex-col justify-between"
                 style={{
-                  background: "linear-gradient(135deg, #DC2626, #991B1B)",
-                  boxShadow: "0 20px 60px rgba(220, 38, 38, 0.25)",
+                  background: "var(--gradient-error)",
+                  boxShadow: "var(--shadow-error)",
                   animation: "fade-in-up 500ms var(--ease-out-quart) both",
                 }}
               >
@@ -332,7 +332,7 @@ export default function AnalysisResults({
                     onIssueClick(leak.key);
                     captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
                   }}
-                  className="cursor-pointer group text-left bg-[var(--surface)] rounded-[1.5rem] p-5 sm:p-6 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+                  className="cursor-pointer group text-left bg-[var(--surface)] rounded-[1.5rem] p-5 sm:p-6 flex flex-col justify-between border border-[var(--outline-variant)]/20 hover:border-[var(--brand)]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
                   style={{
                     boxShadow: "var(--shadow-subtle)",
                     animation: `fade-in-up 400ms ease-out ${i * 70}ms both`,
@@ -515,7 +515,7 @@ export default function AnalysisResults({
               type="button"
               onClick={onAnalyzeAgain}
               className="cursor-pointer inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
-              style={{ boxShadow: "0 8px 32px rgba(124, 58, 237, 0.2)" }}
+              style={{ boxShadow: "var(--shadow-brand-md)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M1 4v6h6M23 20v-6h-6" strokeLinecap="round" strokeLinejoin="round" />

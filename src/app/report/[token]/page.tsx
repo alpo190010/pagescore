@@ -206,7 +206,7 @@ export default async function ReportTokenPage({
             className="text-center mb-8 bg-[var(--surface)] rounded-2xl border-[1.5px] border-[var(--border)]"
             style={{
               padding: "clamp(24px, 5vw, 48px)",
-              boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
+              boxShadow: "var(--shadow-card-elevated)",
             }}
           >
             <div className="mb-2">

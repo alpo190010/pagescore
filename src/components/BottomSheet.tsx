@@ -99,7 +99,7 @@ export default function BottomSheet({
       className={`fixed inset-0 z-40 flex items-end ${
         isClosing ? "sheet-backdrop-exit" : "sheet-backdrop-enter"
       }`}
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+      style={{ backgroundColor: "var(--overlay-backdrop)" }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"

@@ -151,7 +151,7 @@ export default function CompetitorComparison({
       {/* ── Unified comparison table ── */}
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+        style={{ boxShadow: "var(--shadow-subtle)" }}
       >
         {/* Scrollable wrapper for mobile */}
         <div className="overflow-x-auto">
@@ -245,7 +245,7 @@ export default function CompetitorComparison({
                               fontVariantNumeric: "tabular-nums",
                               color: isBest ? "var(--success-text)" : isWorst ? "var(--error-text)" : scoreColorText(val),
                               backgroundColor: isBest ? "var(--success-light)" : isWorst ? "var(--error-light)" : scoreBg(val),
-                              borderColor: isBest ? "var(--success-border)" : isWorst ? "#fca5a5" : "transparent",
+                              borderColor: isBest ? "var(--success-border)" : isWorst ? "var(--error-border-light)" : "transparent",
                             }}
                           >
                             {val}
@@ -267,7 +267,7 @@ export default function CompetitorComparison({
             Best in category
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "var(--error-light)", border: "1px solid #fca5a5" }}></span>
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "var(--error-light)", border: "1px solid var(--error-border-light)" }}></span>
             Weakest in category
           </span>
           <span className="ml-auto text-[var(--text-tertiary)]">Scores out of 100</span>

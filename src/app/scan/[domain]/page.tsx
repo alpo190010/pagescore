@@ -133,7 +133,7 @@ function ScanPageContent() {
           </div>
         </nav>
         <div className="pt-[72px] flex flex-col items-center justify-center min-h-screen px-6">
-          <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "var(--shadow-subtle)" }}>
             <div className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent" style={{ animation: "spin 0.8s linear infinite" }} />
             <span className="text-sm font-medium text-[var(--text-secondary)]">Finding products on {domain}…</span>
           </div>
@@ -202,7 +202,7 @@ export default function ScanPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center px-6">
-          <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "var(--shadow-subtle)" }}>
             <div className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent" style={{ animation: "spin 0.8s linear infinite" }} />
             <span className="text-sm font-medium text-[var(--text-secondary)]">Loading…</span>
           </div>
