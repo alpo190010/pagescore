@@ -122,3 +122,47 @@ export const LEAK_CATEGORIES = [
   { iconKey: "accessibility", label: "Accessibility", leak: "Color contrast and screen reader issues", cost: "4,500+ lawsuits in 2024 alone" },
   { iconKey: "contentFreshness", label: "Freshness", leak: "Stale content and expired badges", cost: "Erodes trust with search engines & AI" },
 ];
+
+/* ══════════════════════════════════════════════════════════════
+   Dimension Groups — maps each category key to a funnel stage
+   ══════════════════════════════════════════════════════════════ */
+
+export interface DimensionGroup {
+  id: string;
+  label: string;
+  question: string;
+  keys: (keyof import("./types").CategoryScores)[];
+}
+
+export const DIMENSION_GROUPS: DimensionGroup[] = [
+  {
+    id: "buying",
+    label: "Buying Experience",
+    question: "Does your page sell the product?",
+    keys: ["images", "description", "pricing", "sizeGuide", "variantUx"],
+  },
+  {
+    id: "trust",
+    label: "Trust & Transparency",
+    question: "Do shoppers believe you?",
+    keys: ["socialProof", "trust", "shipping"],
+  },
+  {
+    id: "conversion",
+    label: "Conversion & Checkout",
+    question: "Will the sale actually complete?",
+    keys: ["checkout", "mobileCta", "cartRecovery", "crossSell"],
+  },
+  {
+    id: "discovery",
+    label: "Discovery & Traffic",
+    question: "Can people find your product?",
+    keys: ["title", "aiDiscoverability", "structuredData", "merchantFeed", "socialCommerce"],
+  },
+  {
+    id: "technical",
+    label: "Technical Foundation",
+    question: "Is your site healthy?",
+    keys: ["pageSpeed", "accessibility", "contentFreshness"],
+  },
+];

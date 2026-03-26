@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   ArrowsClockwiseIcon,
   WarningCircleIcon,
+  CaretDownIcon,
 } from "@phosphor-icons/react";
 import {
   type FreeResult,
@@ -11,6 +12,8 @@ import {
   type LeakCard,
   useCountUp,
   captureEvent,
+  groupLeaks,
+  scoreColor,
 } from "@/lib/analysis";
 import CompetitorComparison from "@/components/CompetitorComparison";
 import CompetitorLoader from "@/components/CompetitorLoader";
@@ -62,6 +65,26 @@ export default function AnalysisResults({
   const [showRevenue, setShowRevenue] = useState(false);
   const [showLeaks, setShowLeaks] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
+
+  /* ── Grouped leaks ── */
+  const grouped = useMemo(() => groupLeaks(leaks), [leaks]);
+
+  /* ── Collapsed groups — worst group (index 0) starts expanded, rest collapsed ── */
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (grouped.length > 0) {
+      setCollapsedGroups(new Set(grouped.slice(1).map((g) => g.group.id)));
+    }
+  }, [grouped]);
+
+  const toggleGroup = (id: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     setShowCard(true);
@@ -149,7 +172,7 @@ export default function AnalysisResults({
         </div>
       )}
 
-      {/* ═══ ISSUES BENTO GRID — 2-column for pane context ═══ */}
+      {/* ═══ GROUPED ISSUES ═══ */}
       {showLeaks && (
         <div ref={issuesRef}>
           {/* Section header */}
@@ -162,29 +185,107 @@ export default function AnalysisResults({
                 Issues Found
               </h2>
               <p className="text-[var(--on-surface-variant)] text-sm mt-1">
-                {leaks.length} conversion leaks identified. Click any to get the fix.
+                {leaks.length} conversion leaks across {grouped.length} areas. Click any to get the fix.
               </p>
             </div>
           </div>
 
-          {/* Bento Grid — 2-col for pane, not 3-col */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {leaks.map((leak, i) => (
-              <IssueCard
-                key={leak.key}
-                leak={leak}
-                index={i}
-                onClick={() => {
-                  onIssueClick(leak.key);
-                  captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
-                }}
-              />
-            ))}
+          {/* Grouped sections */}
+          <div className="space-y-4">
+            {grouped.map((g, gi) => {
+              const isCollapsed = collapsedGroups.has(g.group.id);
 
-            {/* CTA Card — last position */}
+              return (
+                <div
+                  key={g.group.id}
+                  className="rounded-2xl border border-[var(--outline-variant)]/20 overflow-hidden"
+                  style={{
+                    animation: `fade-in-up 400ms ease-out ${gi * 100}ms both`,
+                  }}
+                >
+                  {/* Group header — always visible */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(g.group.id)}
+                    className="cursor-pointer w-full flex items-center gap-4 px-5 py-4 bg-[var(--surface)] hover:bg-[var(--surface-container-low)] transition-colors"
+                  >
+                    {/* Score pill */}
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-extrabold shrink-0"
+                      style={{
+                        background: `color-mix(in oklch, ${scoreColor(g.avgScore)} 12%, transparent)`,
+                        color: scoreColor(g.avgScore),
+                        fontVariantNumeric: "tabular-nums",
+                        fontFamily: "var(--font-manrope), Manrope, sans-serif",
+                      }}
+                    >
+                      {g.avgScore}
+                    </div>
+
+                    {/* Label + question */}
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-sm font-bold text-[var(--on-surface)] truncate"
+                          style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                        >
+                          {g.group.label}
+                        </span>
+                        <span className="text-xs text-[var(--on-surface-variant)] font-medium shrink-0">
+                          {g.leaks.length} issue{g.leaks.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--on-surface-variant)] mt-0.5 truncate">
+                        {g.group.question}
+                      </p>
+                    </div>
+
+                    {/* Chevron */}
+                    <CaretDownIcon
+                      size={16}
+                      weight="bold"
+                      className="text-[var(--on-surface-variant)] shrink-0 transition-transform duration-300"
+                      style={{
+                        transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                      }}
+                    />
+                  </button>
+
+                  {/* Cards grid — collapsible via grid-template-rows for smooth animation */}
+                  <div
+                    className="grid transition-[grid-template-rows] duration-300 ease-[var(--ease-out-quart,cubic-bezier(0.165,0.84,0.44,1))]"
+                    style={{
+                      gridTemplateRows: isCollapsed ? "0fr" : "1fr",
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+                        {g.leaks.map((leak, i) => (
+                          <IssueCard
+                            key={leak.key}
+                            leak={leak}
+                            index={i}
+                            onClick={() => {
+                              onIssueClick(leak.key);
+                              captureEvent("issue_clicked", {
+                                category: leak.key,
+                                impact: leak.impact,
+                                group: g.group.id,
+                              });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* CTA Card — after all groups */}
             <CTACard
               leaksCount={leaks.length}
-              animationDelay={leaks.length * 70}
+              animationDelay={grouped.length * 100}
               onClick={() => {
                 onIssueClick(leaks[0]?.key || "");
                 captureEvent("cta_card_clicked", { url });

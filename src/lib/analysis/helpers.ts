@@ -1,6 +1,7 @@
 import type { CategoryScores, FreeResult, LeakCard } from "./types";
 import {
   CATEGORY_BENCHMARKS, CATEGORY_LABELS, CATEGORY_PROBLEMS, CATEGORY_REVENUE_IMPACT,
+  DIMENSION_GROUPS, type DimensionGroup,
 } from "./constants";
 
 /* ── Lazy PostHog — don't block initial paint with 176KB bundle ── */
@@ -124,4 +125,31 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
     productCategory: String(data.productCategory || "other"),
     estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
   };
+}
+
+/** Group leaks into dimension groups, sorted worst-group-first */
+export interface GroupedLeaks {
+  group: DimensionGroup;
+  leaks: LeakCard[];
+  avgScore: number;
+}
+
+export function groupLeaks(leaks: LeakCard[]): GroupedLeaks[] {
+  const leakMap = new Map(leaks.map((l) => [l.key, l]));
+
+  return DIMENSION_GROUPS
+    .map((group) => {
+      const groupLeaks = group.keys
+        .map((k) => leakMap.get(k))
+        .filter((l): l is LeakCard => !!l)
+        .sort((a, b) => a.catScore - b.catScore); // worst-first within group
+
+      const avg = groupLeaks.length > 0
+        ? Math.round(groupLeaks.reduce((sum, l) => sum + l.catScore, 0) / groupLeaks.length)
+        : 0;
+
+      return { group, leaks: groupLeaks, avgScore: avg };
+    })
+    .filter((g) => g.leaks.length > 0)
+    .sort((a, b) => a.avgScore - b.avgScore); // worst group first
 }
