@@ -73,7 +73,7 @@ export default function Home() {
 
             {/* URL Input */}
             <form id="hero-form" onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-              <div className="flex flex-col sm:flex-row p-2 bg-[var(--surface-container-lowest)] rounded-full shadow-[var(--shadow-subtle)] border border-[var(--outline-variant)]/15 focus-within:border-[var(--brand)]/40 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row p-2 bg-[var(--surface-container-lowest)] rounded-4xl sm:rounded-full shadow-[var(--shadow-subtle)] border border-[var(--outline-variant)]/15 focus-within:border-[var(--brand)]/40 transition-all duration-300">
                 <div className="hidden sm:flex items-center pl-6 pr-2 text-[var(--outline)]">
                   <LinkIcon size={20} weight="regular" />
                 </div>
