@@ -1,30 +1,7 @@
 "use client";
 
 import { ChartBarIcon, ArrowSquareOutIcon } from "@phosphor-icons/react";
-
-/* ── Types (local copy — component stays self-contained) ── */
-interface CategoryScores {
-  pageSpeed: number;
-  images: number;
-  socialProof: number;
-  checkout: number;
-  mobileCta: number;
-  title: number;
-  aiDiscoverability: number;
-  structuredData: number;
-  pricing: number;
-  description: number;
-  shipping: number;
-  crossSell: number;
-  cartRecovery: number;
-  trust: number;
-  merchantFeed: number;
-  socialCommerce: number;
-  sizeGuide: number;
-  variantUx: number;
-  accessibility: number;
-  contentFreshness: number;
-}
+import { type CategoryScores, scoreColorText, scoreColorTintBg } from "@/lib/analysis";
 
 interface CompetitorComparisonProps {
   competitors: Array<{
@@ -71,17 +48,7 @@ function overallScoreColor(score: number): string {
   return "var(--error)";
 }
 
-function scoreColorText(score: number): string {
-  if (score >= 70) return "var(--success-text)";
-  if (score >= 40) return "var(--warning-text)";
-  return "var(--error-text)";
-}
 
-function scoreBg(score: number): string {
-  if (score >= 70) return "var(--success-light)";
-  if (score >= 40) return "var(--warning-light)";
-  return "var(--error-light)";
-}
 
 /* ══════════════════════════════════════════════════════════ */
 
@@ -240,7 +207,7 @@ export default function CompetitorComparison({
                             style={{
                               fontVariantNumeric: "tabular-nums",
                               color: isBest ? "var(--success-text)" : isWorst ? "var(--error-text)" : scoreColorText(val),
-                              backgroundColor: isBest ? "var(--success-light)" : isWorst ? "var(--error-light)" : scoreBg(val),
+                              backgroundColor: isBest ? "var(--success-light)" : isWorst ? "var(--error-light)" : scoreColorTintBg(val),
                               borderColor: isBest ? "var(--success-border)" : isWorst ? "var(--error-border-light)" : "transparent",
                             }}
                           >

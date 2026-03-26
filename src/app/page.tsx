@@ -9,29 +9,9 @@ import {
   LightningIcon,
   ClockIcon,
 } from "@phosphor-icons/react";
+import Nav from "@/components/Nav";
 import { isValidUrl, isProductPageUrl, extractDomain, CATEGORY_SVG, CATEGORY_LABELS, CATEGORY_REVENUE_IMPACT, scoreColorText } from "@/lib/analysis";
-
-/* ── Sample scan data (Gymshark Arrival Shorts) ── */
-const SAMPLE_SCAN = {
-  url: "gymshark.com/products/arrival-5-shorts",
-  brand: "Gymshark",
-  score: 52,
-  summary: "Missing reviews, structured data, and cross-sell recommendations",
-  categories: {
-    pageSpeed: 45, images: 55, socialProof: 15, checkout: 40, mobileCta: 50,
-    title: 65, aiDiscoverability: 20, structuredData: 15, pricing: 40,
-    description: 50, shipping: 55, crossSell: 15, cartRecovery: 45, trust: 30,
-    merchantFeed: 40, socialCommerce: 25, sizeGuide: 40, variantUx: 45,
-    accessibility: 40, contentFreshness: 50,
-  },
-  tips: [
-    "Add review count and star rating visible above the fold",
-    "Implement Product schema.org JSON-LD markup",
-    "Add 'Frequently Bought Together' cross-sell section",
-    "Include trust badges: free returns, secure checkout",
-    "Add estimated delivery date on product page",
-  ],
-};
+import { SAMPLE_SCAN } from "@/lib/sample-data";
 
 export default function Home() {
   const router = useRouter();
@@ -66,18 +46,15 @@ export default function Home() {
   return (
     <>
       {/* ── Nav ── */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)", boxShadow: "var(--nav-shadow)" }} aria-label="Main navigation">
-        <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-          <div className="text-2xl font-black tracking-tighter" style={{ color: "var(--nav-logo)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>Alpo</div>
-          <button
-            type="button"
-            onClick={() => document.getElementById("url-input")?.focus()}
-            className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm"
-          >
-            Scan Your Page
-          </button>
-        </div>
-      </nav>
+      <Nav logoHref={false}>
+        <button
+          type="button"
+          onClick={() => document.getElementById("url-input")?.focus()}
+          className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm"
+        >
+          Scan Your Page
+        </button>
+      </Nav>
 
       <main id="main-content" className="min-h-screen bg-[var(--bg)]">
         {/* ── Hero ── */}
