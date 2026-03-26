@@ -1,10 +1,12 @@
 "use client";
 
-import { PackageIcon } from "@phosphor-icons/react";
+import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import { type FreeResult, scoreColorTintBg, scoreColorText } from "@/lib/analysis";
 
 /* ══════════════════════════════════════════════════════════════
-   ProductGrid — Scrollable product card list with status badges
+   ProductGrid — Collapsible product sidebar
+   Expanded: full cards with thumbnail + name + status
+   Collapsed: narrow rail with just thumbnails
    ══════════════════════════════════════════════════════════════ */
 
 interface Product {
@@ -22,6 +24,8 @@ export interface ProductGridProps {
   storeName: string;
   domain: string;
   onSelectProduct: (index: number) => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export default function ProductGrid({
@@ -33,40 +37,146 @@ export default function ProductGrid({
   storeName,
   domain,
   onSelectProduct,
+  collapsed,
+  onToggleCollapse,
 }: ProductGridProps) {
   return (
     <aside
-      className="w-full lg:w-[35%] lg:max-w-[420px] lg:min-w-[280px] lg:h-[calc(100vh-72px)] lg:sticky lg:top-[72px] border-b lg:border-b-0 lg:border-r border-[var(--border)] bg-[var(--surface-dim)] flex flex-col"
+      className={`
+        ${collapsed
+          ? "w-full lg:w-[88px]"
+          : "w-full lg:w-[35%] lg:max-w-[420px] lg:min-w-[280px]"
+        }
+        lg:h-[calc(100vh-72px)] lg:sticky lg:top-[72px]
+        border-b lg:border-b-0 lg:border-r border-[var(--border)]
+        bg-[var(--surface)] flex flex-col
+        transition-[width] duration-300 ease-[var(--ease-out-quart,cubic-bezier(0.165,0.84,0.44,1))]
+      `}
       aria-label="Product list"
     >
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 px-5 py-4 bg-[var(--surface-dim)] border-b border-[var(--border)]">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-xl bg-[var(--brand-light)] border border-[var(--brand-border)] flex items-center justify-center shrink-0">
-            <PackageIcon size={16} weight="regular" color="var(--brand)" />
-          </div>
-          <div className="min-w-0">
-            <h2
-              className="text-base font-bold text-[var(--on-surface)] truncate leading-tight"
-              style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
-            >
-              {storeName || domain}
-            </h2>
-            <p className="text-xs text-[var(--on-surface-variant)]">
-              {products.length} product{products.length !== 1 ? "s" : ""} found
-            </p>
-          </div>
+      {/* ── Header ── */}
+      <div className="sticky top-0 z-10 bg-[var(--surface)] border-b border-[var(--border)]">
+        <div className={`flex items-center ${collapsed ? "justify-center px-2 py-4" : "justify-between px-5 py-4"}`}>
+          {/* Store info — hidden when collapsed */}
+          {!collapsed && (
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-xl bg-[var(--brand-light)] border border-[var(--brand-border)] flex items-center justify-center shrink-0">
+                <PackageIcon size={16} weight="regular" color="var(--brand)" />
+              </div>
+              <div className="min-w-0">
+                <h2
+                  className="text-base font-bold text-[var(--on-surface)] truncate leading-tight"
+                  style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                >
+                  {storeName || domain}
+                </h2>
+                <p className="text-xs text-[var(--on-surface-variant)]">
+                  {products.length} product{products.length !== 1 ? "s" : ""} found
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Collapse toggle — always visible on desktop */}
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--surface-container)] active:scale-95 transition-all shrink-0 cursor-pointer"
+            aria-label={collapsed ? "Expand product list" : "Collapse product list"}
+            title={collapsed ? "Expand product list" : "Collapse product list"}
+          >
+            <SidebarSimpleIcon
+              size={18}
+              weight="regular"
+              color="var(--on-surface-variant)"
+              style={{
+                transform: collapsed ? "scaleX(-1)" : "none",
+                transition: "transform 300ms ease",
+              }}
+            />
+          </button>
         </div>
       </div>
 
-      {/* Scrollable product list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2" role="list" aria-label="Products">
+      {/* ── Product list ── */}
+      <div
+        className={`flex-1 overflow-y-auto ${collapsed ? "p-2 space-y-2" : "p-3 space-y-2"}`}
+        role="list"
+        aria-label="Products"
+      >
         {sortedIndices.map((i) => {
           const product = products[i];
           const isSelected = selectedIndex === i;
           const isAnalyzing = analyzingHandle === product.slug;
           const cachedResult = analyzedResults.get(product.slug);
 
+          /* ── Collapsed: thumbnail-only buttons ── */
+          if (collapsed) {
+            return (
+              <button
+                key={product.url}
+                type="button"
+                role="listitem"
+                onClick={() => onSelectProduct(i)}
+                className={`
+                  cursor-pointer w-full flex items-center justify-center
+                  rounded-2xl transition-all duration-150 relative
+                  ${isSelected
+                    ? "ring-2 ring-[var(--brand)] ring-offset-2 ring-offset-[var(--surface)]"
+                    : "hover:ring-2 hover:ring-slate-300 hover:ring-offset-2 hover:ring-offset-[var(--surface)]"
+                  }
+                `}
+                aria-current={isSelected ? "true" : undefined}
+                aria-label={product.slug.replace(/-/g, " ")}
+                title={product.slug.replace(/-/g, " ")}
+              >
+                <div className="w-16 h-16 rounded-2xl bg-slate-400 overflow-hidden shrink-0 relative">
+                  {product.image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={product.image}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <PackageIcon size={24} weight="regular" color="var(--outline)" />
+                    </div>
+                  )}
+
+                  {/* Analyzing spinner overlay */}
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
+                      <span
+                        className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
+                        style={{ animation: "spin 0.8s linear infinite" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Score dot */}
+                  {cachedResult && !isAnalyzing && (
+                    <div
+                      className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-[var(--surface)]"
+                      style={{
+                        background: scoreColorTintBg(cachedResult.score),
+                        color: scoreColorText(cachedResult.score),
+                        fontFamily: "var(--font-manrope), Manrope, sans-serif",
+                      }}
+                    >
+                      {cachedResult.score}
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          }
+
+          /* ── Expanded: full card ── */
           return (
             <button
               key={product.url}

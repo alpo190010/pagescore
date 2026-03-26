@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { type FreeResult } from "@/lib/analysis";
 import { useProductAnalysis } from "@/hooks/useProductAnalysis";
@@ -85,6 +85,9 @@ export default function ProductListings({
     sortedIndices,
   });
 
+  /* ── Sidebar collapsed state ── */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   /* ── Mobile viewport ── */
   const [isMobile, setIsMobile] = useState(false);
   const [bottomSheetDismissed, setBottomSheetDismissed] = useState(false);
@@ -106,6 +109,12 @@ export default function ProductListings({
     !bottomSheetDismissed &&
     (!!selectedProduct || !!analyzingHandle || !!analysisResult || !!analysisError);
 
+  /* ── Auto-collapse sidebar on deep analyze ── */
+  const handleDeepAnalyzeAndCollapse = useCallback(() => {
+    setSidebarCollapsed(true);
+    handleDeepAnalyze();
+  }, [handleDeepAnalyze]);
+
   /* ── Shared props for AnalysisPane (rendered in 2 locations) ── */
   const analysisPaneProps: AnalysisPaneProps = useMemo(
     () => ({
@@ -126,7 +135,7 @@ export default function ProductListings({
       emailError,
       selectedLeak,
       competitorCTAName,
-      onDeepAnalyze: handleDeepAnalyze,
+      onDeepAnalyze: handleDeepAnalyzeAndCollapse,
       onRetryAnalysis: handleRetryAnalysis,
       onIssueClick: handleIssueClick,
       onCloseModal: handleCloseModal,
@@ -138,7 +147,7 @@ export default function ProductListings({
       analysisResult, analysisError, selectedUrl, leaks,
       lossLow, lossHigh, contentFading, email, emailStep,
       emailSubmitting, emailError, selectedLeak, competitorCTAName,
-      handleDeepAnalyze, handleRetryAnalysis, handleIssueClick,
+      handleDeepAnalyzeAndCollapse, handleRetryAnalysis, handleIssueClick,
       handleCloseModal, setEmail, submitEmail,
     ],
   );
@@ -158,6 +167,8 @@ export default function ProductListings({
         storeName={storeName}
         domain={domain}
         onSelectProduct={handleSelectProduct}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
 
       {/* ═══ RIGHT PANE — Analysis lifecycle ═══ */}

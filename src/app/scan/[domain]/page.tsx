@@ -178,7 +178,7 @@ function ScanPageContent() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <Nav />
-      <div className="pt-[72px] min-h-screen">
+      <div className="pt-[65px] min-h-screen">
         <ProductListings products={products} storeName={storeName} domain={domain} initialSku={initialSku} onSkuChange={handleSkuChange} initialAnalyses={initialAnalyses} />
       </div>
     </div>
