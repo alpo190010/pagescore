@@ -8,14 +8,14 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
-    <main className="min-h-screen px-4 pt-24 pb-16 max-w-2xl mx-auto">
+    <main id="main-content" className="min-h-screen px-4 pt-24 pb-16 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">Blog</h1>
       <p className="text-[var(--muted)] mb-10">Landing page tips, conversion data, and lessons from the trenches.</p>
 
       <article>
-        <h1 className="text-3xl font-bold mb-6">
+        <h2 className="text-3xl font-bold mb-6">
           What Makes a High-Converting Landing Page? We Analyzed 50+ Sites.
-        </h1>
+        </h2>
 
         <p className="text-[var(--muted)] mb-6">
           We ran our AI landing page analyzer on 50+ popular SaaS and startup
@@ -23,7 +23,7 @@ export default function BlogPage() {
           mistakes.
         </p>
 
-        <h2 className="text-xl font-bold mb-3 mt-8">The Average Score: 67/100</h2>
+        <h3 className="text-xl font-bold mb-3 mt-8">The Average Score: 67/100</h3>
         <p className="text-[var(--muted)] mb-4">
           Even well-funded companies leave significant conversion opportunities
           on the table. The most common issues we found:
@@ -43,7 +43,7 @@ export default function BlogPage() {
           </li>
         </ul>
 
-        <h2 className="text-xl font-bold mb-3 mt-8">Top Scoring Sites</h2>
+        <h3 className="text-xl font-bold mb-3 mt-8">Top Scoring Sites</h3>
         <div className="overflow-x-auto mb-6">
           <table className="w-full text-sm">
             <thead>
@@ -70,9 +70,9 @@ export default function BlogPage() {
           </table>
         </div>
 
-        <h2 className="text-xl font-bold mb-3 mt-8">
+        <h3 className="text-xl font-bold mb-3 mt-8">
           The 5 Quick Wins That Improve Any Landing Page
-        </h2>
+        </h3>
         <ol className="space-y-3 mb-6 list-decimal list-inside">
           <li className="text-sm">
             <strong>Add a clear CTA above the fold.</strong> Your visitor should
@@ -97,9 +97,9 @@ export default function BlogPage() {
         </ol>
 
         <div className="mt-10 p-6 rounded-xl bg-[var(--brand-light)] border border-[var(--brand-border)]">
-          <h3 className="text-lg font-bold mb-2">
+          <h4 className="text-lg font-bold mb-2">
             Want to know your score?
-          </h3>
+          </h4>
           <p className="text-[var(--muted)] text-sm mb-4">
             Paste any URL into alpo.ai and get your AI-powered score + 3
             specific fixes in 30 seconds. Free, no signup required.

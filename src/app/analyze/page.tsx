@@ -258,7 +258,7 @@ function AnalyzePageContent() {
         </div>
       </nav>
 
-      <main className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>
+      <main id="main-content" className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>
         {/* ── Loader ── */}
         {loading && (
           <div className="anim-phase-enter">
@@ -313,7 +313,7 @@ function AnalyzePageContent() {
                       </div>
                       <div className="px-4 py-2.5 bg-[var(--surface-container-low)] rounded-xl">
                         <div className="text-[9px] text-[var(--on-surface-variant)] uppercase font-bold tracking-[0.15em]">Avg Score</div>
-                        <div className="text-lg font-bold text-[var(--on-surface)]" style={{ fontVariantNumeric: "tabular-nums" }}>65</div>
+                        <div className="text-lg font-bold text-[var(--on-surface)]" style={{ fontVariantNumeric: "tabular-nums" }}>{Math.round(Object.values(result.categories).reduce((a, b) => a + b, 0) / Math.max(Object.values(result.categories).length, 1))}</div>
                       </div>
                     </div>
                   </div>

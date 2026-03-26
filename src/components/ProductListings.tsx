@@ -205,7 +205,6 @@ export default function ProductListings({
             ? err.message
             : "Something went wrong. Please try again.";
         setCompetitorError(message);
-        console.error("Competitor fetch failed:", message);
       } finally {
         setCompetitorLoading(false);
       }

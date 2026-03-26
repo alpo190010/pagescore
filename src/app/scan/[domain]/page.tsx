@@ -87,8 +87,7 @@ function ScanPageContent() {
       }
       // 404 or empty products → fall through to discover-products
     } catch {
-      // Cache check failed (network error, etc.) — fall through
-      console.error("[scan] Cache check failed for", domain);
+      // Cache check failed (network error, etc.) — fall through to discover-products
     }
 
     /* ── Fallback: discover products via API ── */
@@ -130,7 +129,7 @@ function ScanPageContent() {
       <div className="min-h-screen bg-[var(--bg)]">
         <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
           <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-            <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
+            <a href="/" className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</a>
           </div>
         </nav>
         <div className="pt-[72px] flex flex-col items-center justify-center min-h-screen px-6">
@@ -149,7 +148,7 @@ function ScanPageContent() {
       <div className="min-h-screen bg-[var(--bg)]">
         <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
           <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-            <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
+            <a href="/" className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</a>
           </div>
         </nav>
         <div className="pt-[72px] flex flex-col items-center justify-center min-h-screen px-6 text-center">
@@ -188,7 +187,7 @@ function ScanPageContent() {
     <div className="min-h-screen bg-[var(--bg)]">
       <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
         <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-          <div className="text-2xl font-black tracking-tighter text-violet-700 cursor-pointer" onClick={() => router.push("/")} style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
+          <a href="/" className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</a>
         </div>
       </nav>
       <div className="pt-[72px] min-h-screen">

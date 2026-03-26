@@ -72,7 +72,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="min-h-screen bg-[var(--bg)]">
+      <main id="main-content" className="min-h-screen bg-[var(--bg)]">
         {/* ── Hero ── */}
         <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-16 overflow-hidden anim-phase-enter">
           <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-violet-200/30 to-transparent blur-3xl opacity-50 pointer-events-none" />
@@ -257,7 +257,7 @@ export default function Home() {
                 <div key={s.num} className="relative" style={{ animation: `fade-in-up 500ms ease-out ${i * 120 + 100}ms both` }}>
                   <div className="text-[8rem] font-black text-[var(--brand)]/5 absolute -top-16 sm:-top-20 -left-2 sm:-left-4 pointer-events-none select-none" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>{s.num}</div>
                   <div className="relative z-10">
-                    <h4 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-[var(--on-surface)]">{s.title}</h4>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-[var(--on-surface)]">{s.title}</h3>
                     <p className="text-[var(--on-surface-variant)] leading-relaxed">{s.desc}</p>
                   </div>
                 </div>
@@ -287,11 +287,11 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 py-10 sm:py-12 gap-6 max-w-7xl mx-auto">
             <div className="flex flex-col gap-1 text-center md:text-left">
               <div className="text-lg font-bold text-violet-800" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
-              <p className="text-slate-500 text-xs tracking-wide uppercase">© 2025 alpo.ai. All rights reserved.</p>
+              <p className="text-slate-500 text-xs tracking-wide uppercase">© {new Date().getFullYear()} alpo.ai. All rights reserved.</p>
             </div>
             <div className="flex gap-6 sm:gap-8 text-xs tracking-wide uppercase">
-              <a className="cursor-pointer text-slate-500 hover:text-violet-600 transition-colors" href="#">Privacy Policy</a>
-              <a className="cursor-pointer text-slate-500 hover:text-violet-600 transition-colors" href="#">Terms of Service</a>
+              <span className="text-slate-500">Privacy Policy</span>
+              <span className="text-slate-500">Terms of Service</span>
             </div>
           </div>
         </footer>

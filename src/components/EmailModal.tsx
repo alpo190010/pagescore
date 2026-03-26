@@ -159,52 +159,19 @@ export default function EmailModal({
                 You&apos;re in the Queue!
               </h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
-                Due to high demand, your detailed report with step-by-step fixes will arrive within <strong className="text-[var(--text-primary)]">48 hours</strong>.
+                Your detailed report with step-by-step fixes will arrive within <strong className="text-[var(--text-primary)]">48 hours</strong>. We&apos;ll email you when it&apos;s ready.
               </p>
-
-              {/* Priority upsell */}
-              <div
-                className="p-5 rounded-2xl border-2 border-dashed mb-4"
-                style={{
-                  borderColor: "var(--brand-border)",
-                  background: "linear-gradient(135deg, var(--brand-light), var(--secondary-container))",
-                }}
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="var(--brand)"/>
-                  </svg>
-                  <span className="text-sm font-bold text-[var(--brand)]">Skip the wait</span>
-                </div>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">
-                  Get your full report with expert suggestions <strong className="text-[var(--text-primary)]">instantly</strong>.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    captureEvent("priority_report_clicked", { url, score, email });
-                    // TODO: integrate Stripe checkout
-                    alert("Stripe checkout coming soon!");
-                  }}
-                  className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
-                  style={{
-                    background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
-                    boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)",
-                  }}
-                >
-                  Get Priority Report — $0.99
-                </button>
-                <p className="text-xs text-center mt-2 text-[var(--text-tertiary)]">
-                  Full report with actionable suggestions • Instant delivery
-                </p>
-              </div>
 
               <button
                 type="button"
                 onClick={handleClose}
-                className="cursor-pointer text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors mt-2"
+                className="w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
+                style={{
+                  background: "linear-gradient(135deg, var(--brand), var(--primary-dim))",
+                  boxShadow: "0 4px 14px rgba(124, 58, 237, 0.25)",
+                }}
               >
-                I&apos;ll wait for the free report →
+                Got it
               </button>
             </div>
           )}

@@ -178,7 +178,7 @@ export default function AnalysisResults({
                       className="text-lg font-bold text-[var(--on-surface)]"
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
-                      65
+                      {Math.round(Object.values(result.categories).reduce((a, b) => a + b, 0) / Math.max(Object.values(result.categories).length, 1))}
                     </div>
                   </div>
                 </div>
@@ -187,20 +187,7 @@ export default function AnalysisResults({
                   <button
                     type="button"
                     onClick={onReanalyze}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                    style={{
-                      color: "var(--on-surface-variant)",
-                      backgroundColor: "var(--surface-container-low)",
-                      border: "1px solid var(--border)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--surface-container)";
-                      e.currentTarget.style.color = "var(--on-surface)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--surface-container-low)";
-                      e.currentTarget.style.color = "var(--on-surface-variant)";
-                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors text-[var(--on-surface-variant)] bg-[var(--surface-container-low)] border border-[var(--border)] hover:bg-[var(--surface-container)] hover:text-[var(--on-surface)] focus-visible:bg-[var(--surface-container)] focus-visible:text-[var(--on-surface)]"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M21.5 2v6h-6" />

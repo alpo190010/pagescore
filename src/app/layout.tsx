@@ -65,6 +65,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://openrouter.ai" />
       </head>
       <body className="antialiased font-[family-name:var(--font-inter)]">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--brand)] focus:text-white focus:text-sm focus:font-semibold">
+          Skip to content
+        </a>
         <PHProvider>{children}</PHProvider>
       </body>
     </html>
