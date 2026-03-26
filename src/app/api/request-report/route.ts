@@ -3,7 +3,9 @@ import { Resend } from "resend";
 import { db } from "@/db";
 import { reports, subscribers } from "@/db/schema";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 /** Escape HTML entities to prevent XSS in email templates */
 function escapeHtml(str: string): string {

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
     const safeTips = Array.isArray(tips) ? tips.map((t: unknown) => String(t).slice(0, 300)).slice(0, 20) : [];
     const safeCats = (categories && typeof categories === "object") ? categories as Record<string, number> : {};
 
-    const { error: emailError } = await resend.emails.send({
+    const { error: emailError } = await getResend().emails.send({
       from: "alpo.ai <noreply@alpo.ai>",
       to: email.trim(),
       subject: `Your product page scored ${safeScore}/100 — full report with all 20 dimensions`,
