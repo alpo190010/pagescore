@@ -110,8 +110,14 @@
   --text-secondary: var(--on-surface-variant);
   --text-tertiary:  var(--outline);
   --brand:          var(--primary);
+  --brand-dim:      var(--primary-dim);
   --brand-light:    #f5f3ff;
   --brand-border:   #ddd6fe;
+  --brand-on-dark:  var(--on-primary-container);
+  --nav-bg:         var(--surface-brand-tint);
+  --nav-shadow:     var(--shadow-brand-sm);
+  --nav-logo:       var(--primary-dim);
+  --brand-glow:     var(--surface-brand-subtle);
   --error:          var(--error-base);
   --error-text:     var(--error-base);
   --error-light:    #fef2f2;

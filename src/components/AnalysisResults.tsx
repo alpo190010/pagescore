@@ -268,7 +268,8 @@ export default function AnalysisResults({
               <button
                 type="button"
                 onClick={onRetryCompetitors}
-                className="cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand)] to-violet-800 hover:scale-105 transition-transform"
+                className="cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:scale-105 transition-transform"
+                style={{ background: "var(--gradient-primary)" }}
               >
                 Retry
               </button>
@@ -514,7 +515,8 @@ export default function AnalysisResults({
             <button
               type="button"
               onClick={onAnalyzeAgain}
-              className="cursor-pointer inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800"
+              className="cursor-pointer inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
+              style={{ background: "var(--gradient-primary)" }}
               style={{ boxShadow: "var(--shadow-brand-md)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

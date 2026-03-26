@@ -59,13 +59,13 @@ export default function Home() {
   return (
     <>
       {/* ── Nav ── */}
-      <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)", boxShadow: "var(--nav-shadow)" }} aria-label="Main navigation">
         <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-          <div className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
+          <div className="text-2xl font-black tracking-tighter" style={{ color: "var(--nav-logo)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
           <button
             type="button"
             onClick={() => document.getElementById("url-input")?.focus()}
-            className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm"
+            className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm" style={{ boxShadow: "var(--shadow-brand-sm)" }}
           >
             Scan Your Page
           </button>
@@ -75,7 +75,7 @@ export default function Home() {
       <main id="main-content" className="min-h-screen bg-[var(--bg)]">
         {/* ── Hero ── */}
         <section className="relative pt-32 sm:pt-40 pb-12 sm:pb-16 overflow-hidden anim-phase-enter">
-          <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-violet-200/30 to-transparent blur-3xl opacity-50 pointer-events-none" />
+          <div className="absolute top-0 right-0 -z-10 w-1/2 h-full blur-3xl opacity-50 pointer-events-none" style={{ background: "linear-gradient(to left, var(--brand-glow), transparent)" }} />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 text-center">
             <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-[var(--on-surface)] mb-8 leading-[1.1]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
@@ -232,7 +232,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="cursor-pointer primary-gradient text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-violet-600/20"
+                className="cursor-pointer primary-gradient text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all" style={{ boxShadow: "var(--shadow-brand-sm)" }}
               >
                 Scan Your Page Free →
               </button>
@@ -274,8 +274,8 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-6 sm:mb-8 tracking-tight" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
                 If {SAMPLE_SCAN.brand} leaks revenue,<br className="hidden sm:block" /> so does your page.
               </h2>
-              <p className="text-lg sm:text-xl text-violet-100 mb-10 sm:mb-12 max-w-xl mx-auto">Find your 20 conversion leaks in 30 seconds. Free. No signup.</p>
-              <button type="button" onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="cursor-pointer bg-white text-violet-600 px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg hover:bg-violet-50 transition-all hover:scale-105 active:scale-95">
+              <p className="text-lg sm:text-xl mb-10 sm:mb-12 max-w-xl mx-auto" style={{ color: "var(--brand-on-dark)" }}>Find your 20 conversion leaks in 30 seconds. Free. No signup.</p>
+              <button type="button" onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="cursor-pointer bg-white px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95" style={{ color: "var(--primary)" }}>
                 Scan Your Page Now
               </button>
             </div>
@@ -283,10 +283,10 @@ export default function Home() {
         </section>
 
         {/* ── Footer ── */}
-        <footer className="bg-violet-50 border-t border-violet-100 w-full">
+        <footer style={{ background: "var(--nav-bg)", borderTop: "1px solid var(--outline-variant)" }} className="w-full">
           <div className="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 py-10 sm:py-12 gap-6 max-w-7xl mx-auto">
             <div className="flex flex-col gap-1 text-center md:text-left">
-              <div className="text-lg font-bold text-violet-800" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
+              <div className="text-lg font-bold" style={{ color: "var(--primary-dim)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo</div>
               <p className="text-slate-500 text-xs tracking-wide uppercase">© {new Date().getFullYear()} alpo.ai. All rights reserved.</p>
             </div>
             <div className="flex gap-6 sm:gap-8 text-xs tracking-wide uppercase">

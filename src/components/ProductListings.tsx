@@ -710,9 +710,10 @@ export default function ProductListings({
                 onClick={() => handleSelectProduct(i)}
                 className={`cursor-pointer w-full text-left p-4 rounded-2xl transition-all duration-150 relative border-2 ${
                   isSelected
-                    ? "border-[var(--brand)] bg-violet-50"
+                    ? "border-[var(--brand)]"
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
+                style={isSelected ? { background: "var(--brand-light)" } : undefined}
                 style={isSelected ? {
                   boxShadow: "var(--shadow-brand-ring)",
                 } : undefined}

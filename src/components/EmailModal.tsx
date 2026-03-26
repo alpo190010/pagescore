@@ -75,7 +75,7 @@ export default function EmailModal({
         style={{ boxShadow: "var(--shadow-modal)" }}
       >
         {/* Top accent */}
-        <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
+        <div className="h-1 w-full" style={{ background: "var(--gradient-primary)" }} />
 
         {/* Close button */}
         <button

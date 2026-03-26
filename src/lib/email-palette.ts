@@ -4,12 +4,12 @@
  * HTML emails cannot reference CSS custom properties — all values must be
  * literal hex strings. Keep these aligned with the design tokens in globals.css.
  *
- * Note: CTA button color unified to brand purple (#7C3AED). The request-report
+ * Note: CTA button color unified to brand primary. The request-report
  * route previously used blue (#2563EB) — intentionally aligned to brand.
  */
 export const emailPalette = {
-  brand: '#7C3AED',
-  brandCta: '#7C3AED',
+  brand: '#D97706',
+  brandCta: '#D97706',
   background: '#F8F7F4',
   cardBg: '#ffffff',
   cardBorder: '#E5E7EB',

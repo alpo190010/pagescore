@@ -245,13 +245,13 @@ function AnalyzePageContent() {
   return (
     <>
       {/* ── Nav ── */}
-      <nav className="fixed top-0 w-full z-50 bg-violet-50/80 backdrop-blur-xl shadow-xl shadow-violet-900/5" aria-label="Main navigation">
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)", boxShadow: "var(--nav-shadow)" }} aria-label="Main navigation">
         <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 max-w-screen-2xl mx-auto">
-          <a href="/" className="text-2xl font-black tracking-tighter text-violet-700" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo.ai</a>
+          <a href="/" className="text-2xl font-black tracking-tighter" style={{ color: "var(--nav-logo)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>alpo.ai</a>
           <button
             type="button"
             onClick={handleScanAnother}
-            className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95 transition-all text-sm"
+            className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm" style={{ boxShadow: "var(--shadow-brand-sm)" }}
           >
             {result ? "Scan Another" : "Analyzing..."}
           </button>
@@ -445,7 +445,7 @@ function AnalyzePageContent() {
             </div>
 
             <div className="text-center mt-12">
-              <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-violet-800" style={{ boxShadow: "var(--shadow-brand-md)" }}>
+              <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring" style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-brand-md)" }}>
                 Analyze Another Page
               </button>
             </div>
@@ -556,7 +556,7 @@ function EmailModal({
           ${modalClosing ? "max-md:drawer-exit md:modal-content-exit" : "max-md:drawer-enter md:modal-content-enter"}`}
         style={{ boxShadow: "var(--shadow-modal)" }}
       >
-        <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] to-violet-800" />
+        <div className="h-1 w-full" style={{ background: "var(--gradient-primary)" }} />
         <button type="button" onClick={onClose} className="cursor-pointer absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
         </button>
