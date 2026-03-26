@@ -7,6 +7,8 @@ interface ScoreRingProps {
   animatedScore: number;
   domain: string;
   productName?: string;
+  productUrl?: string;
+  productImage?: string;
   summary: string;
   categories: CategoryScores;
   leaksCount: number;
@@ -18,6 +20,8 @@ export default function ScoreRing({
   animatedScore,
   domain,
   productName,
+  productUrl,
+  productImage,
   summary,
   categories,
   leaksCount,
@@ -81,25 +85,41 @@ export default function ScoreRing({
           >
             {score >= 80 ? "Excellent" : score >= 60 ? "Above Average" : score >= 40 ? "Needs Improvement" : "Critical Issues Found"}
           </span>
-          {full ? (
-            <>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight capitalize" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
-                {productName || domain}
-              </h1>
-              {productName && (
-                <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">{domain}</p>
+          <div className="flex items-center gap-3 justify-center md:justify-start">
+            {productImage && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={productImage}
+                alt=""
+                className={`${full ? "w-12 h-12" : "w-10 h-10"} rounded-xl object-cover shrink-0 border border-[var(--outline-variant)]/20`}
+              />
+            )}
+            <div>
+              {full ? (
+                <>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight capitalize" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
+                    {productName || domain}
+                  </h1>
+                  {productName && (
+                    <a href={productUrl || `https://${domain}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] hover:underline mt-0.5">
+                      {domain} ↗
+                    </a>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--on-surface)] tracking-tight capitalize" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
+                    {productName || domain}
+                  </h2>
+                  {productName && (
+                    <a href={productUrl || `https://${domain}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] hover:underline mt-0.5">
+                      {domain} ↗
+                    </a>
+                  )}
+                </>
               )}
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--on-surface)] tracking-tight capitalize" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
-                {productName || domain}
-              </h2>
-              {productName && (
-                <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">{domain}</p>
-              )}
-            </>
-          )}
+            </div>
+          </div>
         </div>
         <p className={`text-[var(--on-surface-variant)] max-w-md ${full ? "text-sm sm:text-base" : "text-sm"} leading-relaxed`}>
           {summary}

@@ -213,6 +213,8 @@ export default function AnalysisPane({
             domain={domain}
             url={selectedUrl}
             productName={selectedProduct?.slug.replace(/-/g, " ")}
+            productUrl={selectedProduct?.url}
+            productImage={selectedProduct?.image}
             onIssueClick={onIssueClick}
             onAnalyzeAgain={onDeepAnalyze}
             onFetchCompetitors={() => {}}

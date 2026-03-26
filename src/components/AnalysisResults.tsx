@@ -35,6 +35,8 @@ interface AnalysisResultsProps {
   domain: string;
   url: string;
   productName?: string;
+  productUrl?: string;
+  productImage?: string;
   onIssueClick: (key: string) => void;
   onAnalyzeAgain: () => void;
   onFetchCompetitors: () => void;
@@ -53,6 +55,8 @@ export default function AnalysisResults({
   domain,
   url,
   productName,
+  productUrl,
+  productImage,
   onIssueClick,
   onAnalyzeAgain,
   onFetchCompetitors,
@@ -108,6 +112,8 @@ export default function AnalysisResults({
               animatedScore={animatedScore}
               domain={domain || url}
               productName={productName}
+              productUrl={productUrl}
+              productImage={productImage}
               summary={result.summary}
               categories={result.categories}
               leaksCount={leaks.length}
