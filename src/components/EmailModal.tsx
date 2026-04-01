@@ -54,7 +54,6 @@ export default function EmailModal({
   const [modalClosing, setModalClosing] = useState(false);
   const [prioritySending, setPrioritySending] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<Element | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -63,10 +62,18 @@ export default function EmailModal({
     if (isOpen) setPrioritySending(false);
   }, [isOpen]);
 
-  // Escape key + focus trap
+  // Focus save/restore — runs once on open, once on close
+  useEffect(() => {
+    if (!isOpen) return;
+    const trigger = document.activeElement;
+    return () => {
+      if (trigger instanceof HTMLElement) trigger.focus();
+    };
+  }, [isOpen]);
+
+  // Escape key + focus trap — re-binds when step changes (focusable elements differ per step)
   useEffect(() => {
     if (!isOpen || !emailStep) return;
-    previousFocusRef.current = document.activeElement;
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -92,12 +99,7 @@ export default function EmailModal({
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      if (previousFocusRef.current instanceof HTMLElement) {
-        previousFocusRef.current.focus();
-      }
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, emailStep]);
 
   if (!isOpen || !emailStep) return null;
