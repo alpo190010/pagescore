@@ -265,8 +265,9 @@ export default function CompetitorComparison({
           <button
             type="button"
             onClick={() => onBeatCompetitor(topCompetitor.name)}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring bg-gradient-to-r from-[var(--brand)] to-blue-700"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
             style={{
+              background: "var(--gradient-primary)",
               boxShadow: "0 8px 32px color-mix(in srgb, var(--brand) 20%, transparent)",
             }}
           >

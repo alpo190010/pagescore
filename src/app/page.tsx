@@ -50,7 +50,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => document.getElementById("url-input")?.focus()}
-          className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm"
+          className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-[1.02] active:scale-95 transition-all text-sm"
         >
           Scan Your Page
         </button>
@@ -87,7 +87,7 @@ export default function Home() {
                   value={url}
                   onChange={handleUrlChange}
                   aria-label="Product page URL"
-                  className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-base sm:text-lg placeholder:text-[var(--outline)]/60 px-4 py-3 sm:py-0 text-[var(--on-surface)]"
+                  className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-base sm:text-lg placeholder:text-[var(--outline)] px-4 py-3 sm:py-0 text-[var(--on-surface)]"
                   aria-describedby={error ? "url-error" : undefined}
                 />
                 <button
@@ -215,7 +215,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="cursor-pointer primary-gradient text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all"
+                className="cursor-pointer primary-gradient text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Scan Your Page Free →
               </button>
@@ -257,7 +257,7 @@ export default function Home() {
                 If {SAMPLE_SCAN.brand} leaks revenue,<br className="hidden sm:block" /> so does your page.
               </h2>
               <p className="text-lg sm:text-xl mb-10 sm:mb-12 max-w-xl mx-auto" style={{ color: "var(--brand-on-dark)" }}>Find your 20 conversion leaks in 30 seconds. Free. No signup.</p>
-              <button type="button" onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="cursor-pointer bg-white px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95" style={{ color: "var(--primary)" }}>
+              <button type="button" onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="cursor-pointer bg-white px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg transition-all hover:scale-[1.02] active:scale-95" style={{ color: "var(--primary)" }}>
                 Scan Your Page Now
               </button>
             </div>
@@ -269,11 +269,11 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 py-10 sm:py-12 gap-6 max-w-7xl mx-auto">
             <div className="flex flex-col gap-1 text-center md:text-left">
               <div className="text-lg font-bold" style={{ color: "var(--primary-dim)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>Alpo</div>
-              <p className="text-slate-500 text-xs tracking-wide uppercase">© {new Date().getFullYear()} alpo.ai. All rights reserved.</p>
+              <p className="text-[var(--outline)] text-xs tracking-wide uppercase">© {new Date().getFullYear()} alpo.ai. All rights reserved.</p>
             </div>
             <div className="flex gap-6 sm:gap-8 text-xs tracking-wide uppercase">
-              <span className="text-slate-500">Privacy Policy</span>
-              <span className="text-slate-500">Terms of Service</span>
+              <span className="text-[var(--outline)]">Privacy Policy</span>
+              <span className="text-[var(--outline)]">Terms of Service</span>
             </div>
           </div>
         </footer>

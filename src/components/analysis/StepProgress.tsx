@@ -1,9 +1,10 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { CheckIcon } from "@phosphor-icons/react";
 
 interface StepProgressProps {
-  steps: { icon: string; label: string; sub: string }[];
+  steps: { icon: ReactNode; label: string; sub: string }[];
   activeStep: number;
   stepsComplete?: boolean;
   transitionDuration?: string;

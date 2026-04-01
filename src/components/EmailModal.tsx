@@ -66,7 +66,7 @@ export default function EmailModal({
 
   return (
     <div
-      className={`cursor-pointer fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
       style={{ backgroundColor: "var(--overlay-backdrop)", backdropFilter: "blur(4px)" }}
       onClick={handleBackdropClick}
       role="dialog"

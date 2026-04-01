@@ -1,6 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  MagnifyingGlassIcon,
+  ImageIcon,
+  PencilSimpleIcon,
+  StarIcon,
+  ShoppingCartIcon,
+  ChartBarIcon,
+} from "@phosphor-icons/react";
 import StepProgress from "@/components/analysis/StepProgress";
 
 /* ── Product metadata for the preview panel ── */
@@ -15,12 +23,12 @@ interface ProductMeta {
 }
 
 const STEPS = [
-  { icon: "🔍", label: "Fetching your page", sub: "Reading HTML, images, and metadata" },
-  { icon: "🖼", label: "Checking visuals", sub: "Image quality, count, and layout" },
-  { icon: "✍️", label: "Analyzing copy", sub: "Title, description, and keywords" },
-  { icon: "⭐", label: "Evaluating trust signals", sub: "Reviews, badges, and guarantees" },
-  { icon: "🛒", label: "Scoring conversions", sub: "CTA, pricing, and urgency" },
-  { icon: "📊", label: "Calculating your score", sub: "Compiling results" },
+  { icon: <MagnifyingGlassIcon size={16} weight="regular" />, label: "Fetching your page", sub: "Reading HTML, images, and metadata" },
+  { icon: <ImageIcon size={16} weight="regular" />, label: "Checking visuals", sub: "Image quality, count, and layout" },
+  { icon: <PencilSimpleIcon size={16} weight="regular" />, label: "Analyzing copy", sub: "Title, description, and keywords" },
+  { icon: <StarIcon size={16} weight="regular" />, label: "Evaluating trust signals", sub: "Reviews, badges, and guarantees" },
+  { icon: <ShoppingCartIcon size={16} weight="regular" />, label: "Scoring conversions", sub: "CTA, pricing, and urgency" },
+  { icon: <ChartBarIcon size={16} weight="regular" />, label: "Calculating your score", sub: "Compiling results" },
 ];
 
 /** Extract product handle from a Shopify URL */

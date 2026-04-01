@@ -51,6 +51,10 @@
   --on-error:           var(--on-primary);
   --on-error-container: #93000a;
 
+  /* ── Accent (signal red — revenue loss, urgency) ── */
+  --accent:             #DC2626;  /* red-600 */
+  --accent-dim:         #991B1B;  /* red-800 — gradient endpoint */
+
   /* ── Inverse ── */
   --inverse-surface:    #18181b;  /* zinc-900 */
   --inverse-on-surface: var(--on-primary-container);
@@ -73,7 +77,7 @@
   --shadow-subtle:   0 2px 8px rgba(0, 0, 0, 0.06);
 
   /* ── Composed Patterns ── */
-  --gradient-error:       linear-gradient(135deg, #DC2626, #991B1B);
+  --gradient-error:       linear-gradient(135deg, var(--accent), var(--accent-dim));
   --shadow-error:         0 20px 60px rgba(220, 38, 38, 0.25);
   --shadow-brand-sm:      0 4px 14px rgba(0, 0, 0, 0.08);
   --shadow-brand-md:      0 8px 32px rgba(0, 0, 0, 0.1);
@@ -135,7 +139,7 @@
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  transition: all 0.3s ease;
+  transition: backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, border-color 0.3s ease;
 }
 .glass-card:hover {
   backdrop-filter: blur(var(--glass-blur-hover));

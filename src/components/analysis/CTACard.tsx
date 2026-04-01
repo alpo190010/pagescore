@@ -50,7 +50,7 @@ export default function CTACard({
         <p className="text-white/60 text-sm max-w-[200px] mx-auto leading-relaxed">
           Step-by-step recommendations for all {leaksCount} issues{!full && ", sent to your inbox"}.
         </p>
-        <span className={`inline-flex items-center gap-1.5 ${full ? "px-6 py-2.5" : "px-5 py-2"} bg-white text-[var(--on-surface)] rounded-full font-bold text-sm group-hover:scale-105 transition-transform`}>
+        <span className={`inline-flex items-center gap-1.5 ${full ? "px-6 py-2.5" : "px-5 py-2"} bg-white text-[var(--on-surface)] rounded-full font-bold text-sm group-hover:scale-[1.02] transition-transform`}>
           Get Free Report
           <CaretRightIcon className="w-4 h-4" weight="bold" />
         </span>

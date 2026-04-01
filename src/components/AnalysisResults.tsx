@@ -151,7 +151,7 @@ export default function AnalysisResults({
               <button
                 type="button"
                 onClick={onRetryCompetitors}
-                className="cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:scale-105 transition-transform"
+                className="cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:scale-[1.02] transition-transform"
                 style={{ background: "var(--gradient-primary)" }}
               >
                 Retry

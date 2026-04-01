@@ -175,7 +175,7 @@ function AnalyzePageContent() {
   return (
     <>
       <Nav logoText="alpo.ai">
-        <button type="button" onClick={handleScanAnother} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-105 active:scale-95 transition-all text-sm">
+        <button type="button" onClick={handleScanAnother} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-[1.02] active:scale-95 transition-all text-sm">
           {result ? "Scan Another" : "Analyzing..."}
         </button>
       </Nav>
