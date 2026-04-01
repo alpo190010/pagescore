@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { XIcon, PlusSquareIcon, CheckCircleIcon, LightningIcon } from "@phosphor-icons/react";
 import { type LeakCard, captureEvent } from "@/lib/analysis";
 
@@ -52,6 +52,53 @@ export default function EmailModal({
   emailStep, url, score, onStepChange,
 }: EmailModalProps) {
   const [modalClosing, setModalClosing] = useState(false);
+  const [prioritySending, setPrioritySending] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Reset prioritySending when modal reopens
+  useEffect(() => {
+    if (isOpen) setPrioritySending(false);
+  }, [isOpen]);
+
+  // Escape key + focus trap
+  useEffect(() => {
+    if (!isOpen || !emailStep) return;
+    previousFocusRef.current = document.activeElement;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setModalClosing(true);
+        setTimeout(() => { setModalClosing(false); onCloseRef.current(); }, 200);
+        return;
+      }
+      if (e.key === "Tab" && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocusRef.current instanceof HTMLElement) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [isOpen, emailStep]);
 
   if (!isOpen || !emailStep) return null;
 
@@ -74,6 +121,7 @@ export default function EmailModal({
       aria-label="Get detailed fix"
     >
       <div
+        ref={modalRef}
         className={`relative w-full max-w-md bg-[var(--surface)] rounded-3xl overflow-hidden ${modalClosing ? "modal-content-exit" : "modal-content-enter"}`}
         style={{ boxShadow: "var(--shadow-modal)" }}
       >
@@ -97,7 +145,7 @@ export default function EmailModal({
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
                   {competitorCTAName
-                    ? <>Get a Detailed Plan to Beat &ldquo;{competitorCTAName}&rdquo;</>
+                    ? <>Get a Detailed Plan to Beat &ldquo;<span className="inline-block max-w-[200px] truncate align-bottom">{competitorCTAName}</span>&rdquo;</>
                     : <>Get the Fix for &ldquo;{leaks.find(l => l.key === selectedLeak)?.category}&rdquo;</>}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -149,7 +197,10 @@ export default function EmailModal({
                     <p className="text-sm text-[var(--text-secondary)] mb-4">Get your full report <strong className="text-[var(--text-primary)]">instantly</strong>.</p>
                     <button
                       type="button"
+                      disabled={prioritySending}
                       onClick={() => {
+                        if (prioritySending) return;
+                        setPrioritySending(true);
                         captureEvent("priority_report_clicked", { url, score, email });
                         fetch("/api/send-report-now", {
                           method: "POST", headers: { "Content-Type": "application/json" },
@@ -157,10 +208,10 @@ export default function EmailModal({
                         }).catch(() => {});
                         onStepChange("pricing");
                       }}
-                      className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring"
-                      style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))" }}
+                      className="cursor-pointer w-full px-6 py-3.5 rounded-xl text-base font-semibold text-white polish-hover-lift polish-focus-ring disabled:opacity-50"
+                      style={{ background: prioritySending ? "var(--text-tertiary)" : "linear-gradient(135deg, var(--brand), var(--primary-dim))" }}
                     >
-                      Get Priority Report — Instant
+                      {prioritySending ? "Sending..." : "Get Priority Report — Instant"}
                     </button>
                     <p className="text-xs text-center mt-2 text-[var(--text-tertiary)]">Full report • Sent to your email now</p>
                   </div>

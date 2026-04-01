@@ -181,6 +181,9 @@ function AnalyzePageContent() {
       </Nav>
 
       <main id="main-content" className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>
+        <div className="sr-only" aria-live="polite">
+          {result && !loading && `Analysis complete. Score: ${result.score} out of 100. ${leaks.length} issues found.`}
+        </div>
         {loading && (
           <div className="anim-phase-enter"><AnalysisLoader url={url} /></div>
         )}

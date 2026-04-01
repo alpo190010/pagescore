@@ -215,22 +215,21 @@ export default function ProductGrid({
                 title={product.slug.replace(/-/g, " ")}
               >
                 <div className="w-16 h-16 rounded-2xl bg-slate-400 overflow-hidden shrink-0 relative">
-                  {product.image ? (
+                  {product.image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={product.image}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover peer"
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.target as HTMLImageElement).classList.add("hidden");
                       }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PackageIcon size={24} weight="regular" color="var(--outline)" />
-                    </div>
                   )}
+                  <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
+                    <PackageIcon size={24} weight="regular" color="var(--outline)" />
+                  </div>
 
                   {/* Analyzing spinner overlay */}
                   {isAnalyzing && (
@@ -278,22 +277,21 @@ export default function ProductGrid({
               <div className="flex items-start gap-4 p-4">
                 {/* Thumbnail with score overlay */}
                 <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 relative">
-                  {product.image ? (
+                  {product.image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={product.image}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover peer"
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.target as HTMLImageElement).classList.add("hidden");
                       }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PackageIcon size={24} weight="regular" color="var(--outline)" />
-                    </div>
                   )}
+                  <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
+                    <PackageIcon size={24} weight="regular" color="var(--outline)" />
+                  </div>
                   {cachedResult && !isAnalyzing && (
                     <div
                       className="absolute inset-0 flex items-center justify-center"

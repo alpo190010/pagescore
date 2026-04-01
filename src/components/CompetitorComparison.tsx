@@ -271,7 +271,7 @@ export default function CompetitorComparison({
               boxShadow: "0 8px 32px color-mix(in srgb, var(--brand) 20%, transparent)",
             }}
           >
-            Get a Plan to Beat {topCompetitor.name} →
+            Get a Plan to Beat <span className="inline-block max-w-[200px] truncate align-bottom">{topCompetitor.name}</span> →
           </button>
         </div>
       )}

@@ -8,6 +8,7 @@ import {
   StarIcon,
   ShoppingCartIcon,
   ChartBarIcon,
+  PackageIcon,
 } from "@phosphor-icons/react";
 import StepProgress from "@/components/analysis/StepProgress";
 
@@ -57,6 +58,7 @@ export default function AnalysisLoader({ url }: { url: string }) {
   const [activeStep, setActiveStep] = useState(0);
   const [product, setProduct] = useState<ProductMeta | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
   // Step progression
   useEffect(() => {
@@ -71,7 +73,12 @@ export default function AnalysisLoader({ url }: { url: string }) {
     const handle = getProductHandle(url);
     if (!handle) return;
 
-    const origin = new URL(url).origin;
+    let origin: string;
+    try {
+      origin = new URL(url).origin;
+    } catch {
+      return;
+    }
     let cancelled = false;
 
     fetch(`${origin}/products/${handle}.json`, {
@@ -130,13 +137,19 @@ export default function AnalysisLoader({ url }: { url: string }) {
               {/* Product image */}
               {product.images.length > 0 && (
                 <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={product.images[selectedImage] || product.image}
-                    alt={product.title}
-                    className="w-full h-[200px] lg:h-[260px] object-contain bg-white p-4"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
+                  {imgError ? (
+                    <div className="w-full h-[200px] lg:h-[260px] bg-white flex items-center justify-center">
+                      <PackageIcon size={48} weight="regular" color="var(--outline)" />
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={product.images[selectedImage] || product.image}
+                      alt={product.title}
+                      className="w-full h-[200px] lg:h-[260px] object-contain bg-white p-4"
+                      onError={() => setImgError(true)}
+                    />
+                  )}
                   {/* Thumbnail strip */}
                   {product.images.length > 1 && (
                     <div className="flex gap-1.5 px-3 py-2 overflow-x-auto">
@@ -144,7 +157,7 @@ export default function AnalysisLoader({ url }: { url: string }) {
                         <button
                           key={i}
                           type="button"
-                          onClick={() => setSelectedImage(i)}
+                          onClick={() => { setSelectedImage(i); setImgError(false); }}
                           className={`cursor-pointer w-10 h-10 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${
                             i === selectedImage
                               ? "border-[var(--brand)] ring-1 ring-[var(--brand)]"

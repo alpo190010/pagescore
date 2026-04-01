@@ -35,7 +35,7 @@ export default function StepProgress({
 
       {/* Steps or fallback spinner */}
       {stepsComplete ? (
-        <div className="flex items-center justify-center gap-3 py-6">
+        <div className="flex items-center justify-center gap-3 py-6" role="status">
           <div
             className="w-5 h-5 rounded-full border-2 border-[var(--brand)] border-t-transparent shrink-0"
             style={{ animation: "spin 0.8s linear infinite" }}
@@ -45,7 +45,7 @@ export default function StepProgress({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col" role="list" aria-label="Analysis steps">
+        <div className="flex flex-col" role="list" aria-label="Analysis steps" aria-live="polite">
           {steps.map((step, i) => {
             const isDone = i < activeStep;
             const isActive = i === activeStep;

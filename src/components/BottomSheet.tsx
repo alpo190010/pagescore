@@ -48,6 +48,16 @@ export default function BottomSheet({
     setIsClosing(true);
   }, [isClosing]);
 
+  // ── Escape key dismiss ─────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") triggerClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, triggerClose]);
+
   function handleAnimationEnd() {
     if (isClosing) {
       setIsClosing(false);
