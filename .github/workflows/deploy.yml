@@ -2,15 +2,22 @@
 # Deploy to Production
 # =============================================================================
 # Triggers on push to main.
-#   1. Builds Docker image in GitHub Actions
-#   2. Pushes to ghcr.io/alpo190010/alpo
-#   3. SSHes into the droplet, pulls the new image, restarts
+#   1. Builds webapp + api Docker images in parallel
+#   2. Pushes both to ghcr.io/alpo190010/alpo and ghcr.io/alpo190010/alpo-api
+#   3. SSHes into the droplet, pulls both images, restarts all services
 #
 # Required GitHub Secrets:
 #   SSH_PRIVATE_KEY — Private SSH key for the droplet (full PEM with newline)
 #   DROPLET_IP     — Droplet IP (134.199.142.211)
 #   GH_PAT         — GitHub PAT with read:packages scope (for droplet to pull
 #                     from GHCR). Create at github.com/settings/tokens.
+#
+# Required GitHub Variables:
+#   NEXT_PUBLIC_API_URL              — API base URL (e.g. https://api.alpo.ai)
+#   NEXT_PUBLIC_POSTHOG_KEY          — PostHog project key
+#   NEXT_PUBLIC_POSTHOG_HOST         — PostHog host
+#   NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL — LemonSqueezy checkout URL
+#   NEXT_PUBLIC_BASE_URL             — Public base URL
 #
 # GHCR push uses the built-in GITHUB_TOKEN. GHCR pull on the droplet uses
 # GH_PAT because the repo/package is private.
@@ -28,18 +35,17 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
-    name: Build & Push Image
+  # ---------------------------------------------------------------------------
+  # Build & push webapp image
+  # ---------------------------------------------------------------------------
+  build-and-push-webapp:
+    name: Build & Push Webapp
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
-    outputs:
-      image_tag: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: Checkout
@@ -56,7 +62,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/alpo190010/alpo
           tags: |
             type=sha,prefix=
             type=raw,value=latest
@@ -64,19 +70,60 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./webapp
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
             NEXT_PUBLIC_POSTHOG_HOST=${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
             NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=${{ vars.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL }}
             NEXT_PUBLIC_BASE_URL=${{ vars.NEXT_PUBLIC_BASE_URL }}
 
+  # ---------------------------------------------------------------------------
+  # Build & push api image
+  # ---------------------------------------------------------------------------
+  build-and-push-api:
+    name: Build & Push API
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/alpo190010/alpo-api
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+  # ---------------------------------------------------------------------------
+  # Deploy both services to droplet
+  # ---------------------------------------------------------------------------
   deploy:
     name: Deploy to Droplet
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push-webapp, build-and-push-api]
 
     steps:
       - name: Deploy via SSH
@@ -88,17 +135,18 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             set -euo pipefail
-            echo "==> Deploying alpo..."
+            echo "==> Deploying alpo (webapp + api)..."
 
             cd /opt/alpo
 
             echo "==> Logging in to GHCR..."
             echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u alpo190010 --password-stdin
 
-            echo "==> Pulling latest image..."
+            echo "==> Pulling latest images..."
             docker pull ghcr.io/alpo190010/alpo:latest
+            docker pull ghcr.io/alpo190010/alpo-api:latest
 
-            echo "==> Restarting app service..."
+            echo "==> Restarting services..."
             docker compose -f docker-compose.prod.yml up -d
 
             echo "==> Service status:"
@@ -106,7 +154,7 @@ jobs:
 
             echo "==> Deploy complete."
 
-      - name: Health check
+      - name: Health check (webapp)
         run: |
           echo "Waiting for containers to stabilize..."
           sleep 30
@@ -115,10 +163,10 @@ jobs:
           RETRY_DELAY=10
 
           for i in $(seq 1 $MAX_RETRIES); do
-            echo "Health check attempt $i/$MAX_RETRIES..."
+            echo "Webapp health check attempt $i/$MAX_RETRIES..."
             if curl -sf --max-time 10 "http://${{ secrets.DROPLET_IP }}/api/health"; then
               echo ""
-              echo "✅ Health check passed."
+              echo "✅ Webapp health check passed."
               exit 0
             fi
             if [ "$i" -lt "$MAX_RETRIES" ]; then
@@ -128,5 +176,27 @@ jobs:
             fi
           done
 
-          echo "❌ Health check failed after $MAX_RETRIES attempts."
+          echo "❌ Webapp health check failed after $MAX_RETRIES attempts."
+          exit 1
+
+      - name: Health check (api)
+        run: |
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "API health check attempt $i/$MAX_RETRIES..."
+            if curl -sf --max-time 10 "http://${{ secrets.DROPLET_IP }}:8000/health"; then
+              echo ""
+              echo "✅ API health check passed."
+              exit 0
+            fi
+            if [ "$i" -lt "$MAX_RETRIES" ]; then
+              echo "Retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          done
+
+          echo "❌ API health check failed after $MAX_RETRIES attempts."
           exit 1

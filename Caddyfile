@@ -9,3 +9,7 @@ alpo.ai {
 www.alpo.ai {
 	redir https://alpo.ai{uri} permanent
 }
+
+api.alpo.ai {
+	reverse_proxy api:8000
+}

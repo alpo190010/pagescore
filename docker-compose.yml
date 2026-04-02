@@ -15,12 +15,13 @@ services:
 
   app:
     build:
-      context: .
+      context: ./webapp
       args:
         NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
         NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
         NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: ${NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}
         NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     depends_on:
       db:
         condition: service_healthy
@@ -33,6 +34,30 @@ services:
       PORT: "3000"
     env_file:
       - .env
+
+  api:
+    build:
+      context: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DB_SSL: ${DB_SSL:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      LEMONSQUEEZY_WEBHOOK_SECRET: ${LEMONSQUEEZY_WEBHOOK_SECRET:-}
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   caddy:
     image: caddy:latest

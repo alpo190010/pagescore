@@ -1,0 +1,254 @@
+"""POST /analyze endpoint — URL validation, AI scoring, DB persistence."""
+
+import logging
+import urllib.parse
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+
+from app.config import settings
+from app.database import get_db
+from app.models import ProductAnalysis, Scan
+from app.services.html_fetcher import fetch_page_html
+from app.services.openrouter import call_openrouter
+from app.services.scoring import build_category_scores
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# Hostnames / prefixes blocked for SSRF prevention.
+_BLOCKED_EXACT = {"localhost", "0.0.0.0", "[::1]"}
+_BLOCKED_PREFIXES = ("127.", "10.", "192.168.", "172.")
+_BLOCKED_SUFFIX = ".local"
+
+
+def _is_blocked_host(hostname: str) -> bool:
+    h = hostname.lower()
+    if h in _BLOCKED_EXACT:
+        return True
+    if any(h.startswith(p) for p in _BLOCKED_PREFIXES):
+        return True
+    if h.endswith(_BLOCKED_SUFFIX):
+        return True
+    return False
+
+
+def _build_analysis_prompt(truncated_html: str) -> str:
+    """Build the 20-dimension analysis prompt. Copied VERBATIM from
+    webapp/src/app/api/analyze/route.ts (lines ~96-139), with only the
+    JS template-literal interpolation replaced by Python concatenation."""
+    return (
+        'You are a ruthless e-commerce conversion expert. You have analyzed thousands of Shopify product pages. You are HONEST and SPECIFIC — you never give vague feedback.\n'
+        '\n'
+        'Analyze this HTML for a Shopify product page. Return a JSON object with:\n'
+        '- "score": number 0-100 (conversion effectiveness — be harsh, most pages score 30-55)\n'
+        '- "summary": one punchy sentence about the biggest issue (max 20 words, be specific)\n'
+        '- "tips": array of up to 10 specific fixes — each must reference actual content on THIS page (max 30 words each). No generic advice.\n'
+        '- "categories": scores 0-100 for ALL 20 dimensions below\n'
+        '- "productPrice": extract the product price as a number (e.g. 49.99). Return 0 if not found.\n'
+        '- "productCategory": one of: "fashion", "electronics", "beauty", "home", "food", "fitness", "jewelry", "other"\n'
+        '- "estimatedMonthlyVisitors": your best estimate based on page signals. 500 small, 2000 medium, 10000 large.\n'
+        '\n'
+        'Score ALL 20 dimensions (0-100, be STRICT):\n'
+        '\n'
+        '1. pageSpeed (Very High impact): Check for large unoptimized images, render-blocking scripts, excessive apps. Most Shopify stores score 40-60.\n'
+        '2. images (Very High): 5-7 images minimum across types (white bg, lifestyle, scale, texture, UGC). Only 1-2 basic photos = 30 or less.\n'
+        '3. socialProof (Very High): Reviews visible above fold? Count shown? Star rating? Photo reviews? No reviews = 15 or less.\n'
+        '4. checkout (Very High): Shop Pay? BNPL? Multiple payment icons? Apple/Google Pay? Only basic checkout = 40.\n'
+        '5. mobileCta (High): Is CTA above fold on mobile? Sticky? Proper size (44-48px)? Thumb-zone? Hidden CTA = 20.\n'
+        '6. title (High): Product name + key benefit + keyword in first 3-5 words? 55-70 chars? Generic name = 25.\n'
+        '7. aiDiscoverability (High): Structured data for AI? Clear product attributes? FAQ schema? Most stores score 10-30.\n'
+        '8. structuredData (High): Product schema? Review schema? FAQ? Breadcrumbs? Offer markup? Missing = 15.\n'
+        '9. pricing (High): Charm pricing? Compare-at anchor? Installment framing? Just one price = 40.\n'
+        '10. description (Medium-High): Benefits first? Scannable? Bullet points? Layered architecture? Wall of text = 25.\n'
+        '11. shipping (Medium-High): Delivery date visible? Free shipping threshold? Costs shown? Hidden costs = 20.\n'
+        '12. crossSell (Medium-High): "Frequently bought together"? Recommendations near buy button? 4-6 items? None = 15.\n'
+        '13. cartRecovery (Medium-High): Evidence of email capture? Cart recovery signals? Hard to detect from HTML, score 40-50 if unclear.\n'
+        '14. trust (Medium): Money-back guarantee? Return policy visible? Phone number? "As seen in" logos? None = 25.\n'
+        '15. merchantFeed (Medium): Google Shopping markup? GTIN present? Clean product data? Hard to detect, score 40-50 if unclear.\n'
+        '16. socialCommerce (Medium): TikTok/Instagram/Pinterest integration? Social sharing? Social proof from platforms? None = 20.\n'
+        '17. sizeGuide (Medium, category-dependent): Size chart? Fit finder? Model measurements? For non-apparel, score 60-70 (N/A boost).\n'
+        '18. variantUx (Medium): Color swatches vs dropdowns? Stock indicators? Out-of-stock handling? Basic dropdown = 35.\n'
+        '19. accessibility (Low-Medium): Color contrast? Alt text on images? Semantic HTML? ARIA labels? Most stores score 30-50.\n'
+        '20. contentFreshness (Low-Medium): Updated dates? Current year? Fresh badges? Stale content = 30.\n'
+        '\n'
+        'If the page is a 404 or error, return score: 0.\n'
+        '\n'
+        'Return ONLY valid JSON. No markdown, no explanation.\n'
+        '\n'
+        'HTML:\n'
+    ) + truncated_html
+
+
+@router.post("/analyze")
+async def analyze(request: Request, db: Session = Depends(get_db)):
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "URL is required"})
+
+    url = body.get("url") if isinstance(body, dict) else None
+    if not url or not isinstance(url, str) or not url.strip():
+        return JSONResponse(status_code=400, content={"error": "URL is required"})
+
+    url = url.strip()
+
+    # --- URL validation ---
+    if len(url) > 2048:
+        return JSONResponse(status_code=400, content={"error": "URL is too long"})
+
+    parsed_url = urllib.parse.urlparse(url)
+    if not parsed_url.scheme or not parsed_url.hostname:
+        return JSONResponse(status_code=400, content={"error": "Invalid URL format"})
+
+    if parsed_url.scheme not in ("http", "https"):
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Only HTTP/HTTPS URLs are supported"},
+        )
+
+    if _is_blocked_host(parsed_url.hostname):
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Internal URLs are not allowed"},
+        )
+
+    # --- Fetch HTML ---
+    try:
+        html = await fetch_page_html(url)
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Could not fetch that URL. Make sure it's accessible and not behind a login."
+            },
+        )
+
+    if len(html) < 100:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Page appears to be empty or too small to analyze."},
+        )
+
+    # --- AI scoring ---
+    api_key = settings.openai_api_key
+    if not api_key:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Server configuration error"},
+        )
+
+    truncated = html[:15_000]
+    prompt = _build_analysis_prompt(truncated)
+
+    try:
+        result = await call_openrouter(
+            prompt,
+            api_key,
+            model="minimax/minimax-m2.5",
+            temperature=0.3,
+            max_tokens=4000,
+        )
+    except ValueError:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "AI returned an unexpected format. Please try again."
+            },
+        )
+    except Exception:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "AI analysis failed"},
+        )
+
+    # --- Build response (all camelCase keys) ---
+    response_data: dict = {
+        "score": min(100, max(0, int(result.get("score", 50)))),
+        "summary": str(result.get("summary", "Analysis complete."))[:200],
+        "tips": [str(t)[:300] for t in (result.get("tips") or [])][:20],
+        "categories": build_category_scores(result.get("categories", {})),
+        "productPrice": max(0, float(result.get("productPrice", 0)) or 0),
+        "productCategory": str(result.get("productCategory", "other")),
+        "estimatedMonthlyVisitors": max(
+            0, int(result.get("estimatedMonthlyVisitors", 1000)) or 0
+        ),
+    }
+
+    # --- DB operations (fire-and-forget) ---
+    analysis_id: str | None = None
+
+    # 1. Insert scan record
+    try:
+        db.add(
+            Scan(
+                url=url,
+                score=response_data["score"],
+                product_category=response_data["productCategory"] or None,
+                product_price=response_data["productPrice"] or None,
+            )
+        )
+        db.commit()
+    except Exception:
+        logger.exception("DB scan insert error")
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+    # 2. Upsert product analysis
+    try:
+        stmt = (
+            pg_insert(ProductAnalysis)
+            .values(
+                product_url=url,
+                store_domain=parsed_url.hostname,
+                score=response_data["score"],
+                summary=response_data["summary"],
+                tips=response_data["tips"],
+                categories=response_data["categories"],
+                product_price=(
+                    str(response_data["productPrice"])
+                    if response_data["productPrice"]
+                    else None
+                ),
+                product_category=response_data["productCategory"] or None,
+                estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
+            )
+            .on_conflict_do_update(
+                index_elements=["product_url"],
+                set_={
+                    "store_domain": parsed_url.hostname,
+                    "score": response_data["score"],
+                    "summary": response_data["summary"],
+                    "tips": response_data["tips"],
+                    "categories": response_data["categories"],
+                    "product_price": (
+                        str(response_data["productPrice"])
+                        if response_data["productPrice"]
+                        else None
+                    ),
+                    "product_category": response_data["productCategory"] or None,
+                    "estimated_monthly_visitors": response_data[
+                        "estimatedMonthlyVisitors"
+                    ],
+                    "updated_at": func.now(),
+                },
+            )
+            .returning(ProductAnalysis.id)
+        )
+        row = db.execute(stmt).fetchone()
+        db.commit()
+        analysis_id = str(row[0]) if row else None
+    except Exception:
+        logger.exception("DB product analysis upsert error")
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+    return {**response_data, "analysisId": analysis_id}

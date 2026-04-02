@@ -37,6 +37,28 @@ services:
     env_file:
       - .env
 
+  api:
+    image: ghcr.io/alpo190010/alpo-api:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DB_SSL: ${DB_SSL:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      LEMONSQUEEZY_WEBHOOK_SECRET: ${LEMONSQUEEZY_WEBHOOK_SECRET}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   caddy:
     image: caddy:latest
     restart: unless-stopped
@@ -49,6 +71,7 @@ services:
       - caddy_config:/config
     depends_on:
       - app
+      - api
 
 volumes:
   pgdata:
