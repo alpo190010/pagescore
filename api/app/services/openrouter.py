@@ -44,7 +44,7 @@ async def call_openrouter(
         "max_tokens": max_tokens,
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(OPENROUTER_URL, headers=headers, json=body)
         response.raise_for_status()
 

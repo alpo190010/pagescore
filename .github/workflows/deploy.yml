@@ -155,6 +155,15 @@ jobs:
 
             cd /opt/alpo
 
+            echo "==> Syncing auth secrets to .env..."
+            touch .env
+            grep -v '^AUTH_SECRET=\|^AUTH_GOOGLE_ID=\|^AUTH_GOOGLE_SECRET=\|^AUTH_TRUST_HOST=' .env > .env.tmp || true
+            echo 'AUTH_SECRET=${{ secrets.AUTH_SECRET }}' >> .env.tmp
+            echo 'AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}' >> .env.tmp
+            echo 'AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}' >> .env.tmp
+            echo 'AUTH_TRUST_HOST=true' >> .env.tmp
+            mv .env.tmp .env
+
             echo "==> Logging in to GHCR..."
             echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u alpo190010 --password-stdin
 

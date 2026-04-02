@@ -126,7 +126,8 @@ async def analyze(
     # --- Fetch HTML ---
     try:
         html = await render_page(url)
-    except Exception:
+    except Exception as exc:
+        logger.exception("Failed to render page %s: %s", url, exc)
         return JSONResponse(
             status_code=400,
             content={
@@ -148,6 +149,7 @@ async def analyze(
     # --- AI scoring ---
     api_key = settings.openai_api_key
     if not api_key:
+        logger.error("Missing openai_api_key in settings")
         return JSONResponse(
             status_code=500,
             content={"error": "Server configuration error"},
@@ -164,14 +166,16 @@ async def analyze(
             temperature=0.3,
             max_tokens=4000,
         )
-    except ValueError:
+    except ValueError as exc:
+        logger.exception("AI returned unparseable response for %s: %s", url, exc)
         return JSONResponse(
             status_code=500,
             content={
                 "error": "AI returned an unexpected format. Please try again."
             },
         )
-    except Exception:
+    except Exception as exc:
+        logger.exception("AI analysis failed for %s: %s", url, exc)
         return JSONResponse(
             status_code=500,
             content={"error": "AI analysis failed"},
