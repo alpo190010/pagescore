@@ -9,9 +9,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
+from app.auth import get_current_user_optional
 from app.config import settings
 from app.database import get_db
-from app.models import ProductAnalysis, Scan
+from app.models import ProductAnalysis, Scan, User
 from app.services.page_renderer import render_page
 from app.services.openrouter import call_openrouter
 from app.services.scoring import build_category_scores, compute_weighted_score
@@ -86,7 +87,11 @@ def _build_analysis_prompt(truncated_html: str) -> str:
 
 
 @router.post("/analyze")
-async def analyze(request: Request, db: Session = Depends(get_db)):
+async def analyze(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
     try:
         body = await request.json()
     except Exception:
@@ -202,6 +207,7 @@ async def analyze(request: Request, db: Session = Depends(get_db)):
                 score=response_data["score"],
                 product_category=response_data["productCategory"] or None,
                 product_price=response_data["productPrice"] or None,
+                user_id=current_user.id if current_user else None,
             )
         )
         db.commit()
@@ -230,6 +236,7 @@ async def analyze(request: Request, db: Session = Depends(get_db)):
                 ),
                 product_category=response_data["productCategory"] or None,
                 estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
+                user_id=current_user.id if current_user else None,
             )
             .on_conflict_do_update(
                 index_elements=["product_url"],

@@ -11,6 +11,9 @@
 #   DROPLET_IP     — Droplet IP (134.199.142.211)
 #   GH_PAT         — GitHub PAT with read:packages scope (for droplet to pull
 #                     from GHCR). Create at github.com/settings/tokens.
+#   AUTH_SECRET    — Auth.js secret for token encryption (openssl rand -base64 33)
+#   AUTH_GOOGLE_ID — Google OAuth client ID
+#   AUTH_GOOGLE_SECRET — Google OAuth client secret
 #
 # Required GitHub Variables:
 #   NEXT_PUBLIC_API_URL              — API base URL (e.g. https://api.alpo.ai)

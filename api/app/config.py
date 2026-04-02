@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     resend_api_key: str = ""
     lemonsqueezy_webhook_secret: str = ""
+    auth_secret: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

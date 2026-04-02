@@ -9,7 +9,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, backref
 from sqlalchemy.sql import func
 
 Base = declarative_base()
@@ -28,8 +28,11 @@ class ProductAnalysis(Base):
     product_price = Column(Numeric, nullable=True)
     product_category = Column(Text, nullable=True)
     estimated_monthly_visitors = Column(Integer, nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", backref=backref("product_analyses", lazy="dynamic"))
 
 
 class Report(Base):
@@ -56,7 +59,10 @@ class Scan(Base):
     score = Column(Integer, nullable=True)
     product_category = Column(Text, nullable=True)
     product_price = Column(Numeric, nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", backref=backref("scans", lazy="dynamic"))
 
 
 class Store(Base):
@@ -85,6 +91,18 @@ class StoreProduct(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     store = relationship("Store", back_populates="products")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    google_sub = Column(Text, nullable=False, unique=True)
+    email = Column(Text, nullable=False)
+    name = Column(Text, nullable=True)
+    picture = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now())
 
 
 class Subscriber(Base):

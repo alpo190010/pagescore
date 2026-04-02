@@ -10,6 +10,7 @@ import {
   ClockIcon,
 } from "@phosphor-icons/react";
 import Nav from "@/components/Nav";
+import NavAuthButton from "@/components/NavAuthButton";
 import { isValidUrl, isProductPageUrl, extractDomain, CATEGORY_SVG, CATEGORY_LABELS, CATEGORY_REVENUE_IMPACT, scoreColorText } from "@/lib/analysis";
 import { SAMPLE_SCAN } from "@/lib/sample-data";
 
@@ -54,6 +55,7 @@ export default function Home() {
         >
           Scan Your Page
         </button>
+        <NavAuthButton />
       </Nav>
 
       <main id="main-content" className="min-h-screen bg-[var(--bg)]">

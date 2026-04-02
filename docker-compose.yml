@@ -32,6 +32,10 @@ services:
       LEMONSQUEEZY_WEBHOOK_SECRET: ${LEMONSQUEEZY_WEBHOOK_SECRET}
       DB_SSL: ${DB_SSL:-false}
       PORT: "3000"
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
+      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
     env_file:
       - .env
 
@@ -50,6 +54,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       LEMONSQUEEZY_WEBHOOK_SECRET: ${LEMONSQUEEZY_WEBHOOK_SECRET:-}
+      AUTH_SECRET: ${AUTH_SECRET:-}
     env_file:
       - .env
     ports:

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { WarningCircleIcon } from "@phosphor-icons/react";
 import AnalysisLoader from "@/components/AnalysisLoader";
 import Nav from "@/components/Nav";
+import NavAuthButton from "@/components/NavAuthButton";
 import EmailModal from "@/components/EmailModal";
 import ScoreRing from "@/components/analysis/ScoreRing";
 import RevenueLossCard from "@/components/analysis/RevenueLossCard";
@@ -12,6 +13,7 @@ import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
 import FeaturedInsight from "@/components/analysis/FeaturedInsight";
 import { API_URL } from "@/lib/api";
+import { authFetch } from "@/lib/auth-fetch";
 import {
   type FreeResult,
   type LeakCard,
@@ -55,7 +57,7 @@ function AnalyzePageContent() {
     if (!url) { setError("No URL provided."); setLoading(false); return; }
     const controller = new AbortController();
     abortRef.current = controller;
-    fetch(`${API_URL}/analyze`, {
+    authFetch(`${API_URL}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
@@ -179,6 +181,7 @@ function AnalyzePageContent() {
         <button type="button" onClick={handleScanAnother} className="cursor-pointer primary-gradient text-white px-6 py-2 rounded-full font-bold hover:scale-[1.02] active:scale-95 transition-all text-sm">
           {result ? "Scan Another" : "Analyzing..."}
         </button>
+        <NavAuthButton />
       </Nav>
 
       <main id="main-content" className="min-h-screen bg-[var(--bg)]" aria-busy={loading}>

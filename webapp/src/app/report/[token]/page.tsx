@@ -1,4 +1,5 @@
 import Nav from "@/components/Nav";
+import NavAuthButton from "@/components/NavAuthButton";
 import type { CategoryScores } from "@/lib/analysis/types";
 import {
   REPORT_CATEGORY_LABELS,
@@ -96,7 +97,9 @@ export default async function ReportTokenPage({
 
   return (
     <>
-      <Nav variant="simple" logoText="alpo.ai" />
+      <Nav variant="simple" logoText="alpo.ai">
+        <NavAuthButton />
+      </Nav>
 
       <main className="min-h-screen flex flex-col items-center px-4 py-8 sm:py-12 bg-[var(--bg)] text-[var(--text-primary)]">
         <div className="max-w-2xl w-full">

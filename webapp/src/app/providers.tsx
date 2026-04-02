@@ -2,6 +2,7 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
+import { SessionProvider } from "next-auth/react";
 import { useEffect } from "react";
 
 export function PHProvider({ children }: { children: React.ReactNode }) {
@@ -15,5 +16,9 @@ export function PHProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+  return (
+    <SessionProvider>
+      <PostHogProvider client={posthog}>{children}</PostHogProvider>
+    </SessionProvider>
+  );
 }

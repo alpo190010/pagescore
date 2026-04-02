@@ -10,15 +10,17 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.2.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.16.4",
     "@types/react": "^19.1.8",
+    "jsonwebtoken": "^9.0.3",
     "next": "^16.2.1",
+    "next-auth": "^5.0.0-beta.30",
     "postcss": "^8.5.5",
     "posthog-js": "^1.363.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3"
-  },
-  "devDependencies": {}
+  }
 }
