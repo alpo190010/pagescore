@@ -12,9 +12,11 @@ from sqlalchemy.sql import func
 from app.config import settings
 from app.database import get_db
 from app.models import ProductAnalysis, Scan
-from app.services.html_fetcher import fetch_page_html
+from app.services.page_renderer import render_page
 from app.services.openrouter import call_openrouter
-from app.services.scoring import build_category_scores
+from app.services.scoring import build_category_scores, compute_weighted_score
+from app.services.social_proof_detector import detect_social_proof
+from app.services.social_proof_rubric import score_social_proof, get_social_proof_tips
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +59,7 @@ def _build_analysis_prompt(truncated_html: str) -> str:
         '\n'
         '1. pageSpeed (Very High impact): Check for large unoptimized images, render-blocking scripts, excessive apps. Most Shopify stores score 40-60.\n'
         '2. images (Very High): 5-7 images minimum across types (white bg, lifestyle, scale, texture, UGC). Only 1-2 basic photos = 30 or less.\n'
-        '3. socialProof (Very High): Reviews visible above fold? Count shown? Star rating? Photo reviews? No reviews = 15 or less.\n'
-        '4. checkout (Very High): Shop Pay? BNPL? Multiple payment icons? Apple/Google Pay? Only basic checkout = 40.\n'
+        '3. checkout (Very High): Shop Pay? BNPL? Multiple payment icons? Apple/Google Pay? Only basic checkout = 40.\n'
         '5. mobileCta (High): Is CTA above fold on mobile? Sticky? Proper size (44-48px)? Thumb-zone? Hidden CTA = 20.\n'
         '6. title (High): Product name + key benefit + keyword in first 3-5 words? 55-70 chars? Generic name = 25.\n'
         '7. aiDiscoverability (High): Structured data for AI? Clear product attributes? FAQ schema? Most stores score 10-30.\n'
@@ -119,7 +120,7 @@ async def analyze(request: Request, db: Session = Depends(get_db)):
 
     # --- Fetch HTML ---
     try:
-        html = await fetch_page_html(url)
+        html = await render_page(url)
     except Exception:
         return JSONResponse(
             status_code=400,
@@ -133,6 +134,11 @@ async def analyze(request: Request, db: Session = Depends(get_db)):
             status_code=400,
             content={"error": "Page appears to be empty or too small to analyze."},
         )
+
+    # --- Deterministic social proof scoring (runs on full HTML) ---
+    signals = detect_social_proof(html)
+    sp_score = score_social_proof(signals)
+    sp_tips = get_social_proof_tips(signals)
 
     # --- AI scoring ---
     api_key = settings.openai_api_key
@@ -167,11 +173,17 @@ async def analyze(request: Request, db: Session = Depends(get_db)):
         )
 
     # --- Build response (all camelCase keys) ---
+    categories = build_category_scores(result.get("categories", {}))
+    categories["socialProof"] = sp_score
+
+    ai_tips = [str(t)[:300] for t in (result.get("tips") or [])][:20]
+    all_tips = (sp_tips + ai_tips)[:20]
+
     response_data: dict = {
-        "score": min(100, max(0, int(result.get("score", 50)))),
+        "score": compute_weighted_score(categories),
         "summary": str(result.get("summary", "Analysis complete."))[:200],
-        "tips": [str(t)[:300] for t in (result.get("tips") or [])][:20],
-        "categories": build_category_scores(result.get("categories", {})),
+        "tips": all_tips,
+        "categories": categories,
         "productPrice": max(0, float(result.get("productPrice", 0)) or 0),
         "productCategory": str(result.get("productCategory", "other")),
         "estimatedMonthlyVisitors": max(

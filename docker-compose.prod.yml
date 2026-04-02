@@ -40,6 +40,8 @@ services:
   api:
     image: ghcr.io/alpo190010/alpo-api:latest
     restart: unless-stopped
+    init: true
+    shm_size: 256mb
     depends_on:
       db:
         condition: service_healthy

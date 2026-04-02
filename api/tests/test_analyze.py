@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.database import get_db
 from app.main import app
-from app.services.scoring import CATEGORY_KEYS
+from app.services.scoring import CATEGORY_KEYS, build_category_scores, compute_weighted_score
 
 # --- Test fixtures / helpers ---
 
@@ -111,7 +111,7 @@ def test_analyze_non_http_protocol():
 # --- Service-level error tests ---
 
 
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
 def test_analyze_fetch_failure(mock_fetch):
     mock_fetch.side_effect = Exception("connection refused")
     client = _get_client()
@@ -122,7 +122,7 @@ def test_analyze_fetch_failure(mock_fetch):
     app.dependency_overrides.clear()
 
 
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
 def test_analyze_page_too_small(mock_fetch):
     mock_fetch.return_value = "<html>hi</html>"  # < 100 chars
     client = _get_client()
@@ -133,8 +133,11 @@ def test_analyze_page_too_small(mock_fetch):
     app.dependency_overrides.clear()
 
 
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
-def test_analyze_missing_api_key(mock_fetch):
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_missing_api_key(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips):
     mock_fetch.return_value = _VALID_HTML
     client = _get_client()
     with patch("app.routers.analyze.settings") as mock_settings:
@@ -146,9 +149,12 @@ def test_analyze_missing_api_key(mock_fetch):
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
-def test_analyze_ai_value_error(mock_fetch, mock_ai):
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_ai_value_error(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
     mock_fetch.return_value = _VALID_HTML
     mock_ai.side_effect = ValueError("No JSON found")
     client = _get_client()
@@ -161,9 +167,12 @@ def test_analyze_ai_value_error(mock_fetch, mock_ai):
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
-def test_analyze_ai_api_error(mock_fetch, mock_ai):
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_ai_api_error(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
     mock_fetch.return_value = _VALID_HTML
     mock_ai.side_effect = RuntimeError("API down")
     client = _get_client()
@@ -179,9 +188,12 @@ def test_analyze_ai_api_error(mock_fetch, mock_ai):
 # --- Happy-path success test ---
 
 
+@patch("app.routers.analyze.get_social_proof_tips", return_value=["Add photo reviews"])
+@patch("app.routers.analyze.score_social_proof", return_value=75)
+@patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
-def test_analyze_success(mock_fetch, mock_ai):
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_success(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
     mock_fetch.return_value = _VALID_HTML
     mock_ai.return_value = _AI_RESPONSE
 
@@ -196,9 +208,7 @@ def test_analyze_success(mock_fetch, mock_ai):
     data = resp.json()
 
     # Core fields present
-    assert data["score"] == 42
     assert data["summary"] == "Test summary"
-    assert data["tips"] == ["tip1", "tip2"]
     assert data["productPrice"] == 29.99
     assert data["productCategory"] == "fashion"
     assert data["estimatedMonthlyVisitors"] == 2000
@@ -211,10 +221,21 @@ def test_analyze_success(mock_fetch, mock_ai):
         assert isinstance(val, int), f"{key} should be int, got {type(val)}"
         assert 0 <= val <= 100, f"{key}={val} out of 0-100"
 
-    # Supplied categories forwarded, missing ones defaulted to 0
+    # socialProof comes from deterministic rubric, not AI
+    assert cats["socialProof"] == 75
+
+    # AI-supplied categories forwarded correctly
     assert cats["pageSpeed"] == 65
     assert cats["images"] == 80
-    assert cats["socialProof"] == 0  # not in AI response → default
+
+    # Social proof tip appears first, then AI tips
+    assert data["tips"][0] == "Add photo reviews"
+    assert "tip1" in data["tips"]
+    assert "tip2" in data["tips"]
+
+    # Overall score is weighted average, not raw AI score
+    expected_score = compute_weighted_score(cats)
+    assert data["score"] == expected_score
 
     # DB was called
     assert mock_session.add.called  # Scan insert
@@ -226,13 +247,16 @@ def test_analyze_success(mock_fetch, mock_ai):
 # --- Score clamping edge cases ---
 
 
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
-@patch("app.routers.analyze.fetch_page_html", new_callable=AsyncMock)
-def test_analyze_score_clamping(mock_fetch, mock_ai):
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_score_clamping(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
     mock_fetch.return_value = _VALID_HTML
     mock_ai.return_value = {
         **_AI_RESPONSE,
-        "score": 150,  # should clamp to 100
+        "score": 150,  # AI score no longer used directly — weighted average instead
         "productPrice": -10,  # should clamp to 0
     }
     client = _get_client()
@@ -242,7 +266,116 @@ def test_analyze_score_clamping(mock_fetch, mock_ai):
 
     assert resp.status_code == 200
     data = resp.json()
-    assert data["score"] == 100
+    # Score is now computed by weighted average, not clamped from AI
+    assert 0 <= data["score"] <= 100
     assert data["productPrice"] == 0
+
+    app.dependency_overrides.clear()
+
+
+# --- Hybrid pipeline tests ---
+
+
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_prompt_excludes_social_proof(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
+    """The AI prompt should NOT contain socialProof — it's scored deterministically."""
+    mock_fetch.return_value = _VALID_HTML
+    mock_ai.return_value = _AI_RESPONSE
+    client = _get_client()
+    with patch("app.routers.analyze.settings") as mock_settings:
+        mock_settings.openai_api_key = "test-key"
+        resp = client.post("/analyze", json={"url": "http://example.com/product"})
+    assert resp.status_code == 200
+
+    # Capture the prompt passed to call_openrouter
+    prompt_arg = mock_ai.call_args[0][0]
+    assert "socialProof" not in prompt_arg, "socialProof should not appear in the AI prompt"
+
+    app.dependency_overrides.clear()
+
+
+@patch("app.routers.analyze.get_social_proof_tips", return_value=["SP tip 1", "SP tip 2"])
+@patch("app.routers.analyze.score_social_proof", return_value=60)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_tips_merged(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
+    """Social proof tips come first, then AI tips, total capped at 20."""
+    ai_tips = [f"AI tip {i}" for i in range(19)]
+    mock_fetch.return_value = _VALID_HTML
+    mock_ai.return_value = {**_AI_RESPONSE, "tips": ai_tips}
+    client = _get_client()
+    with patch("app.routers.analyze.settings") as mock_settings:
+        mock_settings.openai_api_key = "test-key"
+        resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    tips = data["tips"]
+
+    # Social proof tips come first
+    assert tips[0] == "SP tip 1"
+    assert tips[1] == "SP tip 2"
+
+    # Total capped at 20
+    assert len(tips) <= 20
+
+    # AI tips follow social proof tips
+    assert tips[2] == "AI tip 0"
+
+    app.dependency_overrides.clear()
+
+
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=85)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_weighted_score(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips):
+    """Overall score is compute_weighted_score(categories), not AI's raw score."""
+    ai_cats = {
+        "pageSpeed": 70,
+        "images": 55,
+        "checkout": 80,
+        "mobileCta": 60,
+        "title": 45,
+        "aiDiscoverability": 30,
+        "structuredData": 50,
+        "pricing": 65,
+        "description": 40,
+        "shipping": 35,
+        "crossSell": 25,
+        "cartRecovery": 50,
+        "trust": 55,
+        "merchantFeed": 40,
+        "socialCommerce": 30,
+        "sizeGuide": 60,
+        "variantUx": 45,
+        "accessibility": 35,
+        "contentFreshness": 50,
+    }
+    mock_fetch.return_value = _VALID_HTML
+    mock_ai.return_value = {**_AI_RESPONSE, "score": 99, "categories": ai_cats}
+    client = _get_client()
+    with patch("app.routers.analyze.settings") as mock_settings:
+        mock_settings.openai_api_key = "test-key"
+        resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Build expected categories: AI cats + socialProof override
+    expected_cats = build_category_scores(ai_cats)
+    expected_cats["socialProof"] = 85
+    expected_score = compute_weighted_score(expected_cats)
+
+    assert data["score"] == expected_score
+    assert data["categories"]["socialProof"] == 85
+    # AI's raw score (99) is NOT used
+    assert data["score"] != 99
 
     app.dependency_overrides.clear()

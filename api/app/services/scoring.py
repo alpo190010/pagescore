@@ -52,6 +52,49 @@ COMPETITOR_SCORING_PROMPT: str = (
 )
 
 
+# Revenue-impact weights per category, mirroring frontend CATEGORY_REVENUE_IMPACT tiers.
+# Very High = 4, High = 3, Medium-High = 2.5, Medium = 2, Low-Medium = 1.  Total = 53.
+IMPACT_WEIGHTS: dict[str, float] = {
+    "pageSpeed": 4,
+    "images": 4,
+    "socialProof": 4,
+    "checkout": 4,
+    "mobileCta": 3,
+    "title": 3,
+    "aiDiscoverability": 3,
+    "structuredData": 3,
+    "pricing": 3,
+    "description": 2.5,
+    "shipping": 2.5,
+    "crossSell": 2.5,
+    "cartRecovery": 2.5,
+    "trust": 2,
+    "merchantFeed": 2,
+    "socialCommerce": 2,
+    "sizeGuide": 2,
+    "variantUx": 2,
+    "accessibility": 1,
+    "contentFreshness": 1,
+}
+
+_TOTAL_WEIGHT = sum(IMPACT_WEIGHTS[k] for k in CATEGORY_KEYS)
+
+
+def compute_weighted_score(categories: dict) -> int:
+    """Compute overall score as a weighted average across all 20 category dimensions.
+
+    Each category score is clamped to 0-100 before weighting. Missing keys default to 0.
+    Weights mirror the frontend's CATEGORY_REVENUE_IMPACT tiers.
+
+    Returns an integer 0-100.
+    """
+    total = sum(
+        clamp_score(categories.get(k, 0)) * IMPACT_WEIGHTS[k]
+        for k in CATEGORY_KEYS
+    )
+    return round(total / _TOTAL_WEIGHT)
+
+
 def clamp_score(v) -> int:
     """Clamp any value to a 0\u2013100 integer. Returns 0 for None, NaN, or non-numeric."""
     try:
