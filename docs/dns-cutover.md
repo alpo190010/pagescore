@@ -9,11 +9,10 @@ This runbook walks through moving alpo.ai DNS from Vercel to the DigitalOcean dr
 Before touching DNS, confirm the droplet is healthy and ready to serve production traffic.
 
 - [ ] SSH into the droplet: `ssh root@134.199.142.211`
-- [ ] Docker stack is running: `docker compose ps` shows `app`, `db`, and `caddy` healthy
-- [ ] Health endpoint responds: `curl -sf http://localhost:3000/api/health` returns `{"status":"ok"}`
+- [ ] Docker stack is running: `docker compose -f docker-compose.prod.yml ps` shows `app`, `db`, and `caddy` healthy
+- [ ] Health endpoint responds: `curl -sf http://localhost/api/health` returns `{"status":"ok"}`
 - [ ] `.env` is populated with production secrets (see `.env.production.template`)
-- [ ] Database has been migrated: `docker compose exec app npx prisma migrate status` shows no pending
-- [ ] Caddyfile includes `www.alpo.ai` redirect block (deploy latest before cutover)
+- [ ] Caddyfile includes `www.alpo.ai` redirect block
 
 ---
 
@@ -50,16 +49,15 @@ Delete any existing A, AAAA, or CNAME records for:
 
 In Namecheap, edit the current A/CNAME records and set TTL to 5 min. This ensures caches expire quickly when you change the value.
 
-### 2. Deploy the latest Caddyfile
+### 2. Verify the stack is running
 
 On the droplet:
 
 ```bash
 ssh root@134.199.142.211
-cd /root/alpo   # or wherever docker-compose.yml lives
-git pull origin main
-docker compose up -d caddy
-docker compose logs -f caddy   # watch for "certificate obtained" messages
+cd /opt/alpo
+docker compose -f docker-compose.prod.yml ps   # all services should be Up
+docker compose -f docker-compose.prod.yml logs -f caddy   # watch for "certificate obtained" messages after DNS switch
 ```
 
 ### 3. Update DNS records
@@ -117,7 +115,7 @@ Confirm the webhook is received:
 
 ```bash
 ssh root@134.199.142.211
-docker compose logs -f app | grep -i webhook
+docker compose -f docker-compose.prod.yml logs -f app | grep -i webhook
 ```
 
 ### Other post-cutover tasks
@@ -125,7 +123,7 @@ docker compose logs -f app | grep -i webhook
 - [ ] **Disable Vercel deployment** — Remove the Vercel project or disconnect the Git integration to prevent the old deployment from running and consuming resources
 - [ ] **Update Resend domain settings** — If Resend is configured with domain verification DNS records (SPF/DKIM), ensure those TXT records are preserved in Namecheap
 - [ ] **Raise TTL** — After 24–48h of stable operation, increase DNS TTL to 1800s or 3600s
-- [ ] **Monitor logs** — Watch for errors in the first 24h: `docker compose logs -f app`
+- [ ] **Monitor logs** — Watch for errors in the first 24h: `docker compose -f docker-compose.prod.yml logs -f app`
 - [ ] **Test email delivery** — Trigger a transactional email (e.g., analysis complete notification) and verify it arrives
 
 ---
@@ -136,7 +134,7 @@ If something goes wrong after cutover:
 
 1. **Revert DNS:** Change the A record for `@` back to Vercel's IP (find it in Vercel dashboard → Project → Domains)
 2. **Revert webhook URL:** Change LemonSqueezy webhook back to `https://alpo.ai/api/webhook` (pointing at Vercel)
-3. **Investigate:** SSH into the droplet and check logs: `docker compose logs --tail=100 app`
+3. **Investigate:** SSH into the droplet and check logs: `docker compose -f docker-compose.prod.yml logs --tail=100 app`
 
 With a 5-minute TTL, DNS rollback takes effect within 5–10 minutes.
 
@@ -148,7 +146,7 @@ With a 5-minute TTL, DNS rollback takes effect within 5–10 minutes.
 
 - Ensure port 80 and 443 are open on the droplet firewall: `ufw status`
 - Ensure no other process is binding port 80/443: `ss -tlnp | grep -E ':80|:443'`
-- Check Caddy logs: `docker compose logs caddy`
+- Check Caddy logs: `docker compose -f docker-compose.prod.yml logs caddy`
 - Caddy uses Let's Encrypt — rate limits apply (5 certs per domain per week)
 
 ### Site loads over HTTP but not HTTPS
@@ -165,4 +163,4 @@ With a 5-minute TTL, DNS rollback takes effect within 5–10 minutes.
 ### Database connection errors after cutover
 
 - The database runs inside Docker and is not exposed externally. Connection issues usually mean the `app` container crashed.
-- Check: `docker compose ps` and `docker compose logs app`
+- Check: `docker compose -f docker-compose.prod.yml ps` and `docker compose -f docker-compose.prod.yml logs app`

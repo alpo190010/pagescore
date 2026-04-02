@@ -1,15 +1,19 @@
 # =============================================================================
 # Deploy to Production
 # =============================================================================
-# Triggers on push to main. SSHes into the DigitalOcean droplet, pulls latest
-# code, rebuilds containers, and verifies via health endpoint.
+# Triggers on push to main.
+#   1. Builds Docker image in GitHub Actions
+#   2. Pushes to ghcr.io/alpo190010/alpo
+#   3. SSHes into the droplet, pulls the new image, restarts
 #
 # Required GitHub Secrets:
-#   SSH_PRIVATE_KEY — Private SSH key matching the public key on the droplet.
-#                     Must include full header/footer (-----BEGIN/END-----) and
-#                     a trailing newline.
-#   DROPLET_IP     — Droplet IP address (e.g. 134.199.219.170 or reserved IP
-#                     134.199.142.211).
+#   SSH_PRIVATE_KEY — Private SSH key for the droplet (full PEM with newline)
+#   DROPLET_IP     — Droplet IP (134.199.142.211)
+#   GH_PAT         — GitHub PAT with read:packages scope (for droplet to pull
+#                     from GHCR). Create at github.com/settings/tokens.
+#
+# GHCR push uses the built-in GITHUB_TOKEN. GHCR pull on the droplet uses
+# GH_PAT because the repo/package is private.
 # =============================================================================
 
 name: Deploy to Production
@@ -22,10 +26,57 @@ concurrency:
   group: deploy
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  deploy:
-    name: Deploy
+  build-and-push:
+    name: Build & Push Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            NEXT_PUBLIC_POSTHOG_HOST=${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+            NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=${{ vars.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL }}
+            NEXT_PUBLIC_BASE_URL=${{ vars.NEXT_PUBLIC_BASE_URL }}
+
+  deploy:
+    name: Deploy to Droplet
+    runs-on: ubuntu-latest
+    needs: build-and-push
 
     steps:
       - name: Deploy via SSH
@@ -41,15 +92,17 @@ jobs:
 
             cd /opt/alpo
 
-            echo "==> Pulling latest code..."
-            git fetch origin main
-            git reset --hard origin/main
+            echo "==> Logging in to GHCR..."
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u alpo190010 --password-stdin
 
-            echo "==> Rebuilding and restarting containers..."
-            docker compose up --build -d
+            echo "==> Pulling latest image..."
+            docker pull ghcr.io/alpo190010/alpo:latest
+
+            echo "==> Restarting app service..."
+            docker compose -f docker-compose.prod.yml up -d
 
             echo "==> Service status:"
-            docker compose ps
+            docker compose -f docker-compose.prod.yml ps
 
             echo "==> Deploy complete."
 

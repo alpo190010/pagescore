@@ -5,13 +5,17 @@ set -euo pipefail
 # Alpo — Server Provisioning Script
 # =============================================================================
 # Provisions a fresh Ubuntu 24.04 droplet for alpo deployment.
-# Run as root: curl ... | bash  OR  bash scripts/provision.sh
+# Run as root: bash provision.sh
 #
 # What it does:
 #   1. System update
 #   2. Install Docker Engine + Compose plugin
 #   3. Configure UFW firewall (SSH, HTTP, HTTPS only)
 #   4. Create /opt/alpo deployment directory
+#
+# No source code is cloned — the app runs from a pre-built image
+# pulled from ghcr.io. Only docker-compose.prod.yml, Caddyfile,
+# and .env live on the server.
 #
 # Idempotent: safe to re-run on an already-provisioned server.
 # =============================================================================
@@ -118,17 +122,16 @@ echo " Firewall:  UFW active (22/SSH, 80/HTTP, 443/HTTPS)"
 echo " Deploy to: $DEPLOY_DIR"
 echo ""
 echo " Next steps:"
-echo "   1. Clone the repo:"
-echo "      git clone https://github.com/YOUR_ORG/alpo.git $DEPLOY_DIR"
+echo "   1. Copy deploy files to the server:"
+echo "      scp docker-compose.prod.yml root@<IP>:$DEPLOY_DIR/docker-compose.prod.yml"
+echo "      scp Caddyfile root@<IP>:$DEPLOY_DIR/Caddyfile"
 echo ""
-echo "   2. Copy .env.production.template → .env and fill in secrets:"
-echo "      cp $DEPLOY_DIR/.env.production.template $DEPLOY_DIR/.env"
+echo "   2. Create .env with production secrets:"
+echo "      nano $DEPLOY_DIR/.env"
 echo ""
-echo "   3. Start the app:"
-echo "      cd $DEPLOY_DIR && docker compose up --build -d"
+echo "   3. Pull and start the app:"
+echo "      cd $DEPLOY_DIR && docker compose -f docker-compose.prod.yml up -d"
 echo ""
-echo "   4. For subsequent deploys (CI/CD does this automatically):"
-echo "      cd $DEPLOY_DIR && git fetch origin main && git reset --hard origin/main"
-echo "      docker compose up --build -d"
+echo "   4. Subsequent deploys happen automatically via GitHub Actions."
 echo ""
 echo "============================================================"
