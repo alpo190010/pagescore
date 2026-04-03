@@ -151,13 +151,9 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   // Parse signals if present
   const rawSignals = data.signals as Record<string, unknown> | undefined;
   const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
-<<<<<<< HEAD
   const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = (sp || sd)
-=======
   const co = rawSignals?.checkout as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = (sp || co)
->>>>>>> milestone/M010
+  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co)
     ? {
         ...(sp ? {
           socialProof: {
@@ -170,7 +166,6 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasReviewFiltering: Boolean(sp.hasReviewFiltering),
           },
         } : {}),
-<<<<<<< HEAD
         ...(sd ? {
           structuredData: {
             hasProductSchema: Boolean(sd.hasProductSchema),
@@ -195,7 +190,8 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasInvalidAvailability: Boolean(sd.hasInvalidAvailability),
             jsonParseErrors: Number(sd.jsonParseErrors) || 0,
             duplicateProductCount: Number(sd.duplicateProductCount) || 0,
-=======
+          },
+        } : {}),
         ...(co ? {
           checkout: {
             hasAcceleratedCheckout: Boolean(co.hasAcceleratedCheckout),
@@ -209,7 +205,6 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasDrawerCart: Boolean(co.hasDrawerCart),
             hasAjaxCart: Boolean(co.hasAjaxCart),
             hasStickyCheckout: Boolean(co.hasStickyCheckout),
->>>>>>> milestone/M010
           },
         } : {}),
       }
