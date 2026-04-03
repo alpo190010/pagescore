@@ -21,6 +21,7 @@ TEST_USER_UUID = uuid.UUID("d4f8a2b1-c3e5-4a6b-9d7f-8e2c1a3b5d6e")
 def _make_user(
     google_sub: str = TEST_GOOGLE_SUB,
     user_id: uuid.UUID = TEST_USER_UUID,
+    role: str = "user",
 ) -> User:
     """Build a User ORM instance without touching a real DB."""
     user = User()
@@ -29,6 +30,7 @@ def _make_user(
     user.email = "test@example.com"
     user.name = "Test User"
     user.picture = None
+    user.role = role
     user.created_at = datetime.now(timezone.utc)
     user.updated_at = datetime.now(timezone.utc)
     return user
@@ -333,6 +335,45 @@ class TestGetCurrentUserRequired:
         from app.auth import get_current_user_required
 
         with pytest.raises(HTTPException) as exc_info:
+            get_current_user_required(None)
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Authentication required"
+
+
+# -- get_current_user_admin tests -------------------------------------------
+
+
+class TestGetCurrentUserAdmin:
+    """Test the admin auth dependency — must raise 403 for non-admins."""
+
+    def test_returns_admin_user(self):
+        """Admin user passes through → returns the user."""
+        from app.auth import get_current_user_admin
+
+        user = _make_user(role="admin")
+        result = get_current_user_admin(user)
+
+        assert result is user
+
+    def test_raises_403_for_non_admin(self):
+        """User with role='user' → raises HTTPException 403."""
+        from app.auth import get_current_user_admin
+
+        user = _make_user(role="user")
+
+        with pytest.raises(HTTPException) as exc_info:
+            get_current_user_admin(user)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Admin access required"
+
+    def test_raises_401_when_no_user(self):
+        """Unauthenticated (None from upstream) → raises 401 from required dep."""
+        from app.auth import get_current_user_required
+
+        with pytest.raises(HTTPException) as exc_info:
+            # Simulating the dependency chain: required dep raises before admin dep runs
             get_current_user_required(None)
 
         assert exc_info.value.status_code == 401

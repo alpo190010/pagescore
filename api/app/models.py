@@ -120,6 +120,9 @@ class User(Base):
     current_period_end = Column(DateTime, nullable=True)
     lemon_customer_portal_url = Column(Text, nullable=True)
 
+    # --- Role ---
+    role = Column(Text, server_default="user", nullable=False)
+
 
 class Subscriber(Base):
     __tablename__ = "subscribers"

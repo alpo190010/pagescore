@@ -107,6 +107,7 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
         password_hash=hash_password(req.password),
         name=req.name,
         email_verified=False,
+        role="user",
         verification_token=token,
         verification_token_expires_at=datetime.now(timezone.utc)
         + timedelta(hours=24),
@@ -150,6 +151,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         "name": user.name,
         "picture": user.picture,
         "email_verified": user.email_verified,
+        "role": user.role,
     }
 
 
@@ -254,6 +256,7 @@ def google_signin(req: GoogleSigninRequest, db: Session = Depends(get_db)):
         name=req.name,
         picture=req.picture,
         email_verified=True,
+        role="user",
     )
     db.add(user)
     db.commit()
@@ -271,6 +274,7 @@ def _google_user_response(user: User) -> dict:
         "picture": user.picture,
         "google_sub": user.google_sub,
         "email_verified": user.email_verified,
+        "role": user.role,
     }
 
 

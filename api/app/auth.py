@@ -95,3 +95,16 @@ def get_current_user_required(
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     return user
+
+
+def get_current_user_admin(
+    user: User = Depends(get_current_user_required),
+) -> User:
+    """Require an authenticated admin user — raises 403 if not admin.
+
+    Chains off ``get_current_user_required`` so unauthenticated requests
+    get a 401 before the role check runs.
+    """
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user

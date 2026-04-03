@@ -28,6 +28,7 @@ def _make_user(
     reset_token: str | None = None,
     reset_token_expires_at: datetime | None = None,
     picture: str | None = None,
+    role: str = "user",
 ) -> User:
     """Build a User ORM instance without touching a real DB."""
     user = User()
@@ -38,6 +39,7 @@ def _make_user(
     user.email_verified = email_verified
     user.google_sub = google_sub
     user.picture = picture
+    user.role = role
     user.verification_token = verification_token
     user.verification_token_expires_at = verification_token_expires_at
     user.reset_token = reset_token
@@ -221,6 +223,7 @@ class TestLogin:
         assert data["name"] == "Jane"
         assert data["picture"] == "https://img.example.com/jane.jpg"
         assert data["email_verified"] is True
+        assert data["role"] == "user"
 
     def test_login_wrong_password(self):
         user = _make_user()
@@ -514,6 +517,7 @@ class TestGoogleSignin:
         assert data["email"] == "guser@example.com"
         assert data["google_sub"] == "google-abc"
         assert data["email_verified"] is True
+        assert data["role"] == "user"
 
     def test_email_linking(self):
         """Existing email/password user signs in via Google → link accounts."""
@@ -544,6 +548,7 @@ class TestGoogleSignin:
         data = resp.json()
         assert data["google_sub"] == "google-new-sub"
         assert data["email_verified"] is True
+        assert data["role"] == "user"
         assert user.google_sub == "google-new-sub"
         assert user.name == "Linked"
         assert user.picture == "https://img.google.com/link.jpg"
@@ -574,6 +579,7 @@ class TestGoogleSignin:
         assert data["email"] == "brand@example.com"
         assert data["google_sub"] == "google-brand-new"
         assert data["email_verified"] is True
+        assert data["role"] == "user"
         db.add.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once()

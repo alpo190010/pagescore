@@ -8,4 +8,11 @@ export const proxy = auth((req) => {
   ) {
     return Response.redirect(new URL("/", req.nextUrl.origin));
   }
+
+  // Protect /admin/* routes — require authenticated admin user
+  if (req.nextUrl.pathname.startsWith("/admin")) {
+    if (!req.auth || req.auth.user?.role !== "admin") {
+      return Response.redirect(new URL("/", req.nextUrl.origin));
+    }
+  }
 });

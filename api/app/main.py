@@ -13,6 +13,9 @@ from app.routers.user_plan import router as user_plan_router
 from app.routers.user_scans import router as user_scans_router
 from app.routers.auth_routes import router as auth_router
 from app.routers.webhook import router as webhook_router
+from app.routers.admin_users import router as admin_users_router
+from app.routers.admin_analytics import router as admin_analytics_router
+from app.routers.admin_impersonate import router as admin_impersonate_router
 
 app = FastAPI(title="Alpo API")
 
@@ -37,3 +40,6 @@ app.include_router(send_report_now_router)
 app.include_router(user_plan_router)
 app.include_router(user_scans_router)
 app.include_router(webhook_router)
+app.include_router(admin_users_router)
+app.include_router(admin_analytics_router)
+app.include_router(admin_impersonate_router)
