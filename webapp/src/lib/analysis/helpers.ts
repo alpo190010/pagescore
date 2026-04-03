@@ -1,7 +1,7 @@
 import type { CategoryScores, FreeResult, LeakCard } from "./types";
 import {
   CATEGORY_BENCHMARKS, CATEGORY_LABELS, CATEGORY_PROBLEMS, CATEGORY_REVENUE_IMPACT,
-  DIMENSION_GROUPS, type DimensionGroup,
+  DIMENSION_GROUPS, ACTIVE_DIMENSIONS, type DimensionGroup,
 } from "./constants";
 
 /* ── Lazy PostHog — don't block initial paint with 176KB bundle ── */
@@ -70,7 +70,8 @@ export function buildLeaks(
   lossLow?: number,
   lossHigh?: number,
 ): LeakCard[] {
-  const entries = Object.entries(categories) as [keyof CategoryScores, number][];
+  const entries = (Object.entries(categories) as [keyof CategoryScores, number][])
+    .filter(([key]) => ACTIVE_DIMENSIONS.has(key));
   entries.sort((a, b) => a[1] - b[1]);
 
   /* Total gap across all dimensions — used to weight each card's share */
@@ -146,6 +147,24 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
     sizeGuide: Number(cats?.sizeGuide) || 0, variantUx: Number(cats?.variantUx) || 0,
     accessibility: Number(cats?.accessibility) || 0, contentFreshness: Number(cats?.contentFreshness) || 0,
   };
+
+  // Parse signals if present
+  const rawSignals = data.signals as Record<string, unknown> | undefined;
+  const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
+  const signals: import("./types").DimensionSignals | undefined = sp
+    ? {
+        socialProof: {
+          reviewApp: (sp.reviewApp as string) ?? null,
+          starRating: sp.starRating != null ? Number(sp.starRating) : null,
+          reviewCount: sp.reviewCount != null ? Number(sp.reviewCount) : null,
+          hasPhotoReviews: Boolean(sp.hasPhotoReviews),
+          hasVideoReviews: Boolean(sp.hasVideoReviews),
+          starRatingAboveFold: Boolean(sp.starRatingAboveFold),
+          hasReviewFiltering: Boolean(sp.hasReviewFiltering),
+        },
+      }
+    : undefined;
+
   return {
     score: Math.min(100, Math.max(0, Number(data.score) || 0)),
     summary: String(data.summary || "Analysis complete."),
@@ -154,6 +173,7 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
     productPrice: Number(data.productPrice) || 0,
     productCategory: String(data.productCategory || "other"),
     estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
+    signals,
   };
 }
 
@@ -172,6 +192,7 @@ export function groupLeaks(leaks: LeakCard[]): GroupedLeaks[] {
   return DIMENSION_GROUPS
     .map((group) => {
       const groupLeaks = group.keys
+        .filter((k) => ACTIVE_DIMENSIONS.has(k))
         .map((k) => leakMap.get(k))
         .filter((l): l is LeakCard => !!l)
         .sort((a, b) => a.catScore - b.catScore); // worst-first within group

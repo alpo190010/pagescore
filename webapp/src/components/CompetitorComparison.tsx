@@ -1,7 +1,7 @@
 "use client";
 
 import { ChartBarIcon, ArrowSquareOutIcon } from "@phosphor-icons/react";
-import { type CategoryScores, scoreColorText, scoreColorTintBg } from "@/lib/analysis";
+import { type CategoryScores, scoreColorText, scoreColorTintBg, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 interface CompetitorComparisonProps {
   competitors: Array<{
@@ -27,7 +27,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   trust: "Trust",
 };
 
-const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as (keyof CategoryScores)[];
+const CATEGORY_KEYS = (Object.keys(CATEGORY_LABELS) as (keyof CategoryScores)[])
+  .filter((k) => ACTIVE_DIMENSIONS.has(k));
 
 /* ── Score color helpers (0-100 category scale) ── */
 function cellColor(val: number, isBest: boolean, isWorst: boolean): string {
@@ -104,10 +105,10 @@ export default function CompetitorComparison({
             </h2>
             <p className="text-sm text-[var(--text-secondary)]">
               {userWins > userLosses
-                ? `You lead in ${userWins} of 7 categories`
+                ? `You lead in ${userWins} of ${CATEGORY_KEYS.length} categories`
                 : userWins === userLosses
                   ? "You're neck and neck with competitors"
-                  : `Competitors lead in ${userLosses} of 7 categories`}
+                  : `Competitors lead in ${userLosses} of ${CATEGORY_KEYS.length} categories`}
             </p>
           </div>
         </div>

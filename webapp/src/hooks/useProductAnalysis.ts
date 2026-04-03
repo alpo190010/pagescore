@@ -238,6 +238,10 @@ export function useProductAnalysis({
         accessibility: sc("accessibility"), contentFreshness: sc("contentFreshness"),
       };
 
+      // Parse signals if present
+      const rawSignals = data.signals as Record<string, unknown> | undefined;
+      const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
+
       const result: FreeResult = {
         score: Math.min(100, Math.max(0, Number(data.score) || 0)),
         summary: String(data.summary || "Analysis complete."),
@@ -246,6 +250,19 @@ export function useProductAnalysis({
         productPrice: Number(data.productPrice) || 0,
         productCategory: String(data.productCategory || "other"),
         estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
+        signals: sp
+          ? {
+              socialProof: {
+                reviewApp: (sp.reviewApp as string) ?? null,
+                starRating: sp.starRating != null ? Number(sp.starRating) : null,
+                reviewCount: sp.reviewCount != null ? Number(sp.reviewCount) : null,
+                hasPhotoReviews: Boolean(sp.hasPhotoReviews),
+                hasVideoReviews: Boolean(sp.hasVideoReviews),
+                starRatingAboveFold: Boolean(sp.starRatingAboveFold),
+                hasReviewFiltering: Boolean(sp.hasReviewFiltering),
+              },
+            }
+          : undefined,
       };
 
       setAnalysisResult(result);

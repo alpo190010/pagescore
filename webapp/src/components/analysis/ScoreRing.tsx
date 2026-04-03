@@ -1,6 +1,6 @@
 "use client";
 
-import { scoreColor, scoreColorText, scoreColorTintBg, type CategoryScores } from "@/lib/analysis";
+import { scoreColor, scoreColorText, scoreColorTintBg, type CategoryScores, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 interface ScoreRingProps {
   score: number;
@@ -28,7 +28,8 @@ export default function ScoreRing({
   variant = "compact",
 }: ScoreRingProps) {
   const full = variant === "full";
-  const criticalCount = Object.values(categories).filter((s) => s < 40).length;
+  const activeEntries = Object.entries(categories).filter(([k]) => ACTIVE_DIMENSIONS.has(k));
+  const criticalCount = activeEntries.filter(([, s]) => s < 40).length;
   const ringSize = full ? "w-28 h-28 sm:w-32 sm:h-32" : "w-24 h-24 sm:w-28 sm:h-28";
   const HeadingTag = full ? "h1" : "h2";
 
@@ -149,7 +150,7 @@ export default function ScoreRing({
             className={`${full ? "text-xl" : "text-lg"} font-extrabold text-[var(--on-surface)]`}
             style={{ fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
           >
-            {Object.keys(categories).length}
+            {activeEntries.length}
           </div>
           <div className="text-[9px] text-[var(--on-surface-variant)] uppercase font-semibold tracking-[0.1em]">Dimensions</div>
         </div>

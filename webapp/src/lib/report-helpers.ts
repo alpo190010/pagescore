@@ -17,7 +17,11 @@ export const REPORT_CATEGORY_LABELS: Record<string, string> = {
   accessibility: "Accessibility", contentFreshness: "Content Freshness",
 };
 
-/** Human-readable status badge label */
+/**
+ * Dimensions with real scoring. Must match ACTIVE_DIMENSIONS in analysis/constants.tsx.
+ * Can't import from there because it pulls in React icons → breaks Server Components.
+ */
+export const ACTIVE_REPORT_DIMENSIONS: ReadonlySet<string> = new Set(["socialProof"]);
 export function getStatusLabel(score: number): string {
   if (score >= 70) return "Strong";
   if (score >= 40) return "Room to improve";

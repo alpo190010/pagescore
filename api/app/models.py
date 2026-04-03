@@ -29,6 +29,7 @@ class ProductAnalysis(Base):
     product_price = Column(Numeric, nullable=True)
     product_category = Column(Text, nullable=True)
     estimated_monthly_visitors = Column(Integer, nullable=True)
+    signals = Column(JSONB, nullable=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())

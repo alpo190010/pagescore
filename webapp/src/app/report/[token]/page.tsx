@@ -1,6 +1,6 @@
 import type { CategoryScores } from "@/lib/analysis/types";
 import {
-  REPORT_CATEGORY_LABELS,
+  REPORT_CATEGORY_LABELS, ACTIVE_REPORT_DIMENSIONS,
   scoreColor, scoreColorText, scoreColorTintBg,
   getStatusLabel, getExplanation,
 } from "@/lib/report-helpers";
@@ -86,6 +86,7 @@ export default async function ReportTokenPage({
   const lossHigh = (100 - score) * 8;
 
   const sortedCategories = Object.entries(categories)
+    .filter(([key]) => ACTIVE_REPORT_DIMENSIONS.has(key))
     .map(([key, val]) => ({ key, score: val as number }))
     .sort((a, b) => a.score - b.score);
   const actionPlanItems = sortedCategories.slice(0, 3).map((cat, i) => {
@@ -141,9 +142,9 @@ export default async function ReportTokenPage({
             </div>
           </div>
 
-          {/* Category sections — all 20 */}
+          {/* Category sections — active dimensions only */}
           <div className="grid gap-4 mb-8">
-            {Object.entries(categories).map(([key, catScore]) => {
+            {Object.entries(categories).filter(([key]) => ACTIVE_REPORT_DIMENSIONS.has(key)).map(([key, catScore]) => {
               const label = REPORT_CATEGORY_LABELS[key] || key;
               const explanation = getExplanation(key, catScore);
 

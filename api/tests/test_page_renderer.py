@@ -90,16 +90,20 @@ async def test_render_page_passes_chromium_args():
 
 
 @pytest.mark.asyncio
-async def test_render_page_timeout_raises():
-    """TimeoutError from page.goto is re-raised with a descriptive message."""
+async def test_render_page_timeout_falls_back():
+    """TimeoutError from page.goto triggers graceful fallback — returns content instead of raising."""
     from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
     factory, page, _browser = _build_playwright_mocks()
     page.goto = AsyncMock(side_effect=PlaywrightTimeoutError("Timeout 30000ms exceeded"))
+    page.content = AsyncMock(return_value="<html>partial</html>")
+    page.wait_for_timeout = AsyncMock()
 
     with patch(PATCH_TARGET, factory):
-        with pytest.raises(PlaywrightTimeoutError, match="timed out"):
-            await render_page("https://slow-site.example.com", timeout_ms=5000)
+        html = await render_page("https://slow-site.example.com", timeout_ms=5000)
+
+    assert "partial" in html
+    page.wait_for_timeout.assert_awaited_once_with(3_000)
 
 
 @pytest.mark.asyncio
@@ -128,16 +132,18 @@ async def test_browser_closed_on_success():
 
 @pytest.mark.asyncio
 async def test_browser_closed_on_timeout():
-    """browser.close() is called even when navigation times out."""
+    """browser.close() is called even when navigation times out (graceful fallback)."""
     from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
     factory, page, browser = _build_playwright_mocks()
     page.goto = AsyncMock(side_effect=PlaywrightTimeoutError("Timeout"))
+    page.content = AsyncMock(return_value="<html>fallback</html>")
+    page.wait_for_timeout = AsyncMock()
 
     with patch(PATCH_TARGET, factory):
-        with pytest.raises(PlaywrightTimeoutError):
-            await render_page("https://example.com")
+        html = await render_page("https://example.com")
 
+    assert "fallback" in html
     browser.close.assert_awaited_once()
 
 

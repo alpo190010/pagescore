@@ -14,6 +14,7 @@ import {
   List,
   X,
   UserCircle,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import AuthModal from "./AuthModal";
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/", icon: House, label: "Home", auth: false },
   { href: "/dashboard", icon: ChartBar, label: "Dashboard", auth: true },
   { href: "/pricing", icon: CurrencyDollar, label: "Pricing", auth: false },
+  { href: "/admin", icon: ShieldCheck, label: "Admin", auth: true, adminOnly: true },
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -112,7 +114,10 @@ export default function Sidebar() {
 
         {/* Drawer nav items */}
         <nav className="flex-1 flex flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.filter((item) => !item.auth || status === "authenticated").map((item) => {
+          {NAV_ITEMS.filter((item) => {
+            if (item.adminOnly && session?.user?.role !== "admin") return false;
+            return !item.auth || status === "authenticated";
+          }).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
@@ -166,7 +171,10 @@ export default function Sidebar() {
 
         {/* Nav icons */}
         <nav className="flex-1 flex flex-col items-center justify-center gap-2">
-          {NAV_ITEMS.filter((item) => !item.auth || status === "authenticated").map((item) => {
+          {NAV_ITEMS.filter((item) => {
+            if (item.adminOnly && session?.user?.role !== "admin") return false;
+            return !item.auth || status === "authenticated";
+          }).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (

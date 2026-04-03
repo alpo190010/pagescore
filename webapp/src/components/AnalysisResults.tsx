@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import {
   ArrowsClockwiseIcon,
   WarningCircleIcon,
@@ -15,13 +16,14 @@ import {
   groupLeaks,
   scoreColor,
 } from "@/lib/analysis";
+import { API_URL } from "@/lib/api";
+import { authFetch } from "@/lib/auth-fetch";
 import CompetitorComparison from "@/components/CompetitorComparison";
 import CompetitorLoader from "@/components/CompetitorLoader";
 import ScoreRing from "@/components/analysis/ScoreRing";
 import RevenueLossCard from "@/components/analysis/RevenueLossCard";
 import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
-import FeaturedInsight from "@/components/analysis/FeaturedInsight";
 
 /* ══════════════════════════════════════════════════════════════
    AnalysisResults — Complete results display for right-pane
@@ -66,6 +68,19 @@ export default function AnalysisResults({
   onRetryCompetitors,
   onBeatCompetitor,
 }: AnalysisResultsProps) {
+  const { status } = useSession();
+
+  /* ── Plan-based gating ── */
+  const [userPlan, setUserPlan] = useState<string>("free");
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    authFetch(`${API_URL}/user/plan`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.plan) setUserPlan(data.plan); })
+      .catch(() => {});
+  }, [status]);
+  const isPaid = status === "authenticated" && userPlan !== "free";
+
   /* ── Staggered reveal ── */
   const [showCard, setShowCard] = useState(false);
   const [showRevenue, setShowRevenue] = useState(false);
@@ -194,7 +209,8 @@ export default function AnalysisResults({
                 Issues Found
               </h2>
               <p className="text-[var(--on-surface-variant)] text-sm mt-1">
-                {leaks.length} conversion leaks across {grouped.length} areas. Click any to get the fix.
+                {leaks.length} conversion leak{leaks.length !== 1 ? "s" : ""} across {grouped.length} area{grouped.length !== 1 ? "s" : ""}.{" "}
+                {isPaid ? "Click any to see the details." : "Click any to get the fix."}
               </p>
             </div>
           </div>
@@ -291,6 +307,8 @@ export default function AnalysisResults({
                                 group: g.group.id,
                               });
                             }}
+                            expandable={isPaid}
+                            signals={isPaid ? result.signals?.socialProof : undefined}
                           />
                         ))}
                       </div>
@@ -300,28 +318,24 @@ export default function AnalysisResults({
               );
             })}
 
-            {/* CTA Card — after all groups */}
-            <CTACard
-              leaksCount={leaks.length}
-              animationDelay={grouped.length * 100}
-              onClick={() => {
-                onIssueClick(leaks[0]?.key || "");
-                captureEvent("cta_card_clicked", { url });
-              }}
-            />
+            {/* CTA Card — only for free users */}
+            {!isPaid && (
+              <CTACard
+                leaksCount={leaks.length}
+                animationDelay={grouped.length * 100}
+                onClick={() => {
+                  onIssueClick(leaks[0]?.key || "");
+                  captureEvent("cta_card_clicked", { url });
+                }}
+              />
+            )}
           </div>
         </div>
       )}
 
-      {/* ═══ FEATURED INSIGHT ═══ */}
+      {/* ═══ ANALYZE AGAIN ═══ */}
       {showLeaks && (
         <section style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}>
-          <FeaturedInsight
-            leaks={leaks}
-            summary={result.summary}
-            onInsightClick={() => { if (leaks[0]) onIssueClick(leaks[0].key); }}
-          />
-
           {/* Analyze again CTA */}
           <div className="text-center mt-8">
             <button

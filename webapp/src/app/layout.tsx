@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PHProvider } from "./providers";
-<<<<<<< HEAD
 import Sidebar from "@/components/Sidebar";
-=======
 import ImpersonationBanner from "@/components/ImpersonationBanner";
->>>>>>> milestone/M008
 
 const inter = Inter({
   subsets: ["latin"],
@@ -68,7 +65,7 @@ export default function RootLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--brand)] focus:text-white focus:text-sm focus:font-semibold">
           Skip to content
         </a>
-<<<<<<< HEAD
+        <ImpersonationBanner />
         <PHProvider>
           <Sidebar />
           <div className="md:pl-16 h-dvh bg-[var(--surface-container)] md:py-2">
@@ -77,10 +74,6 @@ export default function RootLayout({
             </div>
           </div>
         </PHProvider>
-=======
-        <ImpersonationBanner />
-        <PHProvider>{children}</PHProvider>
->>>>>>> milestone/M008
       </body>
     </html>
   );

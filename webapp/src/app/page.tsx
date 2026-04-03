@@ -9,7 +9,7 @@ import {
   LightningIcon,
   ClockIcon,
 } from "@phosphor-icons/react";
-import { isValidUrl, isProductPageUrl, extractDomain, CATEGORY_SVG, CATEGORY_LABELS, CATEGORY_REVENUE_IMPACT, scoreColorText } from "@/lib/analysis";
+import { isValidUrl, isProductPageUrl, extractDomain, CATEGORY_SVG, CATEGORY_LABELS, CATEGORY_REVENUE_IMPACT, ACTIVE_DIMENSIONS, scoreColorText } from "@/lib/analysis";
 import { SAMPLE_SCAN } from "@/lib/sample-data";
 
 export default function Home() {
@@ -40,7 +40,9 @@ export default function Home() {
     }
   }, [url, submitting, router]);
 
-  const sorted = Object.entries(SAMPLE_SCAN.categories).sort((a, b) => a[1] - b[1]);
+  const sorted = Object.entries(SAMPLE_SCAN.categories)
+    .filter(([key]) => ACTIVE_DIMENSIONS.has(key))
+    .sort((a, b) => a[1] - b[1]);
 
   return (
     <>
@@ -56,7 +58,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg sm:text-xl text-[var(--on-surface-variant)] max-w-2xl mx-auto mb-12">
-              alpo.ai scans 20 conversion dimensions and shows you exactly where you lose sales. See for yourself.
+              alpo.ai analyzes your product page&apos;s social proof and shows you exactly where you lose sales. See for yourself.
             </p>
 
             {/* URL Input */}
@@ -106,7 +108,7 @@ export default function Home() {
               </span>
               <span className="flex items-center gap-2">
                 <LightningIcon size={16} weight="fill" color="var(--brand)" />
-                20 Dimensions Scored
+                Social Proof Scored
               </span>
               <span className="flex items-center gap-2">
                 <ClockIcon size={16} weight="fill" color="var(--brand)" />
@@ -169,7 +171,7 @@ export default function Home() {
             {/* All 20 dimension scores */}
             <div className="bg-[var(--surface-container-lowest)] rounded-3xl p-6 sm:p-8" style={{ animation: "fade-in-up 400ms ease-out 240ms both" }}>
               <div className="flex justify-between items-center mb-5">
-                <p className="text-sm font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">All 20 Dimensions</p>
+                <p className="text-sm font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">Social Proof Analysis</p>
                 <p className="text-xs text-[var(--on-surface-variant)]">Sorted by severity</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -222,7 +224,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 relative">
               {[
                 { num: "01", title: "Paste Your URL", desc: "Product page, store homepage, or any sales page. No code required." },
-                { num: "02", title: "Get 20 Scores", desc: "AI analyzes page speed, images, reviews, pricing, mobile UX, AI discoverability, and 14 more dimensions." },
+                { num: "02", title: "Get Your Score", desc: "AI analyzes reviews, ratings, UGC, and social proof signals on your product page." },
                 { num: "03", title: "Fix What Matters", desc: "Prioritized by revenue impact. Fix the red ones first. See the money come back." },
               ].map((s, i) => (
                 <div key={s.num} className="relative" style={{ animation: `fade-in-up 500ms ease-out ${i * 120 + 100}ms both` }}>
@@ -244,7 +246,7 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-6 sm:mb-8 tracking-tight" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
                 If {SAMPLE_SCAN.brand} leaks revenue,<br className="hidden sm:block" /> so does your page.
               </h2>
-              <p className="text-lg sm:text-xl mb-10 sm:mb-12 max-w-xl mx-auto" style={{ color: "var(--brand-on-dark)" }}>Find your 20 conversion leaks in 30 seconds. 3 free scans. No signup.</p>
+              <p className="text-lg sm:text-xl mb-10 sm:mb-12 max-w-xl mx-auto" style={{ color: "var(--brand-on-dark)" }}>Find your social proof leaks in 30 seconds. 3 free scans. No signup.</p>
               <button type="button" onClick={() => { document.getElementById("url-input")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="cursor-pointer bg-white px-10 sm:px-12 py-4 sm:py-5 rounded-full font-bold text-lg transition-all hover:scale-[1.02] active:scale-95" style={{ color: "var(--primary)" }}>
                 Scan Your Page Now
               </button>

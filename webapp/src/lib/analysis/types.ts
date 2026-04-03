@@ -35,6 +35,20 @@ export interface CompetitorResult {
   }>;
 }
 
+export interface SocialProofSignals {
+  reviewApp: string | null;
+  starRating: number | null;
+  reviewCount: number | null;
+  hasPhotoReviews: boolean;
+  hasVideoReviews: boolean;
+  starRatingAboveFold: boolean;
+  hasReviewFiltering: boolean;
+}
+
+export interface DimensionSignals {
+  socialProof?: SocialProofSignals;
+}
+
 export interface FreeResult {
   score: number;
   summary: string;
@@ -43,6 +57,7 @@ export interface FreeResult {
   productPrice: number;
   productCategory: string;
   estimatedMonthlyVisitors: number;
+  signals?: DimensionSignals;
 }
 
 /** Shape of each entry returned by `buildLeaks` */

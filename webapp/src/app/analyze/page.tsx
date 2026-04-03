@@ -11,13 +11,13 @@ import ScoreRing from "@/components/analysis/ScoreRing";
 import RevenueLossCard from "@/components/analysis/RevenueLossCard";
 import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
-import FeaturedInsight from "@/components/analysis/FeaturedInsight";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { SAMPLE_SCAN } from "@/lib/sample-data";
 import {
   type FreeResult,
   type LeakCard,
+  type SocialProofSignals,
   captureEvent,
   calculateRevenueLoss,
   buildLeaks,
@@ -219,18 +219,6 @@ function AnalyzePageContent() {
     captureEvent("cta_card_clicked", { url });
   }, [isTeaser, isShallow, handleSignIn, leaks, url]);
 
-  const openInsightModal = useCallback(() => {
-    if (isTeaser) {
-      handleSignIn();
-      return;
-    }
-    if (isShallow) {
-      setPaywallLeakKey(leaks[0]?.key || null);
-      setPaywallOpen(true);
-      captureEvent("paywall_opened", { trigger: "featured_insight" });
-      return;
-    }
-  }, [isTeaser, isShallow, handleSignIn, leaks]);
 
   // ── Credit exhaustion screen ──
   if (creditExhausted && !loading) {
@@ -334,23 +322,33 @@ function AnalyzePageContent() {
                 <p className="text-[var(--on-surface-variant)] text-sm sm:text-base mt-1">
                   {isShallow
                     ? `${leaks.length} conversion leaks identified. Upgrade to see detailed fixes.`
-                    : `${leaks.length} conversion leaks identified. Click any to get the fix.`
+                    : `${leaks.length} conversion leaks identified. Click any to see the details.`
                   }
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {leaks.map((leak, i) => (
-                <IssueCard key={leak.key} variant="full" leak={leak} index={i} onClick={() => openIssueModal(leak)} />
+                <IssueCard
+                  key={leak.key}
+                  variant="full"
+                  leak={leak}
+                  index={i}
+                  onClick={() => openIssueModal(leak)}
+                  expandable={!isTeaser && !isShallow}
+                  signals={!isTeaser && !isShallow ? result?.signals?.socialProof : undefined}
+                />
               ))}
-              <CTACard
-                variant="full"
-                leaksCount={leaks.length}
-                animationDelay={leaks.length * 70}
-                onClick={openCTAModal}
-                label={isShallow ? "Unlock Full Report" : undefined}
-                buttonLabel={isShallow ? "Upgrade Now" : undefined}
-              />
+              {(isTeaser || isShallow) && (
+                <CTACard
+                  variant="full"
+                  leaksCount={leaks.length}
+                  animationDelay={leaks.length * 70}
+                  onClick={openCTAModal}
+                  label={isShallow ? "Unlock Full Report" : undefined}
+                  buttonLabel={isShallow ? "Upgrade Now" : undefined}
+                />
+              )}
             </div>
           </div>
         )}
@@ -384,10 +382,9 @@ function AnalyzePageContent() {
           </section>
         )}
 
-        {/* FeaturedInsight + scan-another — only for authenticated paid users (not shallow) */}
+        {/* Scan-another — for authenticated paid users (not shallow) */}
         {result && showLeaks && !isTeaser && !isShallow && (
           <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16" style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}>
-            <FeaturedInsight variant="full" leaks={leaks} summary={result.summary} onInsightClick={openInsightModal} />
             <div className="text-center mt-12">
               <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring" style={{ background: "var(--gradient-primary)" }}>
                 Analyze Another Page

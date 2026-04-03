@@ -24,6 +24,11 @@ _CHROMIUM_ARGS: list[str] = [
 async def render_page(url: str, timeout_ms: int = 30_000) -> str:
     """Render a page with headless Chromium and return the full DOM HTML.
 
+    Navigates with ``networkidle`` wait, but if the page never reaches
+    network-idle (common with heavy analytics/tracking scripts), falls
+    back to ``domcontentloaded`` + a short settle delay so we still
+    capture JS-rendered content like review widgets.
+
     Args:
         url: The URL to navigate to and render.
         timeout_ms: Maximum time in milliseconds to wait for navigation
@@ -33,10 +38,8 @@ async def render_page(url: str, timeout_ms: int = 30_000) -> str:
         The fully rendered DOM HTML as a string.
 
     Raises:
-        PlaywrightTimeoutError: If navigation exceeds *timeout_ms*, re-raised
-            with a descriptive message including the URL.
-        RuntimeError: If Chromium crashes or cannot start, wrapping the
-            underlying Playwright error with context.
+        PlaywrightTimeoutError: If even the fallback navigation fails.
+        RuntimeError: If Chromium crashes or cannot start.
     """
     browser = None
     start = time.monotonic()
@@ -48,7 +51,22 @@ async def render_page(url: str, timeout_ms: int = 30_000) -> str:
                 args=_CHROMIUM_ARGS,
             )
             page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+            except PlaywrightTimeoutError:
+                # networkidle never settled (common with analytics-heavy
+                # e-commerce pages). The page is already loaded and JS has
+                # been running — just give widgets a moment to paint.
+                elapsed_ms = (time.monotonic() - start) * 1_000
+                logger.warning(
+                    "networkidle timed out for %s after %.0f ms — "
+                    "capturing current content after settle delay",
+                    url,
+                    elapsed_ms,
+                )
+                await page.wait_for_timeout(3_000)
+
             html = await page.content()
 
             elapsed_ms = (time.monotonic() - start) * 1_000
@@ -59,15 +77,6 @@ async def render_page(url: str, timeout_ms: int = 30_000) -> str:
                 len(html),
             )
             return html
-
-        except PlaywrightTimeoutError:
-            elapsed_ms = (time.monotonic() - start) * 1_000
-            logger.warning(
-                "Timeout rendering %s after %.0f ms", url, elapsed_ms
-            )
-            raise PlaywrightTimeoutError(
-                f"Page render timed out after {timeout_ms} ms for URL: {url}"
-            )
 
         except PlaywrightError as exc:
             elapsed_ms = (time.monotonic() - start) * 1_000

@@ -107,6 +107,7 @@ def get_cached_analysis(
         "categories": row.categories,
         "productPrice": row.product_price,
         "productCategory": row.product_category,
+        "signals": row.signals,
         "analysisId": str(row.id),
     }
 
@@ -210,16 +211,28 @@ async def analyze(
     }
     mock_categories["socialProof"] = sp_score
 
-    mock_score = round(sum(mock_categories.values()) / len(mock_categories))
+    # Overall score = socialProof score (only live dimension)
+    mock_score = sp_score
 
     response_data: dict = {
         "score": mock_score,
-        "summary": "Analysis complete. Social proof scoring is live; other dimensions use placeholder scores.",
+        "summary": "Social proof analysis complete.",
         "tips": sp_tips or ["No social proof issues detected."],
         "categories": mock_categories,
         "productPrice": 0,
         "productCategory": "other",
         "estimatedMonthlyVisitors": 1000,
+        "signals": {
+            "socialProof": {
+                "reviewApp": signals.review_app,
+                "starRating": signals.star_rating,
+                "reviewCount": signals.review_count,
+                "hasPhotoReviews": signals.has_photo_reviews,
+                "hasVideoReviews": signals.has_video_reviews,
+                "starRatingAboveFold": signals.star_rating_above_fold,
+                "hasReviewFiltering": signals.has_review_filtering,
+            },
+        },
     }
 
     # --- Consume credit (best-effort — analysis already succeeded) ---
@@ -276,6 +289,7 @@ async def analyze(
                 ),
                 product_category=response_data["productCategory"] or None,
                 estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
+                signals=response_data.get("signals"),
                 user_id=current_user.id if current_user else None,
             )
             .on_conflict_do_update(
@@ -295,6 +309,7 @@ async def analyze(
                     "estimated_monthly_visitors": response_data[
                         "estimatedMonthlyVisitors"
                     ],
+                    "signals": response_data.get("signals"),
                     "updated_at": func.now(),
                 },
             )

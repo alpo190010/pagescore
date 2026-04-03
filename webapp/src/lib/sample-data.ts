@@ -11,8 +11,8 @@ export const SAMPLE_SCAN: {
 } = {
   url: "gymshark.com/products/arrival-5-shorts",
   brand: "Gymshark",
-  score: 52,
-  summary: "Missing reviews, structured data, and cross-sell recommendations",
+  score: 15,
+  summary: "Missing reviews, star ratings, and user-generated content",
   categories: {
     pageSpeed: 45, images: 55, socialProof: 15, checkout: 40, mobileCta: 50,
     title: 65, aiDiscoverability: 20, structuredData: 15, pricing: 40,
