@@ -1,12 +1,14 @@
 """JWT authentication dependencies for FastAPI.
 
 Verifies Auth.js-issued JWTs using PyJWT and resolves the user from
-the `sub` claim (google_sub) in the database.
+the `sub` claim in the database.  New sessions carry a Postgres UUID as
+``sub``; legacy Google sessions carry a ``google_sub`` string.
 """
 
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Optional
 
 import jwt
@@ -59,6 +61,17 @@ def get_current_user_optional(
     if not sub:
         return None
 
+    # Phase 1: Try resolving as a Postgres UUID (new sessions from both
+    # Credentials and Google providers).
+    try:
+        user_uuid = uuid.UUID(sub)
+        user = db.query(User).filter(User.id == user_uuid).first()
+        if user is not None:
+            return user
+    except ValueError:
+        pass  # Not a valid UUID — fall through to legacy lookup.
+
+    # Phase 2: Fallback to google_sub lookup (legacy Google sessions).
     user = db.query(User).filter(User.google_sub == sub).first()
     return user
 

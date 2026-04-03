@@ -15,12 +15,16 @@ from app.models import User
 
 TEST_SECRET = "test-auth-secret-for-unit-tests"
 TEST_GOOGLE_SUB = "google-sub-12345"
+TEST_USER_UUID = uuid.UUID("d4f8a2b1-c3e5-4a6b-9d7f-8e2c1a3b5d6e")
 
 
-def _make_user(google_sub: str = TEST_GOOGLE_SUB) -> User:
+def _make_user(
+    google_sub: str = TEST_GOOGLE_SUB,
+    user_id: uuid.UUID = TEST_USER_UUID,
+) -> User:
     """Build a User ORM instance without touching a real DB."""
     user = User()
-    user.id = uuid.uuid4()
+    user.id = user_id
     user.google_sub = google_sub
     user.email = "test@example.com"
     user.name = "Test User"
@@ -39,10 +43,14 @@ def _encode_jwt(
 
 
 def _make_valid_token(
-    sub: str = TEST_GOOGLE_SUB,
+    sub: str = str(TEST_USER_UUID),
     exp_delta: timedelta | None = None,
 ) -> str:
-    """Create a valid (or expired) JWT token."""
+    """Create a valid (or expired) JWT token.
+
+    Default sub is now the Postgres UUID string so that tests exercise the
+    UUID-first resolution path by default.
+    """
     payload: dict = {"sub": sub}
     if exp_delta is not None:
         payload["exp"] = datetime.now(timezone.utc) + exp_delta
@@ -62,11 +70,32 @@ def _make_request(authorization: str | None = None) -> MagicMock:
     return request
 
 
-def _make_db_session(user: User | None = None) -> MagicMock:
-    """Simulate a SQLAlchemy Session.query(...).filter(...).first() chain."""
+def _make_db_session(*filter_results: User | None) -> MagicMock:
+    """Simulate a SQLAlchemy Session supporting sequential filter().first() calls.
+
+    Each positional argument corresponds to the return value of one
+    ``db.query(User).filter(...).first()`` call, in the order they happen
+    at runtime:
+
+    * ``_make_db_session(user)``       — first (only) filter call returns *user*
+    * ``_make_db_session(None, user)``  — first returns None, second returns *user*
+    * ``_make_db_session(None, None)``  — both miss
+    * ``_make_db_session()``           — no filter calls expected (safe fallback)
+    """
     session = MagicMock()
-    query = session.query.return_value
-    query.filter.return_value.first.return_value = user
+    query_mock = session.query.return_value
+
+    if filter_results:
+        filters = []
+        for result in filter_results:
+            f = MagicMock()
+            f.first.return_value = result
+            filters.append(f)
+        query_mock.filter.side_effect = filters
+    else:
+        # Safe fallback for tests that never exercise the DB path.
+        query_mock.filter.return_value.first.return_value = None
+
     return session
 
 
@@ -78,14 +107,14 @@ class TestGetCurrentUserOptional:
 
     @patch("app.auth.settings")
     def test_valid_jwt_known_user(self, mock_settings):
-        """Valid JWT with a matching user in DB → returns User."""
+        """Valid JWT with UUID sub matching a user in DB → returns User."""
         from app.auth import get_current_user_optional
 
         mock_settings.auth_secret = TEST_SECRET
         user = _make_user()
-        token = _make_valid_token()
+        token = _make_valid_token()  # sub = str(TEST_USER_UUID)
         request = _make_request(f"Bearer {token}")
-        db = _make_db_session(user)
+        db = _make_db_session(user)  # UUID hit on first filter
 
         result = get_current_user_optional(request, db)
 
@@ -94,13 +123,14 @@ class TestGetCurrentUserOptional:
 
     @patch("app.auth.settings")
     def test_valid_jwt_unknown_sub(self, mock_settings):
-        """Valid JWT but google_sub not in DB → returns None."""
+        """Valid JWT but sub (UUID) not in DB and no google_sub match → returns None."""
         from app.auth import get_current_user_optional
 
         mock_settings.auth_secret = TEST_SECRET
-        token = _make_valid_token(sub="unknown-sub-99999")
+        unknown_uuid = str(uuid.uuid4())
+        token = _make_valid_token(sub=unknown_uuid)
         request = _make_request(f"Bearer {token}")
-        db = _make_db_session(user=None)
+        db = _make_db_session(None, None)  # UUID miss, google_sub miss
 
         result = get_current_user_optional(request, db)
 
@@ -184,7 +214,7 @@ class TestGetCurrentUserOptional:
         mock_settings.auth_secret = ""
         token = _make_valid_token()
         request = _make_request(f"Bearer {token}")
-        db = _make_db_session(_make_user())
+        db = _make_db_session(_make_user())  # would match, but DB never hit
 
         result = get_current_user_optional(request, db)
 
@@ -230,6 +260,53 @@ class TestGetCurrentUserOptional:
         )
         request = _make_request(f"Bearer {token}")
         db = _make_db_session()
+
+        result = get_current_user_optional(request, db)
+
+        assert result is None
+
+    # -- UUID-first / google_sub-fallback tests ---
+
+    @patch("app.auth.settings")
+    def test_legacy_google_sub_fallback(self, mock_settings):
+        """Non-UUID sub (legacy Google session) falls through to google_sub lookup."""
+        from app.auth import get_current_user_optional
+
+        mock_settings.auth_secret = TEST_SECRET
+        user = _make_user(google_sub="117893425672834")
+        token = _make_valid_token(sub="117893425672834")
+        request = _make_request(f"Bearer {token}")
+        # UUID parse fails → only google_sub filter runs → returns user
+        db = _make_db_session(user)
+
+        result = get_current_user_optional(request, db)
+
+        assert result is user
+
+    @patch("app.auth.settings")
+    def test_uuid_sub_not_in_db_no_fallback(self, mock_settings):
+        """Valid UUID sub not in DB, no google_sub match either → returns None."""
+        from app.auth import get_current_user_optional
+
+        mock_settings.auth_secret = TEST_SECRET
+        nonexistent_uuid = str(uuid.uuid4())
+        token = _make_valid_token(sub=nonexistent_uuid)
+        request = _make_request(f"Bearer {token}")
+        db = _make_db_session(None, None)  # UUID miss, google_sub miss
+
+        result = get_current_user_optional(request, db)
+
+        assert result is None
+
+    @patch("app.auth.settings")
+    def test_malformed_sub_no_match(self, mock_settings):
+        """Arbitrary non-UUID, non-google_sub string → returns None."""
+        from app.auth import get_current_user_optional
+
+        mock_settings.auth_secret = TEST_SECRET
+        token = _make_valid_token(sub="random-garbage-string")
+        request = _make_request(f"Bearer {token}")
+        db = _make_db_session(None)  # only google_sub filter runs → miss
 
         result = get_current_user_optional(request, db)
 

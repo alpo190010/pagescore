@@ -63,6 +63,7 @@ services:
       LEMONSQUEEZY_VARIANT_PRO: ${LEMONSQUEEZY_VARIANT_PRO:-}
       LEMONSQUEEZY_VARIANT_SINGLE_REPORT: ${LEMONSQUEEZY_VARIANT_SINGLE_REPORT:-}
       AUTH_SECRET: ${AUTH_SECRET:-}
+      WEBAPP_URL: ${WEBAPP_URL:-http://localhost:3000}
     env_file:
       - .env
     ports:

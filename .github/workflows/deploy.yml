@@ -169,7 +169,7 @@ jobs:
 
             echo "==> Syncing auth secrets to .env..."
             touch .env
-            grep -v '^AUTH_SECRET=\|^AUTH_GOOGLE_ID=\|^AUTH_GOOGLE_SECRET=\|^AUTH_TRUST_HOST=\|^LEMONSQUEEZY_VARIANT_STARTER=\|^LEMONSQUEEZY_VARIANT_GROWTH=\|^LEMONSQUEEZY_VARIANT_PRO=\|^LEMONSQUEEZY_VARIANT_SINGLE_REPORT=' .env > .env.tmp || true
+            grep -v '^AUTH_SECRET=\|^AUTH_GOOGLE_ID=\|^AUTH_GOOGLE_SECRET=\|^AUTH_TRUST_HOST=\|^LEMONSQUEEZY_VARIANT_STARTER=\|^LEMONSQUEEZY_VARIANT_GROWTH=\|^LEMONSQUEEZY_VARIANT_PRO=\|^LEMONSQUEEZY_VARIANT_SINGLE_REPORT=\|^WEBAPP_URL=' .env > .env.tmp || true
             echo 'AUTH_SECRET=${{ secrets.AUTH_SECRET }}' >> .env.tmp
             echo 'AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}' >> .env.tmp
             echo 'AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}' >> .env.tmp
@@ -178,6 +178,7 @@ jobs:
             echo 'LEMONSQUEEZY_VARIANT_GROWTH=${{ secrets.LEMONSQUEEZY_VARIANT_GROWTH }}' >> .env.tmp
             echo 'LEMONSQUEEZY_VARIANT_PRO=${{ secrets.LEMONSQUEEZY_VARIANT_PRO }}' >> .env.tmp
             echo 'LEMONSQUEEZY_VARIANT_SINGLE_REPORT=${{ secrets.LEMONSQUEEZY_VARIANT_SINGLE_REPORT }}' >> .env.tmp
+            echo 'WEBAPP_URL=${{ vars.WEBAPP_URL }}' >> .env.tmp
             mv .env.tmp .env
 
             echo "==> Logging in to GHCR..."

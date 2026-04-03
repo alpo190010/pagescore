@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -97,10 +98,16 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
-    google_sub = Column(Text, nullable=False, unique=True)
-    email = Column(Text, nullable=False)
+    google_sub = Column(Text, nullable=True, unique=True)
+    email = Column(Text, nullable=False, unique=True)
     name = Column(Text, nullable=True)
     picture = Column(Text, nullable=True)
+    password_hash = Column(Text, nullable=True)
+    email_verified = Column(Boolean, nullable=False, server_default=text("false"))
+    verification_token = Column(Text, nullable=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
+    reset_token = Column(Text, nullable=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
 

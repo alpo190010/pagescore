@@ -1,10 +1,13 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import AuthModal from "./AuthModal";
 
 export default function NavAuthButton() {
   const { data: session, status } = useSession();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   if (status === "loading") {
     return (
@@ -47,15 +50,21 @@ export default function NavAuthButton() {
   }
 
   return (
-    <button
-      onClick={() => signIn("google")}
-      className="text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
-      style={{
-        color: "var(--on-primary)",
-        background: "var(--primary)",
-      }}
-    >
-      Sign In
-    </button>
+    <>
+      <button
+        onClick={() => setIsAuthModalOpen(true)}
+        className="text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+        style={{
+          color: "var(--on-primary)",
+          background: "var(--primary)",
+        }}
+      >
+        Sign In
+      </button>
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+    </>
   );
 }

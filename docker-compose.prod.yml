@@ -61,6 +61,7 @@ services:
       LEMONSQUEEZY_VARIANT_PRO: ${LEMONSQUEEZY_VARIANT_PRO}
       LEMONSQUEEZY_VARIANT_SINGLE_REPORT: ${LEMONSQUEEZY_VARIANT_SINGLE_REPORT}
       AUTH_SECRET: ${AUTH_SECRET}
+      WEBAPP_URL: ${WEBAPP_URL:-https://alpo.ai}
     env_file:
       - .env
     healthcheck:
