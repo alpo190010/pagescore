@@ -151,17 +151,46 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   // Parse signals if present
   const rawSignals = data.signals as Record<string, unknown> | undefined;
   const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = sp
+  const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
+  const signals: import("./types").DimensionSignals | undefined = (sp || sd)
     ? {
-        socialProof: {
-          reviewApp: (sp.reviewApp as string) ?? null,
-          starRating: sp.starRating != null ? Number(sp.starRating) : null,
-          reviewCount: sp.reviewCount != null ? Number(sp.reviewCount) : null,
-          hasPhotoReviews: Boolean(sp.hasPhotoReviews),
-          hasVideoReviews: Boolean(sp.hasVideoReviews),
-          starRatingAboveFold: Boolean(sp.starRatingAboveFold),
-          hasReviewFiltering: Boolean(sp.hasReviewFiltering),
-        },
+        ...(sp ? {
+          socialProof: {
+            reviewApp: (sp.reviewApp as string) ?? null,
+            starRating: sp.starRating != null ? Number(sp.starRating) : null,
+            reviewCount: sp.reviewCount != null ? Number(sp.reviewCount) : null,
+            hasPhotoReviews: Boolean(sp.hasPhotoReviews),
+            hasVideoReviews: Boolean(sp.hasVideoReviews),
+            starRatingAboveFold: Boolean(sp.starRatingAboveFold),
+            hasReviewFiltering: Boolean(sp.hasReviewFiltering),
+          },
+        } : {}),
+        ...(sd ? {
+          structuredData: {
+            hasProductSchema: Boolean(sd.hasProductSchema),
+            hasName: Boolean(sd.hasName),
+            hasImage: Boolean(sd.hasImage),
+            hasDescription: Boolean(sd.hasDescription),
+            hasOffers: Boolean(sd.hasOffers),
+            hasPrice: Boolean(sd.hasPrice),
+            hasPriceCurrency: Boolean(sd.hasPriceCurrency),
+            hasAvailability: Boolean(sd.hasAvailability),
+            hasBrand: Boolean(sd.hasBrand),
+            hasSku: Boolean(sd.hasSku),
+            hasGtin: Boolean(sd.hasGtin),
+            hasAggregateRating: Boolean(sd.hasAggregateRating),
+            hasPriceValidUntil: Boolean(sd.hasPriceValidUntil),
+            hasShippingDetails: Boolean(sd.hasShippingDetails),
+            hasReturnPolicy: Boolean(sd.hasReturnPolicy),
+            hasBreadcrumbList: Boolean(sd.hasBreadcrumbList),
+            hasOrganization: Boolean(sd.hasOrganization),
+            hasMissingBrand: Boolean(sd.hasMissingBrand),
+            hasCurrencyInPrice: Boolean(sd.hasCurrencyInPrice),
+            hasInvalidAvailability: Boolean(sd.hasInvalidAvailability),
+            jsonParseErrors: Number(sd.jsonParseErrors) || 0,
+            duplicateProductCount: Number(sd.duplicateProductCount) || 0,
+          },
+        } : {}),
       }
     : undefined;
 
