@@ -151,8 +151,13 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   // Parse signals if present
   const rawSignals = data.signals as Record<string, unknown> | undefined;
   const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
+<<<<<<< HEAD
   const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
   const signals: import("./types").DimensionSignals | undefined = (sp || sd)
+=======
+  const co = rawSignals?.checkout as Record<string, unknown> | undefined;
+  const signals: import("./types").DimensionSignals | undefined = (sp || co)
+>>>>>>> milestone/M010
     ? {
         ...(sp ? {
           socialProof: {
@@ -165,6 +170,7 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasReviewFiltering: Boolean(sp.hasReviewFiltering),
           },
         } : {}),
+<<<<<<< HEAD
         ...(sd ? {
           structuredData: {
             hasProductSchema: Boolean(sd.hasProductSchema),
@@ -189,6 +195,21 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasInvalidAvailability: Boolean(sd.hasInvalidAvailability),
             jsonParseErrors: Number(sd.jsonParseErrors) || 0,
             duplicateProductCount: Number(sd.duplicateProductCount) || 0,
+=======
+        ...(co ? {
+          checkout: {
+            hasAcceleratedCheckout: Boolean(co.hasAcceleratedCheckout),
+            hasDynamicCheckoutButton: Boolean(co.hasDynamicCheckoutButton),
+            hasPaypal: Boolean(co.hasPaypal),
+            hasKlarna: Boolean(co.hasKlarna),
+            hasAfterpay: Boolean(co.hasAfterpay),
+            hasAffirm: Boolean(co.hasAffirm),
+            hasSezzle: Boolean(co.hasSezzle),
+            paymentMethodCount: Number(co.paymentMethodCount) || 0,
+            hasDrawerCart: Boolean(co.hasDrawerCart),
+            hasAjaxCart: Boolean(co.hasAjaxCart),
+            hasStickyCheckout: Boolean(co.hasStickyCheckout),
+>>>>>>> milestone/M010
           },
         } : {}),
       }

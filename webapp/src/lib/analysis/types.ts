@@ -70,9 +70,24 @@ export interface StructuredDataSignals {
   duplicateProductCount: number;
 }
 
+export interface CheckoutSignals {
+  hasAcceleratedCheckout: boolean;
+  hasDynamicCheckoutButton: boolean;
+  hasPaypal: boolean;
+  hasKlarna: boolean;
+  hasAfterpay: boolean;
+  hasAffirm: boolean;
+  hasSezzle: boolean;
+  paymentMethodCount: number;
+  hasDrawerCart: boolean;
+  hasAjaxCart: boolean;
+  hasStickyCheckout: boolean;
+}
+
 export interface DimensionSignals {
   socialProof?: SocialProofSignals;
   structuredData?: StructuredDataSignals;
+  checkout?: CheckoutSignals;
 }
 
 export interface FreeResult {

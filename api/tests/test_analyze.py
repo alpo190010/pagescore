@@ -13,6 +13,7 @@ from app.main import app
 from app.models import User
 from app.services.scoring import CATEGORY_KEYS, build_category_scores, compute_weighted_score
 from app.services.structured_data_detector import StructuredDataSignals
+from app.services.checkout_detector import CheckoutSignals
 
 # --- Test fixtures / helpers ---
 
@@ -83,6 +84,9 @@ def _get_client(db_override=None, user_override=None):
 # --- Auth / credit enforcement tests ---
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -90,7 +94,7 @@ def _get_client(db_override=None, user_override=None):
 @patch("app.routers.analyze.score_social_proof", return_value=50)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_anonymous_user_allowed(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_anonymous_user_allowed(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """POST /analyze without auth → 200 (anonymous access allowed)."""
     mock_fetch.return_value = _VALID_HTML
     app.dependency_overrides[get_db] = lambda: _mock_db()
@@ -135,6 +139,9 @@ def test_analyze_returns_403_at_exact_limit():
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -143,7 +150,7 @@ def test_analyze_returns_403_at_exact_limit():
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_consumes_credit_on_success(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_consumes_credit_on_success(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Credit is incremented only after successful analysis."""
     mock_fetch.return_value = _VALID_HTML
     mock_ai.return_value = _AI_RESPONSE
@@ -165,6 +172,9 @@ def test_analyze_consumes_credit_on_success(mock_fetch, mock_ai, mock_detect, mo
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -173,7 +183,7 @@ def test_analyze_consumes_credit_on_success(mock_fetch, mock_ai, mock_detect, mo
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.call_openrouter", new_callable=AsyncMock)
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_returns_credits_remaining(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_returns_credits_remaining(mock_fetch, mock_ai, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Successful response includes creditsRemaining field."""
     mock_fetch.return_value = _VALID_HTML
     mock_ai.return_value = _AI_RESPONSE
@@ -195,6 +205,9 @@ def test_analyze_returns_credits_remaining(mock_fetch, mock_ai, mock_detect, moc
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -202,7 +215,7 @@ def test_analyze_returns_credits_remaining(mock_fetch, mock_ai, mock_detect, moc
 @patch("app.routers.analyze.score_social_proof", return_value=0)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_no_credit_consumed_on_render_failure(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_no_credit_consumed_on_render_failure(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Render failure → no credit consumed."""
     mock_fetch.side_effect = Exception("connection refused")
 
@@ -325,6 +338,9 @@ def test_analyze_page_too_small(mock_fetch):
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -332,7 +348,7 @@ def test_analyze_page_too_small(mock_fetch):
 @patch("app.routers.analyze.score_social_proof", return_value=0)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_missing_api_key_still_succeeds(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_missing_api_key_still_succeeds(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """AI is disabled — missing API key no longer blocks analysis."""
     mock_fetch.return_value = _VALID_HTML
     client = _get_client()
@@ -343,6 +359,9 @@ def test_analyze_missing_api_key_still_succeeds(mock_fetch, mock_detect, mock_sp
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -350,7 +369,7 @@ def test_analyze_missing_api_key_still_succeeds(mock_fetch, mock_detect, mock_sp
 @patch("app.routers.analyze.score_social_proof", return_value=0)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_ai_not_called(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_ai_not_called(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """AI is disabled — call_openrouter should not be invoked."""
     mock_fetch.return_value = _VALID_HTML
     client = _get_client()
@@ -367,6 +386,9 @@ def test_analyze_ai_not_called(mock_fetch, mock_detect, mock_sp_score, mock_sp_t
 # --- Happy-path success test ---
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -374,7 +396,7 @@ def test_analyze_ai_not_called(mock_fetch, mock_detect, mock_sp_score, mock_sp_t
 @patch("app.routers.analyze.score_social_proof", return_value=75)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_success(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_success(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     mock_fetch.return_value = _VALID_HTML
 
     mock_session = _mock_db()
@@ -416,6 +438,9 @@ def test_analyze_success(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, m
 # --- Score clamping edge cases ---
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -423,7 +448,7 @@ def test_analyze_success(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, m
 @patch("app.routers.analyze.score_social_proof", return_value=0)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_score_clamping(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_score_clamping(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     mock_fetch.return_value = _VALID_HTML
     client = _get_client()
     resp = client.post("/analyze", json={"url": "http://example.com/product"})
@@ -439,6 +464,9 @@ def test_analyze_score_clamping(mock_fetch, mock_detect, mock_sp_score, mock_sp_
 # --- Hybrid pipeline tests ---
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -446,7 +474,7 @@ def test_analyze_score_clamping(mock_fetch, mock_detect, mock_sp_score, mock_sp_
 @patch("app.routers.analyze.score_social_proof", return_value=0)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_score_equals_social_proof(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_score_equals_social_proof(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Overall score is weighted average; categories include both live dimensions."""
     mock_sp_score.return_value = 65
     mock_fetch.return_value = _VALID_HTML
@@ -463,6 +491,9 @@ def test_analyze_score_equals_social_proof(mock_fetch, mock_detect, mock_sp_scor
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=["SD tip 1"])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -470,7 +501,7 @@ def test_analyze_score_equals_social_proof(mock_fetch, mock_detect, mock_sp_scor
 @patch("app.routers.analyze.score_social_proof", return_value=60)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_tips_from_social_proof(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_tips_from_social_proof(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Tips combine SP + SD tips (AI is disabled)."""
     mock_fetch.return_value = _VALID_HTML
     client = _get_client()
@@ -487,6 +518,9 @@ def test_analyze_tips_from_social_proof(mock_fetch, mock_detect, mock_sp_score, 
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
 @patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
@@ -494,7 +528,7 @@ def test_analyze_tips_from_social_proof(mock_fetch, mock_detect, mock_sp_score, 
 @patch("app.routers.analyze.score_social_proof", return_value=85)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Response includes signals.socialProof with detector output."""
     from app.services.social_proof_detector import SocialProofSignals
     mock_detect.return_value = SocialProofSignals(
@@ -523,6 +557,9 @@ def test_analyze_signals_in_response(mock_fetch, mock_detect, mock_sp_score, moc
     app.dependency_overrides.clear()
 
 
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=85)
 @patch("app.routers.analyze.detect_structured_data")
@@ -530,7 +567,7 @@ def test_analyze_signals_in_response(mock_fetch, mock_detect, mock_sp_score, moc
 @patch("app.routers.analyze.score_social_proof", return_value=50)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_structured_data_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips):
+def test_analyze_structured_data_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
     """Response includes signals.structuredData with all 22 camelCase fields."""
     mock_sd_detect.return_value = StructuredDataSignals(
         has_product_schema=True,
@@ -588,5 +625,65 @@ def test_analyze_structured_data_signals_in_response(mock_fetch, mock_detect, mo
     assert sd["hasMissingBrand"] is False
     assert sd["jsonParseErrors"] == 0
     assert sd["duplicateProductCount"] == 1
+
+    app.dependency_overrides.clear()
+
+
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=65)
+@patch("app.routers.analyze.detect_checkout")
+@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
+@patch("app.routers.analyze.score_structured_data", return_value=50)
+@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
+@patch("app.routers.analyze.get_social_proof_tips", return_value=[])
+@patch("app.routers.analyze.score_social_proof", return_value=50)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_checkout_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips):
+    """Response includes signals.checkout with all 11 camelCase fields."""
+    mock_co_detect.return_value = CheckoutSignals(
+        has_accelerated_checkout=True,
+        has_dynamic_checkout_button=True,
+        has_paypal=False,
+        has_klarna=True,
+        has_afterpay=False,
+        has_affirm=False,
+        has_sezzle=False,
+        payment_method_count=3,
+        has_drawer_cart=True,
+        has_ajax_cart=True,
+        has_sticky_checkout=False,
+    )
+    mock_fetch.return_value = _VALID_HTML
+    mock_session = _mock_db()
+    user = _make_user()
+    client = _get_client(db_override=mock_session, user_override=user)
+    resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    co = data["signals"]["checkout"]
+
+    # All 11 camelCase fields present
+    expected_keys = [
+        "hasAcceleratedCheckout", "hasDynamicCheckoutButton", "hasPaypal",
+        "hasKlarna", "hasAfterpay", "hasAffirm", "hasSezzle",
+        "paymentMethodCount", "hasDrawerCart", "hasAjaxCart", "hasStickyCheckout",
+    ]
+    for key in expected_keys:
+        assert key in co, f"Missing key: {key}"
+
+    # Spot-check values
+    assert co["hasAcceleratedCheckout"] is True
+    assert co["hasDynamicCheckoutButton"] is True
+    assert co["hasPaypal"] is False
+    assert co["hasKlarna"] is True
+    assert co["paymentMethodCount"] == 3
+    assert co["hasDrawerCart"] is True
+    assert co["hasStickyCheckout"] is False
+
+    # Checkout category score comes from mocked score_checkout
+    assert data["categories"]["checkout"] == 65
 
     app.dependency_overrides.clear()

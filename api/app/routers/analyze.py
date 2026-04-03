@@ -21,6 +21,8 @@ from app.services.social_proof_detector import detect_social_proof
 from app.services.social_proof_rubric import score_social_proof, get_social_proof_tips
 from app.services.structured_data_detector import detect_structured_data
 from app.services.structured_data_rubric import score_structured_data, get_structured_data_tips
+from app.services.checkout_detector import detect_checkout
+from app.services.checkout_rubric import score_checkout, get_checkout_tips
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +193,11 @@ async def analyze(
     sd_score = score_structured_data(sd_signals)
     sd_tips = get_structured_data_tips(sd_signals)
 
+    # --- Deterministic checkout scoring (runs on full HTML) ---
+    co_signals = detect_checkout(html)
+    co_score = score_checkout(co_signals)
+    co_tips = get_checkout_tips(co_signals)
+
     # --- Mock scores for the other 18 dimensions (AI disabled) ---
     import random
     _mock_seed = hash(url) & 0xFFFFFFFF
@@ -211,7 +218,7 @@ async def analyze(
         "socialCommerce": _rng.randint(35, 75),
         "accessibility": _rng.randint(35, 75),
         "contentQuality": _rng.randint(35, 75),
-        "checkout": _rng.randint(35, 75),
+        "checkout": co_score,
         "aiDiscoverability": _rng.randint(35, 75),
         "internationalReadiness": _rng.randint(35, 75),
         "merchantFeedQuality": _rng.randint(35, 75),
@@ -221,7 +228,7 @@ async def analyze(
     # Overall score = weighted average across all dimensions
     mock_score = compute_weighted_score(mock_categories)
 
-    all_tips = sp_tips + sd_tips
+    all_tips = sp_tips + sd_tips + co_tips
 
     response_data: dict = {
         "score": mock_score,
@@ -264,6 +271,19 @@ async def analyze(
                 "hasInvalidAvailability": sd_signals.has_invalid_availability,
                 "jsonParseErrors": sd_signals.json_parse_errors,
                 "duplicateProductCount": sd_signals.duplicate_product_count,
+            },
+            "checkout": {
+                "hasAcceleratedCheckout": co_signals.has_accelerated_checkout,
+                "hasDynamicCheckoutButton": co_signals.has_dynamic_checkout_button,
+                "hasPaypal": co_signals.has_paypal,
+                "hasKlarna": co_signals.has_klarna,
+                "hasAfterpay": co_signals.has_afterpay,
+                "hasAffirm": co_signals.has_affirm,
+                "hasSezzle": co_signals.has_sezzle,
+                "paymentMethodCount": co_signals.payment_method_count,
+                "hasDrawerCart": co_signals.has_drawer_cart,
+                "hasAjaxCart": co_signals.has_ajax_cart,
+                "hasStickyCheckout": co_signals.has_sticky_checkout,
             },
         },
     }

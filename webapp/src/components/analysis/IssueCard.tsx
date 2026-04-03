@@ -20,8 +20,11 @@ import {
   TreeStructureIcon,
   BuildingsIcon,
   WarningCircleIcon,
+  LightningIcon,
+  CreditCardIcon,
+  ShoppingCartSimpleIcon,
 } from "@phosphor-icons/react";
-import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals } from "@/lib/analysis";
+import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals } from "@/lib/analysis";
 
 interface IssueCardProps {
   leak: LeakCard;
@@ -148,6 +151,92 @@ function StructuredDataChecklist({ sd }: { sd: StructuredDataSignals }) {
             detail={errorItems.join("; ")}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Checkout signal checklist ── */
+function CheckoutChecklist({ co }: { co: CheckoutSignals }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        {/* Express Checkout */}
+        <SignalRow
+          label="Shop Pay / accelerated checkout"
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={co.hasAcceleratedCheckout}
+          detail={!co.hasAcceleratedCheckout ? "Accelerated checkout can boost conversion 1.7×" : undefined}
+        />
+        <SignalRow
+          label="Dynamic checkout button"
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={co.hasDynamicCheckoutButton}
+          detail={!co.hasDynamicCheckoutButton ? "Shows the buyer's preferred payment at checkout" : undefined}
+        />
+        <SignalRow
+          label="PayPal"
+          icon={<CurrencyDollarIcon size={14} weight="fill" />}
+          present={co.hasPaypal}
+          detail={!co.hasPaypal ? "PayPal reaches 400M+ active buyers globally" : undefined}
+        />
+
+        {/* BNPL Providers */}
+        <SignalRow
+          label="Klarna"
+          icon={<CreditCardIcon size={14} weight="fill" />}
+          present={co.hasKlarna}
+          detail={!co.hasKlarna ? "BNPL options increase AOV by up to 45%" : undefined}
+        />
+        <SignalRow
+          label="Afterpay"
+          icon={<CreditCardIcon size={14} weight="fill" />}
+          present={co.hasAfterpay}
+          detail={!co.hasAfterpay ? "Afterpay drives repeat purchases at 2× the rate" : undefined}
+        />
+        <SignalRow
+          label="Affirm"
+          icon={<CreditCardIcon size={14} weight="fill" />}
+          present={co.hasAffirm}
+          detail={!co.hasAffirm ? "Affirm reduces cart abandonment on high-AOV items" : undefined}
+        />
+        <SignalRow
+          label="Sezzle"
+          icon={<CreditCardIcon size={14} weight="fill" />}
+          present={co.hasSezzle}
+          detail={!co.hasSezzle ? "Sezzle targets younger demographics effectively" : undefined}
+        />
+
+        {/* Payment Diversity */}
+        <SignalRow
+          label={`${co.paymentMethodCount} of 5 payment methods detected`}
+          icon={<CreditCardIcon size={14} weight="fill" />}
+          present={co.paymentMethodCount >= 3}
+          detail={co.paymentMethodCount < 3 ? "Offer 3+ payment methods to reduce checkout friction" : undefined}
+        />
+
+        {/* Cart Experience */}
+        <SignalRow
+          label="Drawer / slide-out cart"
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={co.hasDrawerCart}
+          detail={!co.hasDrawerCart ? "Drawer carts keep shoppers on the page" : undefined}
+        />
+        <SignalRow
+          label="AJAX add-to-cart"
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={co.hasAjaxCart}
+          detail={!co.hasAjaxCart ? "AJAX cart avoids disruptive page reloads" : undefined}
+        />
+        <SignalRow
+          label="Sticky checkout button"
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={co.hasStickyCheckout}
+          detail={!co.hasStickyCheckout ? "Sticky buttons keep CTA visible while scrolling" : undefined}
+        />
       </div>
     </div>
   );
@@ -322,6 +411,11 @@ export default function IssueCard({
               {/* Signal breakdown — Structured Data */}
               {signals?.structuredData && leak.key === "structuredData" && (
                 <StructuredDataChecklist sd={signals.structuredData} />
+              )}
+
+              {/* Signal breakdown — Checkout */}
+              {signals?.checkout && leak.key === "checkout" && (
+                <CheckoutChecklist co={signals.checkout} />
               )}
             </div>
           </div>
