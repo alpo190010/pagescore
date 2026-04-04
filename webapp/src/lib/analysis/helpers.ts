@@ -168,9 +168,11 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   const vu = rawSignals?.variantUx as Record<string, unknown> | undefined;
   const sg = rawSignals?.sizeGuide as Record<string, unknown> | undefined;
   const ad = rawSignals?.aiDiscoverability as Record<string, unknown> | undefined;
+  const mc = rawSignals?.mobileCta as Record<string, unknown> | undefined;
+  const cf = rawSignals?.contentFreshness as Record<string, unknown> | undefined;
   const ac = rawSignals?.accessibility as Record<string, unknown> | undefined;
   const sc = rawSignals?.socialCommerce as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co || pr || im || ti || sh || de || tr || ps || cs || vu || sg || ad || ac || sc)
+  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co || pr || im || ti || sh || de || tr || ps || mc || cs || vu || sg || ad || cf || ac || sc)
     ? {
         ...(sp ? {
           socialProof: {
@@ -417,6 +419,49 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             specMentionCount: Number(ad.specMentionCount) || 0,
             hasMeasurementUnits: Boolean(ad.hasMeasurementUnits),
             entityDensityScore: Number(ad.entityDensityScore) || 0,
+          },
+        } : {}),
+        ...(mc ? {
+          mobileCta: {
+            ctaFound: Boolean(mc.ctaFound),
+            ctaText: (mc.ctaText as string) ?? null,
+            ctaCount: Number(mc.ctaCount) || 0,
+            ctaSelectorMatched: (mc.ctaSelectorMatched as string) ?? null,
+            hasViewportMeta: Boolean(mc.hasViewportMeta),
+            hasResponsiveMeta: Boolean(mc.hasResponsiveMeta),
+            hasStickyClass: Boolean(mc.hasStickyClass),
+            hasStickyApp: (mc.hasStickyApp as string) ?? null,
+            buttonWidthPx: mc.buttonWidthPx != null ? Number(mc.buttonWidthPx) : null,
+            buttonHeightPx: mc.buttonHeightPx != null ? Number(mc.buttonHeightPx) : null,
+            meetsMin44px: mc.meetsMin44px != null ? Boolean(mc.meetsMin44px) : null,
+            meetsOptimal60_72px: mc.meetsOptimal60_72px != null ? Boolean(mc.meetsOptimal60_72px) : null,
+            aboveFold: mc.aboveFold != null ? Boolean(mc.aboveFold) : null,
+            isSticky: mc.isSticky != null ? Boolean(mc.isSticky) : null,
+            inThumbZone: mc.inThumbZone != null ? Boolean(mc.inThumbZone) : null,
+            isFullWidth: mc.isFullWidth != null ? Boolean(mc.isFullWidth) : null,
+          },
+        } : {}),
+        ...(cf ? {
+          contentFreshness: {
+            copyrightYear: cf.copyrightYear != null ? Number(cf.copyrightYear) : null,
+            copyrightYearIsCurrent: Boolean(cf.copyrightYearIsCurrent),
+            hasExpiredPromotion: Boolean(cf.hasExpiredPromotion),
+            expiredPromotionText: (cf.expiredPromotionText as string) ?? null,
+            hasSeasonalMismatch: Boolean(cf.hasSeasonalMismatch),
+            hasNewLabel: Boolean(cf.hasNewLabel),
+            datePublishedIso: (cf.datePublishedIso as string) ?? null,
+            newLabelIsStale: Boolean(cf.newLabelIsStale),
+            mostRecentReviewDateIso: (cf.mostRecentReviewDateIso as string) ?? null,
+            reviewAgeDays: cf.reviewAgeDays != null ? Number(cf.reviewAgeDays) : null,
+            reviewStaleness: (cf.reviewStaleness as string) ?? null,
+            dateModifiedIso: (cf.dateModifiedIso as string) ?? null,
+            dateModifiedAgeDays: cf.dateModifiedAgeDays != null ? Number(cf.dateModifiedAgeDays) : null,
+            lastModifiedHeader: (cf.lastModifiedHeader as string) ?? null,
+            lastModifiedAgeDays: cf.lastModifiedAgeDays != null ? Number(cf.lastModifiedAgeDays) : null,
+            timeElementCount: Number(cf.timeElementCount) || 0,
+            mostRecentTimeIso: (cf.mostRecentTimeIso as string) ?? null,
+            mostRecentTimeAgeDays: cf.mostRecentTimeAgeDays != null ? Number(cf.mostRecentTimeAgeDays) : null,
+            freshestSignalAgeDays: cf.freshestSignalAgeDays != null ? Number(cf.freshestSignalAgeDays) : null,
           },
         } : {}),
         ...(ac ? {

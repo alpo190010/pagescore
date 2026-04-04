@@ -285,6 +285,28 @@ export interface SizeGuideSignals {
   categoryApplicable: boolean;
 }
 
+export interface ContentFreshnessSignals {
+  copyrightYear: number | null;
+  copyrightYearIsCurrent: boolean;
+  hasExpiredPromotion: boolean;
+  expiredPromotionText: string | null;
+  hasSeasonalMismatch: boolean;
+  hasNewLabel: boolean;
+  datePublishedIso: string | null;
+  newLabelIsStale: boolean;
+  mostRecentReviewDateIso: string | null;
+  reviewAgeDays: number | null;
+  reviewStaleness: string | null;
+  dateModifiedIso: string | null;
+  dateModifiedAgeDays: number | null;
+  lastModifiedHeader: string | null;
+  lastModifiedAgeDays: number | null;
+  timeElementCount: number;
+  mostRecentTimeIso: string | null;
+  mostRecentTimeAgeDays: number | null;
+  freshestSignalAgeDays: number | null;
+}
+
 export interface SocialCommerceSignals {
   hasInstagramEmbed: boolean;
   hasTiktokEmbed: boolean;
@@ -326,6 +348,7 @@ export interface DimensionSignals {
   variantUx?: VariantUxSignals;
   sizeGuide?: SizeGuideSignals;
   aiDiscoverability?: AiDiscoverabilitySignals;
+  contentFreshness?: ContentFreshnessSignals;
   accessibility?: AccessibilitySignals;
   socialCommerce?: SocialCommerceSignals;
 }

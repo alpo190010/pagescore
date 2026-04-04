@@ -52,8 +52,9 @@ import {
   CursorClickIcon,
   TranslateIcon,
   WheelchairIcon,
+  LeafIcon,
 } from "@phosphor-icons/react";
-import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
+import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type PageSpeedSignals, type MobileCtaSignals, type CrossSellSignals, type VariantUxSignals, type SizeGuideSignals, type AiDiscoverabilitySignals, type ContentFreshnessSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
 
 interface IssueCardProps {
   leak: LeakCard;
@@ -805,6 +806,530 @@ function SocialCommerceChecklist({ sc }: { sc: SocialCommerceSignals }) {
   );
 }
 
+/* ── Page Speed signal checklist ── */
+function PageSpeedChecklist({ ps }: { ps: PageSpeedSignals }) {
+  const perfLabel = ps.performanceScore != null ? `${Math.round(ps.performanceScore)}/100` : "N/A";
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={`Lighthouse performance: ${perfLabel}`}
+          icon={<GaugeIcon size={14} weight="fill" />}
+          present={ps.performanceScore != null && ps.performanceScore >= 50}
+          detail={ps.performanceScore != null && ps.performanceScore < 50 ? "Score below 50 indicates serious performance issues" : undefined}
+        />
+        <SignalRow
+          label={ps.lcpMs != null ? `LCP: ${(ps.lcpMs / 1000).toFixed(1)}s` : "LCP: not measured"}
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={ps.lcpMs != null && ps.lcpMs <= 2500}
+          detail={ps.lcpMs != null && ps.lcpMs > 2500 ? "LCP over 2.5s hurts Core Web Vitals — aim for under 2.5s" : undefined}
+        />
+        <SignalRow
+          label={ps.clsValue != null ? `CLS: ${ps.clsValue.toFixed(3)}` : "CLS: not measured"}
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={ps.clsValue != null && ps.clsValue <= 0.1}
+          detail={ps.clsValue != null && ps.clsValue > 0.1 ? "CLS over 0.1 causes layout shifts — set explicit image/ad dimensions" : undefined}
+        />
+        <SignalRow
+          label={`${ps.thirdPartyScriptCount} third-party script${ps.thirdPartyScriptCount !== 1 ? "s" : ""}`}
+          icon={<CodeIcon size={14} weight="fill" />}
+          present={ps.thirdPartyScriptCount <= 5}
+          detail={ps.thirdPartyScriptCount > 10 ? "Over 10 third-party scripts significantly slows page load" : ps.thirdPartyScriptCount > 5 ? "Consider auditing which scripts are essential" : undefined}
+        />
+        <SignalRow
+          label={`${ps.renderBlockingScriptCount} render-blocking script${ps.renderBlockingScriptCount !== 1 ? "s" : ""}`}
+          icon={<CodeIcon size={14} weight="fill" />}
+          present={ps.renderBlockingScriptCount === 0}
+          detail={ps.renderBlockingScriptCount > 0 ? "Defer or async non-critical scripts to unblock rendering" : undefined}
+        />
+        <SignalRow
+          label={ps.hasLazyLoading ? "Lazy loading enabled" : "No lazy loading detected"}
+          icon={<ImageIcon size={14} weight="fill" />}
+          present={ps.hasLazyLoading}
+          detail={!ps.hasLazyLoading ? "Lazy loading below-fold images saves bandwidth and speeds up FCP" : undefined}
+        />
+        <SignalRow
+          label={ps.lcpImageLazyLoaded ? "⚠ LCP image is lazy-loaded" : "LCP image not lazy-loaded"}
+          icon={<ImageIcon size={14} weight="fill" />}
+          present={!ps.lcpImageLazyLoaded}
+          detail={ps.lcpImageLazyLoaded ? "Never lazy-load the hero/LCP image — it delays the largest paint" : undefined}
+        />
+        <SignalRow
+          label={ps.hasModernImageFormats ? "WebP/AVIF images detected" : "No modern image formats"}
+          icon={<FileImageIcon size={14} weight="fill" />}
+          present={ps.hasModernImageFormats}
+          detail={!ps.hasModernImageFormats ? "WebP/AVIF saves 25–50% file size vs JPEG/PNG" : undefined}
+        />
+        <SignalRow
+          label={ps.hasFontDisplaySwap ? "font-display: swap used" : "No font-display: swap"}
+          icon={<TextTIcon size={14} weight="fill" />}
+          present={ps.hasFontDisplaySwap}
+          detail={!ps.hasFontDisplaySwap ? "font-display: swap prevents invisible text during web font loading" : undefined}
+        />
+        <SignalRow
+          label={ps.hasPreconnectHints ? "Preconnect hints found" : "No preconnect hints"}
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={ps.hasPreconnectHints}
+          detail={!ps.hasPreconnectHints ? "Preconnect to key origins saves 100–500ms per resource" : undefined}
+        />
+        <SignalRow
+          label={ps.hasHeroPreload ? "Hero image preloaded" : "No hero preload"}
+          icon={<ImageIcon size={14} weight="fill" />}
+          present={ps.hasHeroPreload}
+          detail={!ps.hasHeroPreload ? "Preloading the hero image improves LCP significantly" : undefined}
+        />
+        {ps.detectedTheme && (
+          <SignalRow
+            label={`Theme: ${ps.detectedTheme}`}
+            icon={<CodeIcon size={14} weight="fill" />}
+            present={true}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Mobile CTA signal checklist ── */
+function MobileCtaChecklist({ mc }: { mc: MobileCtaSignals }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={mc.ctaFound ? `CTA found: "${mc.ctaText ?? "Add to Cart"}"` : "No Add to Cart button detected"}
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={mc.ctaFound}
+          detail={!mc.ctaFound ? "A visible Add to Cart button is essential for conversion" : undefined}
+        />
+        <SignalRow
+          label={mc.hasViewportMeta ? "Viewport meta tag present" : "Missing viewport meta tag"}
+          icon={<PhoneIcon size={14} weight="fill" />}
+          present={mc.hasViewportMeta}
+          detail={!mc.hasViewportMeta ? "Viewport meta is required for proper mobile rendering" : undefined}
+        />
+        <SignalRow
+          label={mc.hasResponsiveMeta ? "Responsive viewport configured" : "Non-responsive viewport"}
+          icon={<PhoneIcon size={14} weight="fill" />}
+          present={mc.hasResponsiveMeta}
+          detail={!mc.hasResponsiveMeta ? "Use width=device-width for responsive layout" : undefined}
+        />
+        <SignalRow
+          label={
+            mc.meetsMin44px === null
+              ? "Button tap target: not measured"
+              : mc.meetsOptimal60_72px
+                ? `Button: ${mc.buttonHeightPx}px tall — optimal`
+                : mc.meetsMin44px
+                  ? `Button: ${mc.buttonHeightPx}px tall — meets minimum`
+                  : `Button: ${mc.buttonHeightPx}px tall — too small`
+          }
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={mc.meetsMin44px === true}
+          detail={
+            mc.meetsMin44px === false
+              ? "Minimum 44px tap target (Apple HIG) — 60–72px is optimal for thumb reach"
+              : mc.meetsMin44px === true && !mc.meetsOptimal60_72px
+                ? "Meets minimum but 60–72px height converts better on mobile"
+                : undefined
+          }
+        />
+        <SignalRow
+          label={mc.aboveFold === null ? "Fold position: not measured" : mc.aboveFold ? "CTA above the fold" : "CTA below the fold"}
+          icon={<ArrowFatUpIcon size={14} weight="fill" />}
+          present={mc.aboveFold === true}
+          detail={mc.aboveFold === false ? "70% of mobile users never scroll — keep CTA visible immediately" : undefined}
+        />
+        <SignalRow
+          label={mc.isSticky ? "Sticky CTA enabled" : "No sticky CTA"}
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={mc.isSticky === true}
+          detail={!mc.isSticky ? "Sticky buy buttons keep the CTA visible during scroll" : mc.hasStickyApp ? `via ${mc.hasStickyApp}` : undefined}
+        />
+        <SignalRow
+          label={mc.isFullWidth ? "Full-width button" : "Button is not full-width"}
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={mc.isFullWidth === true}
+          detail={mc.isFullWidth === false ? "Full-width buttons are easier to tap on mobile" : undefined}
+        />
+        <SignalRow
+          label={mc.inThumbZone === null ? "Thumb zone: not measured" : mc.inThumbZone ? "CTA in thumb zone" : "CTA outside thumb zone"}
+          icon={<PhoneIcon size={14} weight="fill" />}
+          present={mc.inThumbZone === true}
+          detail={mc.inThumbZone === false ? "Place primary CTA in the bottom-center thumb zone for one-handed use" : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Cross-Sell signal checklist ── */
+function CrossSellChecklist({ cs }: { cs: CrossSellSignals }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={cs.hasCrossSellSection ? "Cross-sell section detected" : "No cross-sell section found"}
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={cs.hasCrossSellSection}
+          detail={!cs.hasCrossSellSection ? "Cross-sell recommendations increase AOV by 10–30%" : undefined}
+        />
+        {cs.crossSellApp && (
+          <SignalRow
+            label={`App: ${cs.crossSellApp}`}
+            icon={<CodeIcon size={14} weight="fill" />}
+            present={true}
+          />
+        )}
+        {cs.widgetType && (
+          <SignalRow
+            label={`Widget type: ${cs.widgetType}`}
+            icon={<ListBulletsIcon size={14} weight="fill" />}
+            present={true}
+          />
+        )}
+        <SignalRow
+          label={`${cs.productCount} recommended product${cs.productCount !== 1 ? "s" : ""}`}
+          icon={<PackageIcon size={14} weight="fill" />}
+          present={cs.recommendationCountOptimal}
+          detail={cs.productCount === 0 ? "Show 3–6 complementary products" : !cs.recommendationCountOptimal ? "Optimal is 3–6 recommendations — too many causes decision fatigue" : undefined}
+        />
+        <SignalRow
+          label={cs.hasBundlePricing ? "Bundle pricing available" : "No bundle pricing"}
+          icon={<TagIcon size={14} weight="fill" />}
+          present={cs.hasBundlePricing}
+          detail={!cs.hasBundlePricing && cs.hasCrossSellSection ? "Bundle discounts increase cross-sell acceptance 25%" : undefined}
+        />
+        <SignalRow
+          label={cs.hasDiscountOnBundle ? "Bundle discount shown" : "No bundle discount"}
+          icon={<CurrencyDollarIcon size={14} weight="fill" />}
+          present={cs.hasDiscountOnBundle}
+          detail={!cs.hasDiscountOnBundle && cs.hasCrossSellSection ? "'Save 15% when bought together' is a proven conversion driver" : undefined}
+        />
+        <SignalRow
+          label={cs.hasAddAllToCart ? "Add All to Cart button" : "No quick-add for bundle"}
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={cs.hasAddAllToCart}
+          detail={!cs.hasAddAllToCart && cs.hasCrossSellSection ? "One-click bundle add reduces friction" : undefined}
+        />
+        <SignalRow
+          label={cs.hasCheckboxSelection ? "Checkbox selection available" : "No item selection checkboxes"}
+          icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+          present={cs.hasCheckboxSelection}
+          detail={!cs.hasCheckboxSelection && cs.hasCrossSellSection ? "Let shoppers pick which items to add" : undefined}
+        />
+        <SignalRow
+          label={cs.nearBuyButton ? "Cross-sell near Buy button" : "Cross-sell not near Buy button"}
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={cs.nearBuyButton}
+          detail={!cs.nearBuyButton && cs.hasCrossSellSection ? "Proximity to the Buy button drives higher engagement" : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Variant UX signal checklist ── */
+function VariantUxChecklist({ vu }: { vu: VariantUxSignals }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={vu.hasVariants ? "Product variants detected" : "No product variants found"}
+          icon={<ArrowsSplitIcon size={14} weight="fill" />}
+          present={vu.hasVariants}
+        />
+        <SignalRow
+          label={vu.hasVisualSwatches ? "Visual color swatches" : "No visual swatches"}
+          icon={<SunIcon size={14} weight="fill" />}
+          present={vu.hasVisualSwatches}
+          detail={!vu.hasVisualSwatches && vu.hasVariants ? "Visual swatches increase engagement 26% vs text-only selectors" : undefined}
+        />
+        <SignalRow
+          label={vu.colorUsesDropdown ? "Color uses dropdown (not ideal)" : "Color not using dropdown"}
+          icon={<ListBulletsIcon size={14} weight="fill" />}
+          present={!vu.colorUsesDropdown}
+          detail={vu.colorUsesDropdown ? "Replace color dropdowns with visual swatches — 60% of shoppers prefer them" : undefined}
+        />
+        <SignalRow
+          label={vu.hasVariantImageLink ? "Variants update product image" : "Variant selection doesn't update image"}
+          icon={<ImageIcon size={14} weight="fill" />}
+          present={vu.hasVariantImageLink}
+          detail={!vu.hasVariantImageLink && vu.hasVariants ? "Linking variants to images reduces return rate 5–10%" : undefined}
+        />
+        <SignalRow
+          label={vu.hasStockIndicator ? "Stock indicator present" : "No stock indicator"}
+          icon={<PackageIcon size={14} weight="fill" />}
+          present={vu.hasStockIndicator}
+          detail={!vu.hasStockIndicator && vu.hasVariants ? "Per-variant stock status reduces disappointment at checkout" : undefined}
+        />
+        <SignalRow
+          label={vu.hasLowStockUrgency ? "Low-stock urgency messaging" : "No low-stock urgency"}
+          icon={<LightningIcon size={14} weight="fill" />}
+          present={vu.hasLowStockUrgency}
+          detail={!vu.hasLowStockUrgency && vu.hasVariants ? "'Only 3 left' messaging drives urgency and faster decisions" : undefined}
+        />
+        <SignalRow
+          label={vu.hasSoldOutHandling ? "Sold-out variants handled" : "No sold-out handling"}
+          icon={<WarningCircleIcon size={14} weight="fill" />}
+          present={vu.hasSoldOutHandling}
+          detail={!vu.hasSoldOutHandling && vu.hasVariants ? "Gray out or label sold-out variants instead of hiding them" : undefined}
+        />
+        <SignalRow
+          label={vu.hasNotifyMe ? "Back-in-stock notification" : "No notify-me option"}
+          icon={<ChatCircleIcon size={14} weight="fill" />}
+          present={vu.hasNotifyMe}
+          detail={!vu.hasNotifyMe && vu.hasVariants ? "Back-in-stock alerts recover 5–15% of otherwise lost sales" : undefined}
+        />
+        {vu.swatchApp && (
+          <SignalRow
+            label={`Swatch app: ${vu.swatchApp}`}
+            icon={<CodeIcon size={14} weight="fill" />}
+            present={true}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Size Guide signal checklist ── */
+function SizeGuideChecklist({ sg }: { sg: SizeGuideSignals }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={sg.hasSizeGuideLink ? "Size guide link present" : "No size guide link"}
+          icon={<LinkSimpleIcon size={14} weight="fill" />}
+          present={sg.hasSizeGuideLink}
+          detail={!sg.hasSizeGuideLink && sg.categoryApplicable ? "Size guides reduce returns by 32% in apparel/footwear" : undefined}
+        />
+        <SignalRow
+          label={sg.hasSizeGuidePopup ? "Size guide opens in popup/modal" : "No size guide popup"}
+          icon={<ListMagnifyingGlassIcon size={14} weight="fill" />}
+          present={sg.hasSizeGuidePopup}
+          detail={!sg.hasSizeGuidePopup && sg.hasSizeGuideLink ? "Popup keeps shoppers on the product page while checking sizing" : undefined}
+        />
+        <SignalRow
+          label={sg.hasSizeChartTable ? "Size chart table found" : "No size chart table"}
+          icon={<ListBulletsIcon size={14} weight="fill" />}
+          present={sg.hasSizeChartTable}
+          detail={!sg.hasSizeChartTable && sg.categoryApplicable ? "Comparison tables make size selection faster and more confident" : undefined}
+        />
+        <SignalRow
+          label={sg.hasFitFinder ? "Fit finder / quiz detected" : "No fit finder tool"}
+          icon={<BrainIcon size={14} weight="fill" />}
+          present={sg.hasFitFinder}
+          detail={!sg.hasFitFinder && sg.categoryApplicable ? "Interactive fit finders increase conversion 20% and reduce returns" : undefined}
+        />
+        <SignalRow
+          label={sg.hasModelMeasurements ? "Model measurements shown" : "No model measurements"}
+          icon={<EyeIcon size={14} weight="fill" />}
+          present={sg.hasModelMeasurements}
+          detail={!sg.hasModelMeasurements && sg.categoryApplicable ? "'Model is 5'10\" wearing size M' gives a concrete reference point" : undefined}
+        />
+        <SignalRow
+          label={sg.hasFitRecommendation ? "Fit recommendation present" : "No fit recommendation"}
+          icon={<HeartIcon size={14} weight="fill" />}
+          present={sg.hasFitRecommendation}
+          detail={!sg.hasFitRecommendation && sg.categoryApplicable ? "'Runs true to size' or 'Order one size up' reduces hesitation" : undefined}
+        />
+        <SignalRow
+          label={sg.hasMeasurementInstructions ? "How-to-measure instructions" : "No measurement instructions"}
+          icon={<ArticleIcon size={14} weight="fill" />}
+          present={sg.hasMeasurementInstructions}
+          detail={!sg.hasMeasurementInstructions && sg.categoryApplicable ? "Self-measurement guides reduce sizing errors" : undefined}
+        />
+        <SignalRow
+          label={sg.nearSizeSelector ? "Size guide near size selector" : "Size guide not near selector"}
+          icon={<CursorClickIcon size={14} weight="fill" />}
+          present={sg.nearSizeSelector}
+          detail={!sg.nearSizeSelector && sg.hasSizeGuideLink ? "Place the size guide link directly next to the size dropdown" : undefined}
+        />
+        {sg.sizeGuideApp && (
+          <SignalRow
+            label={`App: ${sg.sizeGuideApp}`}
+            icon={<CodeIcon size={14} weight="fill" />}
+            present={true}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── AI Discoverability signal checklist ── */
+function AiDiscoverabilityChecklist({ ad }: { ad: AiDiscoverabilitySignals }) {
+  const ogPresent = [ad.hasOgType, ad.hasOgTitle, ad.hasOgDescription, ad.hasOgImage].filter(Boolean).length;
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={ad.robotsTxtExists === null ? "robots.txt: could not check" : ad.robotsTxtExists ? "robots.txt exists" : "No robots.txt found"}
+          icon={<CodeIcon size={14} weight="fill" />}
+          present={ad.robotsTxtExists === true}
+          detail={ad.robotsTxtExists === false ? "robots.txt tells AI crawlers what they can and can't index" : undefined}
+        />
+        <SignalRow
+          label={ad.hasWildcardBlock ? "⚠ Wildcard User-agent block detected" : "No wildcard bot block"}
+          icon={<WarningCircleIcon size={14} weight="fill" />}
+          present={!ad.hasWildcardBlock}
+          detail={ad.hasWildcardBlock ? "Disallow * blocks all bots including AI search — use targeted rules instead" : undefined}
+        />
+        <SignalRow
+          label={`${ad.aiSearchBotsAllowedCount} AI search bot${ad.aiSearchBotsAllowedCount !== 1 ? "s" : ""} allowed`}
+          icon={<BrainIcon size={14} weight="fill" />}
+          present={ad.aiSearchBotsAllowedCount >= 2}
+          detail={ad.aiSearchBotsAllowedCount === 0 ? "Allow OAI-SearchBot, PerplexityBot, and ClaudeBot for AI search visibility" : undefined}
+        />
+        <SignalRow
+          label={ad.hasOaiSearchbotAllowed ? "OAI-SearchBot allowed" : "OAI-SearchBot not allowed"}
+          icon={<BrainIcon size={14} weight="fill" />}
+          present={ad.hasOaiSearchbotAllowed}
+        />
+        <SignalRow
+          label={ad.hasPerplexitybotAllowed ? "PerplexityBot allowed" : "PerplexityBot not allowed"}
+          icon={<BrainIcon size={14} weight="fill" />}
+          present={ad.hasPerplexitybotAllowed}
+        />
+        <SignalRow
+          label={ad.hasClaudeSearchbotAllowed ? "ClaudeBot allowed" : "ClaudeBot not allowed"}
+          icon={<BrainIcon size={14} weight="fill" />}
+          present={ad.hasClaudeSearchbotAllowed}
+        />
+        <SignalRow
+          label={ad.llmsTxtExists === null ? "llms.txt: could not check" : ad.llmsTxtExists ? "llms.txt exists" : "No llms.txt found"}
+          icon={<ArticleIcon size={14} weight="fill" />}
+          present={ad.llmsTxtExists === true}
+          detail={ad.llmsTxtExists === false ? "llms.txt provides structured context for AI assistants" : undefined}
+        />
+        <SignalRow
+          label={`OpenGraph tags: ${ogPresent} of 4`}
+          icon={<TagIcon size={14} weight="fill" />}
+          present={ogPresent === 4}
+          detail={ogPresent < 4
+            ? `Missing: ${[!ad.hasOgType && "og:type", !ad.hasOgTitle && "og:title", !ad.hasOgDescription && "og:description", !ad.hasOgImage && "og:image"].filter(Boolean).join(", ")}`
+            : undefined}
+        />
+        <SignalRow
+          label={ad.hasStructuredSpecs ? "Structured specifications found" : "No structured specs"}
+          icon={<ListBulletsIcon size={14} weight="fill" />}
+          present={ad.hasStructuredSpecs}
+          detail={!ad.hasStructuredSpecs ? "Structured specs help AI extract concrete product attributes" : undefined}
+        />
+        <SignalRow
+          label={ad.hasFaqContent ? "FAQ content detected" : "No FAQ section"}
+          icon={<ChatCircleIcon size={14} weight="fill" />}
+          present={ad.hasFaqContent}
+          detail={!ad.hasFaqContent ? "FAQ sections are prime targets for AI answer extraction" : undefined}
+        />
+        <SignalRow
+          label={`Entity density: ${(ad.entityDensityScore * 100).toFixed(0)}%`}
+          icon={<HashIcon size={14} weight="fill" />}
+          present={ad.entityDensityScore >= 0.03}
+          detail={ad.entityDensityScore < 0.03 ? "Low entity density — add more concrete specs, measurements, and data points" : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Content Freshness signal checklist ── */
+function ContentFreshnessChecklist({ cf }: { cf: ContentFreshnessSignals }) {
+  const ageLabel = (days: number | null) => {
+    if (days == null) return null;
+    if (days < 30) return `${days}d ago`;
+    if (days < 365) return `${Math.round(days / 30)}mo ago`;
+    return `${(days / 365).toFixed(1)}yr ago`;
+  };
+
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
+        What We Found
+      </p>
+      <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
+        <SignalRow
+          label={cf.copyrightYear ? `Copyright year: ${cf.copyrightYear}` : "No copyright year found"}
+          icon={<ClockIcon size={14} weight="fill" />}
+          present={cf.copyrightYearIsCurrent}
+          detail={cf.copyrightYear && !cf.copyrightYearIsCurrent ? "Outdated copyright year makes the site look abandoned" : undefined}
+        />
+        <SignalRow
+          label={cf.hasExpiredPromotion ? `Expired promotion detected` : "No expired promotions"}
+          icon={<WarningCircleIcon size={14} weight="fill" />}
+          present={!cf.hasExpiredPromotion}
+          detail={cf.hasExpiredPromotion ? (cf.expiredPromotionText ? `"${cf.expiredPromotionText.slice(0, 60)}${cf.expiredPromotionText.length > 60 ? "…" : ""}"` : "Expired deals erode trust — remove or update them") : undefined}
+        />
+        <SignalRow
+          label={cf.hasSeasonalMismatch ? "Seasonal content mismatch" : "No seasonal mismatch"}
+          icon={<SunIcon size={14} weight="fill" />}
+          present={!cf.hasSeasonalMismatch}
+          detail={cf.hasSeasonalMismatch ? "Off-season promotions make the page look neglected" : undefined}
+        />
+        <SignalRow
+          label={cf.hasNewLabel ? (cf.newLabelIsStale ? "'New' label but product is stale" : "'New' label present") : "No 'New' label"}
+          icon={<TagIcon size={14} weight="fill" />}
+          present={cf.hasNewLabel && !cf.newLabelIsStale}
+          detail={cf.newLabelIsStale ? "Remove 'New' badges from products older than 90 days" : undefined}
+        />
+        <SignalRow
+          label={cf.mostRecentReviewDateIso
+            ? `Latest review: ${ageLabel(cf.reviewAgeDays) ?? cf.mostRecentReviewDateIso.slice(0, 10)}`
+            : "No review dates found"
+          }
+          icon={<StarIcon size={14} weight="fill" />}
+          present={cf.reviewStaleness === "fresh" || cf.reviewStaleness === "moderate"}
+          detail={cf.reviewStaleness === "stale" ? "Reviews older than 12 months erode buyer confidence" : cf.reviewStaleness === "moderate" ? "Recent reviews would strengthen trust — consider a review request campaign" : undefined}
+        />
+        <SignalRow
+          label={cf.dateModifiedIso
+            ? `Last modified: ${ageLabel(cf.dateModifiedAgeDays) ?? cf.dateModifiedIso.slice(0, 10)}`
+            : "No dateModified in schema"
+          }
+          icon={<ClockIcon size={14} weight="fill" />}
+          present={cf.dateModifiedAgeDays != null && cf.dateModifiedAgeDays < 180}
+          detail={cf.dateModifiedAgeDays != null && cf.dateModifiedAgeDays > 365 ? "Schema shows content unchanged for over a year — search engines notice" : undefined}
+        />
+        <SignalRow
+          label={cf.lastModifiedHeader
+            ? `Last-Modified header: ${ageLabel(cf.lastModifiedAgeDays) ?? cf.lastModifiedHeader}`
+            : "No Last-Modified HTTP header"
+          }
+          icon={<CodeIcon size={14} weight="fill" />}
+          present={cf.lastModifiedAgeDays != null && cf.lastModifiedAgeDays < 180}
+        />
+        <SignalRow
+          label={cf.freshestSignalAgeDays != null
+            ? `Freshest signal: ${ageLabel(cf.freshestSignalAgeDays)}`
+            : "No freshness signals detected"
+          }
+          icon={<LeafIcon size={14} weight="fill" />}
+          present={cf.freshestSignalAgeDays != null && cf.freshestSignalAgeDays < 90}
+          detail={cf.freshestSignalAgeDays != null && cf.freshestSignalAgeDays > 365 ? "All content signals are over a year old — page appears dormant to both users and AI" : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function IssueCard({
   leak,
   index,
@@ -1011,11 +1536,45 @@ export default function IssueCard({
                 <TrustChecklist tr={signals.trust} />
               )}
 
+              {/* Signal breakdown — Page Speed */}
+              {signals?.pageSpeed && leak.key === "pageSpeed" && (
+                <PageSpeedChecklist ps={signals.pageSpeed} />
+              )}
+
+              {/* Signal breakdown — Mobile CTA */}
+              {signals?.mobileCta && leak.key === "mobileCta" && (
+                <MobileCtaChecklist mc={signals.mobileCta} />
+              )}
+
+              {/* Signal breakdown — Cross-Sell */}
+              {signals?.crossSell && leak.key === "crossSell" && (
+                <CrossSellChecklist cs={signals.crossSell} />
+              )}
+
+              {/* Signal breakdown — Variant UX */}
+              {signals?.variantUx && leak.key === "variantUx" && (
+                <VariantUxChecklist vu={signals.variantUx} />
+              )}
+
+              {/* Signal breakdown — Size Guide */}
+              {signals?.sizeGuide && leak.key === "sizeGuide" && (
+                <SizeGuideChecklist sg={signals.sizeGuide} />
+              )}
+
+              {/* Signal breakdown — AI Discoverability */}
+              {signals?.aiDiscoverability && leak.key === "aiDiscoverability" && (
+                <AiDiscoverabilityChecklist ad={signals.aiDiscoverability} />
+              )}
+
+              {/* Signal breakdown — Content Freshness */}
+              {signals?.contentFreshness && leak.key === "contentFreshness" && (
+                <ContentFreshnessChecklist cf={signals.contentFreshness} />
+              )}
+
               {/* Signal breakdown — Accessibility */}
               {signals?.accessibility && leak.key === "accessibility" && (
                 <AccessibilityChecklist ac={signals.accessibility} />
               )}
-
               {/* Signal breakdown — Social Commerce */}
               {signals?.socialCommerce && leak.key === "socialCommerce" && (
                 <SocialCommerceChecklist sc={signals.socialCommerce} />
