@@ -58,6 +58,7 @@ def get_store(domain: str, db: Session = Depends(get_db)):
                 ),
                 "productCategory": row.product_category,
                 "estimatedMonthlyVisitors": row.estimated_monthly_visitors,
+                "signals": row.signals,
                 "updatedAt": (
                     row.updated_at.isoformat() if row.updated_at else None
                 ),

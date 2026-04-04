@@ -6,11 +6,10 @@ import { authFetch } from "@/lib/auth-fetch";
 import {
   type FreeResult,
   type CompetitorResult,
-  type CategoryScores,
-  type LeakCard,
   buildLeaks,
   calculateRevenueLoss,
   captureEvent,
+  parseAnalysisResponse,
 } from "@/lib/analysis";
 import { useEmailModal } from "@/hooks/useEmailModal";
 
@@ -225,101 +224,7 @@ export function useProductAnalysis({
         throw new Error(data.error || `Analysis failed (${res.status})`);
       }
       const data = await res.json();
-
-      const sc = (k: string) => Number(data.categories?.[k]) || 0;
-      const safeCategories: CategoryScores = {
-        pageSpeed: sc("pageSpeed"), images: sc("images"), socialProof: sc("socialProof"),
-        checkout: sc("checkout"), mobileCta: sc("mobileCta"), title: sc("title"),
-        aiDiscoverability: sc("aiDiscoverability"), structuredData: sc("structuredData"),
-        pricing: sc("pricing"), description: sc("description"), shipping: sc("shipping"),
-        crossSell: sc("crossSell"), trust: sc("trust"),
-        socialCommerce: sc("socialCommerce"),
-        sizeGuide: sc("sizeGuide"), variantUx: sc("variantUx"),
-        accessibility: sc("accessibility"), contentFreshness: sc("contentFreshness"),
-      };
-
-      // Parse signals if present
-      const rawSignals = data.signals as Record<string, unknown> | undefined;
-      const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
-      const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
-      const co = rawSignals?.checkout as Record<string, unknown> | undefined;
-
-      // Parse dimensionTips if present
-      const rawDimTips = data.dimensionTips as Record<string, unknown> | undefined;
-      const dimensionTips: Record<string, string[]> | undefined = rawDimTips
-        ? Object.fromEntries(
-            Object.entries(rawDimTips)
-              .filter(([, v]) => Array.isArray(v))
-              .map(([k, v]) => [k, (v as unknown[]).map(String)])
-          )
-        : undefined;
-
-      const result: FreeResult = {
-        score: Math.min(100, Math.max(0, Number(data.score) || 0)),
-        summary: String(data.summary || "Analysis complete."),
-        tips: Array.isArray(data.tips) ? data.tips.map(String).slice(0, 7) : [],
-        dimensionTips,
-        categories: safeCategories,
-        productPrice: Number(data.productPrice) || 0,
-        productCategory: String(data.productCategory || "other"),
-        estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
-        signals: (sp || sd || co)
-          ? {
-              ...(sp ? {
-                socialProof: {
-                  reviewApp: (sp.reviewApp as string) ?? null,
-                  starRating: sp.starRating != null ? Number(sp.starRating) : null,
-                  reviewCount: sp.reviewCount != null ? Number(sp.reviewCount) : null,
-                  hasPhotoReviews: Boolean(sp.hasPhotoReviews),
-                  hasVideoReviews: Boolean(sp.hasVideoReviews),
-                  starRatingAboveFold: Boolean(sp.starRatingAboveFold),
-                  hasReviewFiltering: Boolean(sp.hasReviewFiltering),
-                },
-              } : {}),
-              ...(sd ? {
-                structuredData: {
-                  hasProductSchema: Boolean(sd.hasProductSchema),
-                  hasName: Boolean(sd.hasName),
-                  hasImage: Boolean(sd.hasImage),
-                  hasDescription: Boolean(sd.hasDescription),
-                  hasOffers: Boolean(sd.hasOffers),
-                  hasPrice: Boolean(sd.hasPrice),
-                  hasPriceCurrency: Boolean(sd.hasPriceCurrency),
-                  hasAvailability: Boolean(sd.hasAvailability),
-                  hasBrand: Boolean(sd.hasBrand),
-                  hasSku: Boolean(sd.hasSku),
-                  hasGtin: Boolean(sd.hasGtin),
-                  hasAggregateRating: Boolean(sd.hasAggregateRating),
-                  hasPriceValidUntil: Boolean(sd.hasPriceValidUntil),
-                  hasShippingDetails: Boolean(sd.hasShippingDetails),
-                  hasReturnPolicy: Boolean(sd.hasReturnPolicy),
-                  hasBreadcrumbList: Boolean(sd.hasBreadcrumbList),
-                  hasOrganization: Boolean(sd.hasOrganization),
-                  hasMissingBrand: Boolean(sd.hasMissingBrand),
-                  hasCurrencyInPrice: Boolean(sd.hasCurrencyInPrice),
-                  hasInvalidAvailability: Boolean(sd.hasInvalidAvailability),
-                  jsonParseErrors: Number(sd.jsonParseErrors) || 0,
-                  duplicateProductCount: Number(sd.duplicateProductCount) || 0,
-                },
-              } : {}),
-              ...(co ? {
-                checkout: {
-                  hasAcceleratedCheckout: Boolean(co.hasAcceleratedCheckout),
-                  hasDynamicCheckoutButton: Boolean(co.hasDynamicCheckoutButton),
-                  hasPaypal: Boolean(co.hasPaypal),
-                  hasKlarna: Boolean(co.hasKlarna),
-                  hasAfterpay: Boolean(co.hasAfterpay),
-                  hasAffirm: Boolean(co.hasAffirm),
-                  hasSezzle: Boolean(co.hasSezzle),
-                  paymentMethodCount: Number(co.paymentMethodCount) || 0,
-                  hasDrawerCart: Boolean(co.hasDrawerCart),
-                  hasAjaxCart: Boolean(co.hasAjaxCart),
-                  hasStickyCheckout: Boolean(co.hasStickyCheckout),
-                },
-              } : {}),
-            }
-          : undefined,
-      };
+      const result = parseAnalysisResponse(data as Record<string, unknown>);
 
       setAnalysisResult(result);
       setAnalyzingHandle(null);
