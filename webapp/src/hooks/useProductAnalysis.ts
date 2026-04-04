@@ -95,7 +95,7 @@ export function useProductAnalysis({
     : { lossLow: 0, lossHigh: 0 };
 
   const leaks = analysisResult
-    ? buildLeaks(analysisResult.categories, analysisResult.tips, lossLow, lossHigh)
+    ? buildLeaks(analysisResult.categories, analysisResult.tips, lossLow, lossHigh, analysisResult.dimensionTips)
     : [];
 
   /* ── Abort cleanup ── */
@@ -242,16 +242,28 @@ export function useProductAnalysis({
       const rawSignals = data.signals as Record<string, unknown> | undefined;
       const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
       const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
+      const co = rawSignals?.checkout as Record<string, unknown> | undefined;
+
+      // Parse dimensionTips if present
+      const rawDimTips = data.dimensionTips as Record<string, unknown> | undefined;
+      const dimensionTips: Record<string, string[]> | undefined = rawDimTips
+        ? Object.fromEntries(
+            Object.entries(rawDimTips)
+              .filter(([, v]) => Array.isArray(v))
+              .map(([k, v]) => [k, (v as unknown[]).map(String)])
+          )
+        : undefined;
 
       const result: FreeResult = {
         score: Math.min(100, Math.max(0, Number(data.score) || 0)),
         summary: String(data.summary || "Analysis complete."),
         tips: Array.isArray(data.tips) ? data.tips.map(String).slice(0, 7) : [],
+        dimensionTips,
         categories: safeCategories,
         productPrice: Number(data.productPrice) || 0,
         productCategory: String(data.productCategory || "other"),
         estimatedMonthlyVisitors: Number(data.estimatedMonthlyVisitors) || 1000,
-        signals: (sp || sd)
+        signals: (sp || sd || co)
           ? {
               ...(sp ? {
                 socialProof: {
@@ -288,6 +300,21 @@ export function useProductAnalysis({
                   hasInvalidAvailability: Boolean(sd.hasInvalidAvailability),
                   jsonParseErrors: Number(sd.jsonParseErrors) || 0,
                   duplicateProductCount: Number(sd.duplicateProductCount) || 0,
+                },
+              } : {}),
+              ...(co ? {
+                checkout: {
+                  hasAcceleratedCheckout: Boolean(co.hasAcceleratedCheckout),
+                  hasDynamicCheckoutButton: Boolean(co.hasDynamicCheckoutButton),
+                  hasPaypal: Boolean(co.hasPaypal),
+                  hasKlarna: Boolean(co.hasKlarna),
+                  hasAfterpay: Boolean(co.hasAfterpay),
+                  hasAffirm: Boolean(co.hasAffirm),
+                  hasSezzle: Boolean(co.hasSezzle),
+                  paymentMethodCount: Number(co.paymentMethodCount) || 0,
+                  hasDrawerCart: Boolean(co.hasDrawerCart),
+                  hasAjaxCart: Boolean(co.hasAjaxCart),
+                  hasStickyCheckout: Boolean(co.hasStickyCheckout),
                 },
               } : {}),
             }

@@ -1,6 +1,7 @@
 """POST /analyze endpoint — URL validation, AI scoring, DB persistence."""
 
 import logging
+import time
 import urllib.parse
 
 from fastapi import APIRouter, Depends, Request
@@ -165,7 +166,11 @@ async def analyze(
             },
         )
 
+    timings: dict[str, float] = {}
+    t_start = time.perf_counter()
+
     # --- Fetch HTML ---
+    t0 = time.perf_counter()
     try:
         html = await render_page(url)
     except Exception as exc:
@@ -176,6 +181,7 @@ async def analyze(
                 "error": "Could not fetch that URL. Make sure it's accessible and not behind a login."
             },
         )
+    timings["pageRender"] = round((time.perf_counter() - t0) * 1000, 1)
 
     if len(html) < 100:
         return JSONResponse(
@@ -184,19 +190,25 @@ async def analyze(
         )
 
     # --- Deterministic social proof scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
     signals = detect_social_proof(html)
     sp_score = score_social_proof(signals)
     sp_tips = get_social_proof_tips(signals)
+    timings["socialProof"] = round((time.perf_counter() - t0) * 1000, 1)
 
     # --- Deterministic structured data scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
     sd_signals = detect_structured_data(html)
     sd_score = score_structured_data(sd_signals)
     sd_tips = get_structured_data_tips(sd_signals)
+    timings["structuredData"] = round((time.perf_counter() - t0) * 1000, 1)
 
     # --- Deterministic checkout scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
     co_signals = detect_checkout(html)
     co_score = score_checkout(co_signals)
     co_tips = get_checkout_tips(co_signals)
+    timings["checkout"] = round((time.perf_counter() - t0) * 1000, 1)
 
     # --- Mock scores for the other 18 dimensions (AI disabled) ---
     import random
@@ -230,14 +242,22 @@ async def analyze(
 
     all_tips = sp_tips + sd_tips + co_tips
 
+    timings["total"] = round((time.perf_counter() - t_start) * 1000, 1)
+
     response_data: dict = {
         "score": mock_score,
         "summary": "Analysis complete.",
         "tips": all_tips or ["No issues detected."],
+        "dimensionTips": {
+            "socialProof": sp_tips,
+            "structuredData": sd_tips,
+            "checkout": co_tips,
+        },
         "categories": mock_categories,
         "productPrice": 0,
         "productCategory": "other",
         "estimatedMonthlyVisitors": 1000,
+        "timings": timings,
         "signals": {
             "socialProof": {
                 "reviewApp": signals.review_app,
@@ -302,10 +322,13 @@ async def analyze(
     if credits_remaining is not None:
         response_data["creditsRemaining"] = credits_remaining
 
+    logger.info("analyze timings %s — %s", url, timings)
+
     # --- DB operations (fire-and-forget) ---
     analysis_id: str | None = None
 
     # 1. Insert scan record
+    t0 = time.perf_counter()
     try:
         db.add(
             Scan(
@@ -323,8 +346,10 @@ async def analyze(
             db.rollback()
         except Exception:
             pass
+    timings["dbScan"] = round((time.perf_counter() - t0) * 1000, 1)
 
     # 2. Upsert product analysis
+    t0 = time.perf_counter()
     try:
         stmt = (
             pg_insert(ProductAnalysis)
@@ -377,5 +402,6 @@ async def analyze(
             db.rollback()
         except Exception:
             pass
+    timings["dbUpsert"] = round((time.perf_counter() - t0) * 1000, 1)
 
     return {**response_data, "analysisId": analysis_id}

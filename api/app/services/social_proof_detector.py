@@ -506,43 +506,30 @@ def _star_rating_above_fold(soup: BeautifulSoup) -> bool:
         ".yotpo-sr-bottom-line-summary",
     ]
 
+    # Build a document-order position index once — O(n)
+    pos: dict[int, int] = {id(el): i for i, el in enumerate(soup.descendants)}
+
     first_badge_pos: int | None = None
     first_widget_pos: int | None = None
 
-    all_tags = list(soup.descendants)
+    for sel in badge_selectors:
+        el = soup.select_one(sel)
+        if el is not None:
+            idx = pos.get(id(el))
+            if idx is not None and (first_badge_pos is None or idx < first_badge_pos):
+                first_badge_pos = idx
 
-    for i, el in enumerate(all_tags):
-        if not isinstance(el, Tag):
-            continue
-
-        if first_badge_pos is None:
-            for sel in badge_selectors:
-                if el.select_one(sel) is el or _matches_selector(el, sel):
-                    first_badge_pos = i
-                    break
-
-        if first_widget_pos is None:
-            for sel in _REVIEW_WIDGET_SELECTORS:
-                if _matches_selector(el, sel):
-                    first_widget_pos = i
-                    break
-
-        if first_badge_pos is not None and first_widget_pos is not None:
-            break
+    for sel in _REVIEW_WIDGET_SELECTORS:
+        el = soup.select_one(sel)
+        if el is not None:
+            idx = pos.get(id(el))
+            if idx is not None and (first_widget_pos is None or idx < first_widget_pos):
+                first_widget_pos = idx
 
     if first_badge_pos is not None and first_widget_pos is not None:
         return first_badge_pos < first_widget_pos
 
     return first_badge_pos is not None
-
-
-def _matches_selector(tag: Tag, selector: str) -> bool:
-    """Check if a single Tag matches a CSS selector."""
-    try:
-        matched = tag.parent.select(selector) if tag.parent else []
-        return tag in matched
-    except Exception:
-        return False
 
 
 def _has_review_filtering(soup: BeautifulSoup) -> bool:

@@ -63,12 +63,15 @@ export function scoreColorTintBg(score: number): string {
 /** Build leak cards from categories + tips, sorted worst-first.
  *  When lossLow/lossHigh are provided, per-card revenue is distributed
  *  proportionally by gap (100 - score). Without them, falls back to
- *  a rough estimate. */
+ *  a rough estimate.
+ *  When dimensionTips is provided, each card gets its own dimension-specific
+ *  tip instead of a positional index into the flat tips array. */
 export function buildLeaks(
   categories: CategoryScores,
   tips: string[],
   lossLow?: number,
   lossHigh?: number,
+  dimensionTips?: Record<string, string[]>,
 ): LeakCard[] {
   const entries = (Object.entries(categories) as [keyof CategoryScores, number][])
     .filter(([key]) => ACTIVE_DIMENSIONS.has(key));
@@ -104,7 +107,8 @@ export function buildLeaks(
 
     const problems = CATEGORY_PROBLEMS[key] || { low: `Improve your ${key} to increase conversions.`, mid: `Your ${key} needs optimization.` };
     const problem = catScore <= 40 ? problems.low : problems.mid;
-    const tip = tips[i] || `Improve your ${key} to increase conversions.`;
+    const dimTips = dimensionTips?.[key];
+    const tip = dimTips?.[0] || tips[i] || `Improve your ${key} to increase conversions.`;
     const revenueImpact = CATEGORY_REVENUE_IMPACT[key] || "Medium";
     return { key, catScore, impact, revenue, revenueLow, revenueHigh, tip, problem, category: CATEGORY_LABELS[key] || key, revenueImpact };
   });
@@ -210,10 +214,21 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
       }
     : undefined;
 
+  // Parse dimensionTips if present
+  const rawDimTips = data.dimensionTips as Record<string, unknown> | undefined;
+  const dimensionTips: Record<string, string[]> | undefined = rawDimTips
+    ? Object.fromEntries(
+        Object.entries(rawDimTips)
+          .filter(([, v]) => Array.isArray(v))
+          .map(([k, v]) => [k, (v as unknown[]).map(String)])
+      )
+    : undefined;
+
   return {
     score: Math.min(100, Math.max(0, Number(data.score) || 0)),
     summary: String(data.summary || "Analysis complete."),
     tips: Array.isArray(data.tips) ? data.tips.map(String).slice(0, 20) : [],
+    dimensionTips,
     categories: safeCategories,
     productPrice: Number(data.productPrice) || 0,
     productCategory: String(data.productCategory || "other"),

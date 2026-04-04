@@ -94,6 +94,8 @@ export interface FreeResult {
   score: number;
   summary: string;
   tips: string[];
+  /** Per-dimension tips keyed by dimension slug (e.g. socialProof, structuredData) */
+  dimensionTips?: Record<string, string[]>;
   categories: CategoryScores;
   productPrice: number;
   productCategory: string;

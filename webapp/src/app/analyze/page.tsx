@@ -128,6 +128,9 @@ function AnalyzePageContent() {
         })
         .then((data) => {
           if (!data) return;
+          if ((data as Record<string, unknown>).timings) {
+            console.log("[analyze timings]", (data as Record<string, unknown>).timings);
+          }
           setResult(parseAnalysisResponse(data as Record<string, unknown>));
           setLoading(false);
           captureEvent("scan_completed", { url, score: (data as Record<string, unknown>).score });
@@ -188,7 +191,7 @@ function AnalyzePageContent() {
   const { lossLow, lossHigh } = result
     ? calculateRevenueLoss(result.score, result.productPrice, result.estimatedMonthlyVisitors, result.productCategory)
     : { lossLow: 0, lossHigh: 0 };
-  const leaks = result ? buildLeaks(result.categories, result.tips, lossLow, lossHigh) : [];
+  const leaks = result ? buildLeaks(result.categories, result.tips, lossLow, lossHigh, result.dimensionTips) : [];
 
   const openIssueModal = useCallback((leak: LeakCard) => {
     if (isTeaser) {
