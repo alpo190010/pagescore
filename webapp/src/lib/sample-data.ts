@@ -16,8 +16,8 @@ export const SAMPLE_SCAN: {
   categories: {
     pageSpeed: 45, images: 55, socialProof: 15, checkout: 40, mobileCta: 50,
     title: 65, aiDiscoverability: 20, structuredData: 15, pricing: 40,
-    description: 50, shipping: 55, crossSell: 15, cartRecovery: 45, trust: 30,
-    merchantFeed: 40, socialCommerce: 25, sizeGuide: 40, variantUx: 45,
+    description: 50, shipping: 55, crossSell: 15, trust: 30,
+    socialCommerce: 25, sizeGuide: 40, variantUx: 45,
     accessibility: 40, contentFreshness: 50,
   },
   tips: [

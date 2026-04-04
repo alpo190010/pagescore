@@ -87,12 +87,12 @@ def _build_analysis_prompt(truncated_html: str) -> str:
         '- "score": number 0-100 (conversion effectiveness — be harsh, most pages score 30-55)\n'
         '- "summary": one punchy sentence about the biggest issue (max 20 words, be specific)\n'
         '- "tips": array of up to 10 specific fixes — each must reference actual content on THIS page (max 30 words each). No generic advice.\n'
-        '- "categories": scores 0-100 for ALL 20 dimensions below\n'
+        '- "categories": scores 0-100 for ALL 18 dimensions below\n'
         '- "productPrice": extract the product price as a number (e.g. 49.99). Return 0 if not found.\n'
         '- "productCategory": one of: "fashion", "electronics", "beauty", "home", "food", "fitness", "jewelry", "other"\n'
         '- "estimatedMonthlyVisitors": your best estimate based on page signals. 500 small, 2000 medium, 10000 large.\n'
         '\n'
-        'Score ALL 20 dimensions (0-100, be STRICT):\n'
+        'Score ALL 18 dimensions (0-100, be STRICT):\n'
         '\n'
         '1. pageSpeed (Very High impact): Check for large unoptimized images, render-blocking scripts, excessive apps. Most Shopify stores score 40-60.\n'
         '2. images (Very High): 5-7 images minimum across types (white bg, lifestyle, scale, texture, UGC). Only 1-2 basic photos = 30 or less.\n'
@@ -105,14 +105,12 @@ def _build_analysis_prompt(truncated_html: str) -> str:
         '10. description (Medium-High): Benefits first? Scannable? Bullet points? Layered architecture? Wall of text = 25.\n'
         '11. shipping (Medium-High): Delivery date visible? Free shipping threshold? Costs shown? Hidden costs = 20.\n'
         '12. crossSell (Medium-High): "Frequently bought together"? Recommendations near buy button? 4-6 items? None = 15.\n'
-        '13. cartRecovery (Medium-High): Evidence of email capture? Cart recovery signals? Hard to detect from HTML, score 40-50 if unclear.\n'
-        '14. trust (Medium): Money-back guarantee? Return policy visible? Phone number? "As seen in" logos? None = 25.\n'
-        '15. merchantFeed (Medium): Google Shopping markup? GTIN present? Clean product data? Hard to detect, score 40-50 if unclear.\n'
-        '16. socialCommerce (Medium): TikTok/Instagram/Pinterest integration? Social sharing? Social proof from platforms? None = 20.\n'
-        '17. sizeGuide (Medium, category-dependent): Size chart? Fit finder? Model measurements? For non-apparel, score 60-70 (N/A boost).\n'
-        '18. variantUx (Medium): Color swatches vs dropdowns? Stock indicators? Out-of-stock handling? Basic dropdown = 35.\n'
-        '19. accessibility (Low-Medium): Color contrast? Alt text on images? Semantic HTML? ARIA labels? Most stores score 30-50.\n'
-        '20. contentFreshness (Low-Medium): Updated dates? Current year? Fresh badges? Stale content = 30.\n'
+        '13. trust (Medium): Money-back guarantee? Return policy visible? Phone number? "As seen in" logos? None = 25.\n'
+        '14. socialCommerce (Medium): TikTok/Instagram/Pinterest integration? Social sharing? Social proof from platforms? None = 20.\n'
+        '15. sizeGuide (Medium, category-dependent): Size chart? Fit finder? Model measurements? For non-apparel, score 60-70 (N/A boost).\n'
+        '16. variantUx (Medium): Color swatches vs dropdowns? Stock indicators? Out-of-stock handling? Basic dropdown = 35.\n'
+        '17. accessibility (Low-Medium): Color contrast? Alt text on images? Semantic HTML? ARIA labels? Most stores score 30-50.\n'
+        '18. contentFreshness (Low-Medium): Updated dates? Current year? Fresh badges? Stale content = 30.\n'
         '\n'
         'If the page is a 404 or error, return score: 0.\n'
         '\n'
@@ -398,8 +396,6 @@ async def analyze(
         "contentFreshness": cf_score,
         "checkout": co_score,
         "aiDiscoverability": ad_score,
-        "internationalReadiness": _rng.randint(35, 75),
-        "merchantFeedQuality": _rng.randint(35, 75),
         "shipping": sh_score,
     }
     mock_categories["socialProof"] = sp_score

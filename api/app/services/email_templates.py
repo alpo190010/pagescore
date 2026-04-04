@@ -73,7 +73,7 @@ def build_email(score: int, tips: list[str]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Full 20-dimension report
+# Full 18-dimension report
 # ---------------------------------------------------------------------------
 
 category_labels: dict[str, str] = {
@@ -89,9 +89,7 @@ category_labels: dict[str, str] = {
     "description": "Description Quality",
     "shipping": "Shipping Transparency",
     "crossSell": "Cross-Sell & Upsell",
-    "cartRecovery": "Cart Recovery",
     "trust": "Trust & Guarantees",
-    "merchantFeed": "Merchant Feed",
     "socialCommerce": "Social Commerce",
     "sizeGuide": "Size & Fit",
     "variantUx": "Variant UX",
@@ -112,9 +110,7 @@ impact_levels: dict[str, str] = {
     "description": "🟡 Medium-High",
     "shipping": "🟡 Medium-High",
     "crossSell": "🟡 Medium-High",
-    "cartRecovery": "🟡 Medium-High",
     "trust": "🟢 Medium",
-    "merchantFeed": "🟢 Medium",
     "socialCommerce": "🟢 Medium",
     "sizeGuide": "🟢 Medium",
     "variantUx": "🟢 Medium",
@@ -126,7 +122,7 @@ impact_levels: dict[str, str] = {
 def build_full_report(
     score: int, tips: list[str], categories: dict[str, int]
 ) -> str:
-    """Full 20-dimension report email with sorted category table (worst-first),
+    """Full 18-dimension report email with sorted category table (worst-first),
     score colors, impact levels, tip list (up to 20), and promo CTA.
     """
     score_color = (

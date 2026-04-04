@@ -22,8 +22,8 @@ from app.services.scoring import (
 class TestImpactWeights:
     """Verify IMPACT_WEIGHTS dict matches the frontend tier contract."""
 
-    def test_total_weight_is_53(self):
-        assert _TOTAL_WEIGHT == 53.0
+    def test_total_weight_is_48_5(self):
+        assert _TOTAL_WEIGHT == 48.5
 
     def test_all_category_keys_have_weights(self):
         for key in CATEGORY_KEYS:
@@ -34,7 +34,7 @@ class TestImpactWeights:
             assert key in CATEGORY_KEYS, f"Unexpected key {key} in IMPACT_WEIGHTS"
 
     def test_weight_count_matches_categories(self):
-        assert len(IMPACT_WEIGHTS) == len(CATEGORY_KEYS) == 20
+        assert len(IMPACT_WEIGHTS) == len(CATEGORY_KEYS) == 18
 
     def test_very_high_tier(self):
         very_high = ["pageSpeed", "images", "socialProof", "checkout"]
@@ -47,12 +47,12 @@ class TestImpactWeights:
             assert IMPACT_WEIGHTS[k] == 3, f"{k} should be High (3)"
 
     def test_medium_high_tier(self):
-        medium_high = ["description", "shipping", "crossSell", "cartRecovery"]
+        medium_high = ["description", "shipping", "crossSell"]
         for k in medium_high:
             assert IMPACT_WEIGHTS[k] == 2.5, f"{k} should be Medium-High (2.5)"
 
     def test_medium_tier(self):
-        medium = ["trust", "merchantFeed", "socialCommerce", "sizeGuide", "variantUx"]
+        medium = ["trust", "socialCommerce", "sizeGuide", "variantUx"]
         for k in medium:
             assert IMPACT_WEIGHTS[k] == 2, f"{k} should be Medium (2)"
 
@@ -175,9 +175,7 @@ class TestComputeWeightedScore:
             "description": 65,
             "shipping": 70,
             "crossSell": 20,
-            "cartRecovery": 10,
             "trust": 55,
-            "merchantFeed": 45,
             "socialCommerce": 25,
             "sizeGuide": 35,
             "variantUx": 50,
@@ -186,7 +184,7 @@ class TestComputeWeightedScore:
         }
         # Manual calculation
         total = sum(scores[k] * IMPACT_WEIGHTS[k] for k in CATEGORY_KEYS)
-        expected = round(total / 53)
+        expected = round(total / _TOTAL_WEIGHT)
         assert compute_weighted_score(scores) == expected
 
     def test_uniform_50(self):
@@ -197,7 +195,7 @@ class TestComputeWeightedScore:
     def test_missing_keys_default_to_zero(self):
         """Only some keys present; missing ones contribute 0."""
         scores = {"pageSpeed": 100, "images": 100}
-        expected = round((100 * 4 + 100 * 4) / 53)
+        expected = round((100 * 4 + 100 * 4) / _TOTAL_WEIGHT)
         assert compute_weighted_score(scores) == expected
 
     def test_negative_values_clamped(self):
@@ -218,7 +216,7 @@ class TestComputeWeightedScore:
             "socialProof": "",
             "checkout": 80,
         }
-        expected = round((0 + 0 + 0 + 80 * 4) / 53)
+        expected = round((0 + 0 + 0 + 80 * 4) / _TOTAL_WEIGHT)
         assert compute_weighted_score(scores) == expected
 
     def test_float_scores(self):
@@ -243,15 +241,15 @@ class TestComputeWeightedScore:
         scores = {k: 0 for k in CATEGORY_KEYS}
         for k in ["pageSpeed", "images", "socialProof", "checkout"]:
             scores[k] = 100
-        # 4 * 100 * 4 = 1600, total = round(1600/53) = 30
-        expected = round(1600 / 53)
+        # 4 * 100 * 4 = 1600, total = round(1600/48.5) = 33
+        expected = round(1600 / _TOTAL_WEIGHT)
         assert compute_weighted_score(scores) == expected
 
     def test_low_impact_dimensions_alone(self):
         """When only Low-Medium dimensions score well, score should be low."""
         scores = {"accessibility": 100, "contentFreshness": 100}
-        # (100*1 + 100*1) / 53 = 200/53 ≈ 3.77 → 4
-        expected = round(200 / 53)
+        # (100*1 + 100*1) / 48.5 = 200/48.5 ≈ 4.12 → 4
+        expected = round(200 / _TOTAL_WEIGHT)
         assert compute_weighted_score(scores) == expected
 
 
@@ -261,11 +259,11 @@ class TestComputeWeightedScore:
 
 
 class TestBuildCategoryScores:
-    """Verify build_category_scores produces full 20-key dicts with clamped values."""
+    """Verify build_category_scores produces full 18-key dicts with clamped values."""
 
     def test_empty_input(self):
         result = build_category_scores({})
-        assert len(result) == 20
+        assert len(result) == 18
         assert all(v == 0 for v in result.values())
 
     def test_full_input(self):

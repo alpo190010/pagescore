@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 /**
- * Display labels for all 20 CategoryScores keys.
+ * Display labels for all 18 CategoryScores keys.
  * Duplicated from constants.tsx because that file imports React icons,
  * which triggers createContext and breaks Server Component evaluation.
  */
@@ -12,7 +12,7 @@ export const REPORT_CATEGORY_LABELS: Record<string, string> = {
   checkout: "Checkout & Payments", mobileCta: "Mobile CTA & UX", title: "Title & SEO",
   aiDiscoverability: "AI Discoverability", structuredData: "Schema Markup", pricing: "Pricing Psychology",
   description: "Description Quality", shipping: "Shipping Transparency", crossSell: "Cross-Sell & Upsell",
-  cartRecovery: "Cart Recovery Flows", trust: "Trust & Guarantees", merchantFeed: "Merchant Feed Quality",
+  trust: "Trust & Guarantees",
   socialCommerce: "Social Commerce", sizeGuide: "Size & Fit Info", variantUx: "Variant UX & Stock",
   accessibility: "Accessibility", contentFreshness: "Content Freshness",
 };
@@ -114,16 +114,6 @@ export function getExplanation(key: string, score: number): string {
       high: "Effective cross-sell and upsell strategy with relevant recommendations near the buy section increasing average order value.",
       mid: "Cross-sell is present but could be optimized. Show 4-6 relevant recommendations and consider bundle discounts.",
       low: "No cross-sell or upsell strategy. You're missing significant revenue — add AI-powered product recommendations near the buy button.",
-    },
-    cartRecovery: {
-      high: "Cart recovery flows are in place with automated email sequences and exit-intent strategies to recapture abandoned carts.",
-      mid: "Cart recovery could be stronger. Add a multi-email sequence and consider SMS or push notifications for abandoned carts.",
-      low: "No cart recovery flows detected. Automated abandoned cart emails alone can drive 30% of email revenue — implement immediately.",
-    },
-    merchantFeed: {
-      high: "Merchant feed is well-optimized for Google Shopping with accurate product data, GTINs, and competitive pricing.",
-      mid: "Merchant feed quality could be improved. Ensure GTINs are accurate and product titles match search intent.",
-      low: "No Google Merchant feed detected. Most retail ad clicks come from Shopping Ads — set up a properly optimized product feed.",
     },
     socialCommerce: {
       high: "Social commerce integration is strong with active presence on shoppable platforms driving additional sales channels.",

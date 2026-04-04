@@ -146,8 +146,8 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
     aiDiscoverability: Number(cats?.aiDiscoverability) || 0, structuredData: Number(cats?.structuredData) || 0,
     pricing: Number(cats?.pricing) || 0, description: Number(cats?.description) || 0,
     shipping: Number(cats?.shipping) || 0, crossSell: Number(cats?.crossSell) || 0,
-    cartRecovery: Number(cats?.cartRecovery) || 0, trust: Number(cats?.trust) || 0,
-    merchantFeed: Number(cats?.merchantFeed) || 0, socialCommerce: Number(cats?.socialCommerce) || 0,
+    trust: Number(cats?.trust) || 0,
+    socialCommerce: Number(cats?.socialCommerce) || 0,
     sizeGuide: Number(cats?.sizeGuide) || 0, variantUx: Number(cats?.variantUx) || 0,
     accessibility: Number(cats?.accessibility) || 0, contentFreshness: Number(cats?.contentFreshness) || 0,
   };

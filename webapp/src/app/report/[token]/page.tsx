@@ -17,7 +17,7 @@ interface ReportData {
   used: boolean;
 }
 
-/** Safely map a loose Record<string, number> to the 20-field CategoryScores (0-defaults). */
+/** Safely map a loose Record<string, number> to the 18-field CategoryScores (0-defaults). */
 function toSafeCategories(raw: Record<string, number>): CategoryScores {
   return {
     pageSpeed: Number(raw.pageSpeed) || 0,
@@ -32,9 +32,7 @@ function toSafeCategories(raw: Record<string, number>): CategoryScores {
     description: Number(raw.description) || 0,
     shipping: Number(raw.shipping) || 0,
     crossSell: Number(raw.crossSell) || 0,
-    cartRecovery: Number(raw.cartRecovery) || 0,
     trust: Number(raw.trust) || 0,
-    merchantFeed: Number(raw.merchantFeed) || 0,
     socialCommerce: Number(raw.socialCommerce) || 0,
     sizeGuide: Number(raw.sizeGuide) || 0,
     variantUx: Number(raw.variantUx) || 0,

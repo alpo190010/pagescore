@@ -232,8 +232,8 @@ export function useProductAnalysis({
         checkout: sc("checkout"), mobileCta: sc("mobileCta"), title: sc("title"),
         aiDiscoverability: sc("aiDiscoverability"), structuredData: sc("structuredData"),
         pricing: sc("pricing"), description: sc("description"), shipping: sc("shipping"),
-        crossSell: sc("crossSell"), cartRecovery: sc("cartRecovery"), trust: sc("trust"),
-        merchantFeed: sc("merchantFeed"), socialCommerce: sc("socialCommerce"),
+        crossSell: sc("crossSell"), trust: sc("trust"),
+        socialCommerce: sc("socialCommerce"),
         sizeGuide: sc("sizeGuide"), variantUx: sc("variantUx"),
         accessibility: sc("accessibility"), contentFreshness: sc("contentFreshness"),
       };

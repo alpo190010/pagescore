@@ -2,7 +2,7 @@
 
 from app.services.openrouter import call_openrouter
 
-# All 20 category keys in canonical order (camelCase).
+# All 18 category keys in canonical order (camelCase).
 CATEGORY_KEYS: list[str] = [
     "pageSpeed",
     "images",
@@ -16,9 +16,7 @@ CATEGORY_KEYS: list[str] = [
     "description",
     "shipping",
     "crossSell",
-    "cartRecovery",
     "trust",
-    "merchantFeed",
     "socialCommerce",
     "sizeGuide",
     "variantUx",
@@ -53,7 +51,7 @@ COMPETITOR_SCORING_PROMPT: str = (
 
 
 # Revenue-impact weights per category, mirroring frontend CATEGORY_REVENUE_IMPACT tiers.
-# Very High = 4, High = 3, Medium-High = 2.5, Medium = 2, Low-Medium = 1.  Total = 53.
+# Very High = 4, High = 3, Medium-High = 2.5, Medium = 2, Low-Medium = 1.  Total = 48.5.
 IMPACT_WEIGHTS: dict[str, float] = {
     "pageSpeed": 4,
     "images": 4,
@@ -67,9 +65,7 @@ IMPACT_WEIGHTS: dict[str, float] = {
     "description": 2.5,
     "shipping": 2.5,
     "crossSell": 2.5,
-    "cartRecovery": 2.5,
     "trust": 2,
-    "merchantFeed": 2,
     "socialCommerce": 2,
     "sizeGuide": 2,
     "variantUx": 2,

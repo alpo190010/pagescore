@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Types — 20 Dimensions
+   Types — 18 Dimensions
    ══════════════════════════════════════════════════════════════ */
 
 export interface CategoryScores {
@@ -15,9 +15,7 @@ export interface CategoryScores {
   description: number;
   shipping: number;
   crossSell: number;
-  cartRecovery: number;
   trust: number;
-  merchantFeed: number;
   socialCommerce: number;
   sizeGuide: number;
   variantUx: number;
