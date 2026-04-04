@@ -1,15 +1,17 @@
 """Tests for GET /store/{domain} endpoint."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth import get_current_user_optional
 from app.database import get_db
 from app.main import app
+from app.models import User
 
 
 # ---- helpers ---------------------------------------------------------------
@@ -69,12 +71,15 @@ def _make_analysis(
     return a
 
 
-def _mock_db_with_data(store=None, products=None, analyses=None):
-    """Build a MagicMock session that chains filter/order_by correctly."""
+def _mock_db_with_data(store=None, products=None, analyses=None, *, include_analyses_query=True):
+    """Build a MagicMock session that chains filter/order_by correctly.
+
+    When include_analyses_query=False (unauthenticated path), only 2
+    db.query() calls are expected (Store + Products).  The analyses query
+    is skipped because store.py short-circuits to analysis_rows=[].
+    """
     session = MagicMock()
 
-    # We need to handle three sequential db.query(...) calls:
-    # 1. Store lookup  2. Products lookup  3. Analyses lookup
     store_query = MagicMock()
     store_query.filter.return_value.first.return_value = store
 
@@ -83,15 +88,52 @@ def _mock_db_with_data(store=None, products=None, analyses=None):
         products or []
     )
 
-    analyses_query = MagicMock()
-    analyses_query.filter.return_value.all.return_value = analyses or []
+    queries = [store_query, products_query]
 
-    session.query.side_effect = [store_query, products_query, analyses_query]
+    if include_analyses_query:
+        analyses_query = MagicMock()
+        # Support chained .filter().filter().all() for user-scoped query
+        analyses_query.filter.return_value.filter.return_value.all.return_value = (
+            analyses or []
+        )
+        queries.append(analyses_query)
+
+    session.query.side_effect = queries
     return session
 
 
-def _get_client(db_override):
+def _make_user(user_id=None) -> User:
+    """Build a User ORM instance for auth override."""
+    user = User()
+    user.id = user_id or uuid.uuid4()
+    user.google_sub = "google-sub-test"
+    user.email = "test@example.com"
+    user.name = "Test User"
+    user.picture = None
+    user.plan_tier = "free"
+    user.credits_used = 0
+    user.credits_reset_at = datetime.now(timezone.utc)
+    user.created_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(timezone.utc)
+    user.role = "user"
+    return user
+
+
+def _get_client(db_override, user_override="DEFAULT"):
+    """Return a TestClient with DB and optional auth overrides.
+
+    user_override="DEFAULT" → inject a default authenticated user.
+    user_override=None → no user (anonymous).
+    user_override=<User> → inject that specific user.
+    """
     app.dependency_overrides[get_db] = lambda: db_override
+    if user_override == "DEFAULT":
+        user = _make_user()
+        app.dependency_overrides[get_current_user_optional] = lambda: user
+    elif user_override is None:
+        app.dependency_overrides[get_current_user_optional] = lambda: None
+    else:
+        app.dependency_overrides[get_current_user_optional] = lambda: user_override
     return TestClient(app)
 
 
@@ -261,5 +303,78 @@ def test_store_empty_products_and_analyses():
     data = resp.json()
     assert data["products"] == []
     assert data["analyses"] == {}
+
+    app.dependency_overrides.clear()
+
+
+# ---- per-user scoping tests (R011) ------------------------------------------
+
+
+def test_store_unauthenticated_returns_empty_analyses():
+    """Anonymous GET /store/{domain} → 200 with store+products but empty analyses."""
+    store = _make_store(domain="anon-shop.com", name="Anon Shop")
+    prod = _make_product(
+        store.id,
+        url="https://anon-shop.com/products/hat",
+        slug="hat",
+    )
+    # analyses query is never executed for anonymous users
+    session = _mock_db_with_data(
+        store=store,
+        products=[prod],
+        include_analyses_query=False,
+    )
+    client = _get_client(session, user_override=None)
+    resp = client.get("/store/anon-shop.com")
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Store and products still present
+    assert data["store"]["domain"] == "anon-shop.com"
+    assert data["store"]["name"] == "Anon Shop"
+    assert len(data["products"]) == 1
+    assert data["products"][0]["slug"] == "hat"
+
+    # Analyses empty for anonymous user
+    assert data["analyses"] == {}
+
+    app.dependency_overrides.clear()
+
+
+def test_store_analyses_scoped_to_user():
+    """Authenticated GET /store/{domain} → only that user's analyses, not others'."""
+    user = _make_user()
+    store = _make_store(domain="scoped.com", name="Scoped Shop")
+
+    # Only the current user's analysis — the DB filter ensures
+    # other users' analyses are excluded at the query level
+    user_analysis = _make_analysis(
+        product_url="https://scoped.com/products/widget",
+        store_domain="scoped.com",
+        score=78,
+    )
+
+    session = _mock_db_with_data(
+        store=store,
+        products=[],
+        analyses=[user_analysis],
+    )
+    client = _get_client(session, user_override=user)
+    resp = client.get("/store/scoped.com")
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Only the user's analysis appears
+    assert len(data["analyses"]) == 1
+    assert "https://scoped.com/products/widget" in data["analyses"]
+    assert data["analyses"]["https://scoped.com/products/widget"]["score"] == 78
+
+    # Verify the DB query was filtered by user_id:
+    # The 3rd db.query() call (analyses) should chain .filter().filter().all()
+    analyses_query_mock = session.query.side_effect  # already consumed
+    # Verify all 3 queries were called
+    assert session.query.call_count == 3
 
     app.dependency_overrides.clear()

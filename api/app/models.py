@@ -18,9 +18,12 @@ Base = declarative_base()
 
 class ProductAnalysis(Base):
     __tablename__ = "product_analyses"
+    __table_args__ = (
+        UniqueConstraint("product_url", "user_id", name="uq_product_analyses_product_url_user_id"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
-    product_url = Column(Text, nullable=False, unique=True)
+    product_url = Column(Text, nullable=False)
     store_domain = Column(Text, nullable=False)
     score = Column(Integer, nullable=False)
     summary = Column(Text, nullable=True)
@@ -30,7 +33,7 @@ class ProductAnalysis(Base):
     product_category = Column(Text, nullable=True)
     estimated_monthly_visitors = Column(Integer, nullable=True)
     signals = Column(JSONB, nullable=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
 

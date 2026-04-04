@@ -7,8 +7,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user_optional
 from app.database import get_db
-from app.models import ProductAnalysis, Store, StoreProduct
+from app.models import ProductAnalysis, Store, StoreProduct, User
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,11 @@ router = APIRouter()
 
 
 @router.get("/store/{domain}")
-def get_store(domain: str, db: Session = Depends(get_db)):
+def get_store(
+    domain: str,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
     if not domain:
         return JSONResponse(
             status_code=400, content={"error": "Domain is required"}
@@ -36,11 +41,15 @@ def get_store(domain: str, db: Session = Depends(get_db)):
             .all()
         )
 
-        analysis_rows = (
-            db.query(ProductAnalysis)
-            .filter(ProductAnalysis.store_domain == domain)
-            .all()
-        )
+        if current_user is not None:
+            analysis_rows = (
+                db.query(ProductAnalysis)
+                .filter(ProductAnalysis.store_domain == domain)
+                .filter(ProductAnalysis.user_id == current_user.id)
+                .all()
+            )
+        else:
+            analysis_rows = []
 
         # Build analyses dict keyed by productUrl
         analyses: dict = {}

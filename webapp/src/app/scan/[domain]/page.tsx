@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { WarningCircleIcon, PackageIcon } from "@phosphor-icons/react";
 import ProductListings from "@/components/ProductListings";
 import { API_URL } from "@/lib/api";
+import { authFetch } from "@/lib/auth-fetch";
 import { type FreeResult, parseAnalysisResponse } from "@/lib/analysis";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -29,6 +31,7 @@ function ScanPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { status } = useSession();
   const initialSku = searchParams.get("sku") || "";
   const rawDomain = params.domain ?? "";
   const domain = decodeURIComponent(rawDomain);
@@ -58,7 +61,7 @@ function ScanPageContent() {
     /* ── Cache-first: check DB via /api/store before hitting discover-products ── */
     try {
       const [cacheRes] = await Promise.all([
-        fetch(`${API_URL}/store/${encodeURIComponent(domain)}`),
+        authFetch(`${API_URL}/store/${encodeURIComponent(domain)}`),
         delay(600), // D009: minimum 600ms in discovering phase
       ]);
 
@@ -121,9 +124,32 @@ function ScanPageContent() {
     }
   }, [domain]);
 
+  // Auth guard: redirect unauthenticated users to home
   useEffect(() => {
-    if (domain) discoverProducts();
-  }, [domain, discoverProducts]);
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
+
+  // Only discover products once authenticated
+  useEffect(() => {
+    if (status === "authenticated" && domain) discoverProducts();
+  }, [status, domain, discoverProducts]);
+
+  /* ── Session loading — show spinner while auth resolves ── */
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-[var(--bg)]">
+        <div className="flex flex-col items-center justify-center min-h-screen px-6">
+          <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[var(--surface)] border border-[var(--border)]" style={{ boxShadow: "var(--shadow-subtle)" }}>
+            <div className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent" style={{ animation: "spin 0.8s linear infinite" }} />
+            <span className="text-sm font-medium text-[var(--text-secondary)]">Loading…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   /* ── Discovering state ── */
   if (phase === "discovering") {

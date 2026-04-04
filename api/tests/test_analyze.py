@@ -907,3 +907,117 @@ def test_analyze_social_commerce_signals_in_response(
     assert data["dimensionTips"]["socialCommerce"] == ["Add TikTok embed"]
 
     app.dependency_overrides.clear()
+
+
+# --- GET /analysis per-user scoping tests (R012) ---
+
+
+def test_get_cached_analysis_returns_own():
+    """GET /analysis returns the authenticated user's own cached analysis."""
+    user = _make_user()
+    mock_session = MagicMock()
+
+    # Simulate a ProductAnalysis row belonging to this user
+    mock_row = MagicMock()
+    mock_row.score = 75
+    mock_row.summary = "Good product page"
+    mock_row.tips = ["Add reviews"]
+    mock_row.categories = {"socialProof": 60}
+    mock_row.product_price = "29.99"
+    mock_row.product_category = "fashion"
+    mock_row.signals = {"socialProof": {}}
+    mock_row.id = uuid.uuid4()
+
+    mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = mock_row
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_required] = lambda: user
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["score"] == 75
+    assert data["summary"] == "Good product page"
+    assert data["analysisId"] == str(mock_row.id)
+
+    app.dependency_overrides.clear()
+
+
+def test_get_cached_analysis_404_for_other_user():
+    """GET /analysis returns 404 when no analysis exists for this user (even if another user has one)."""
+    user = _make_user()
+    mock_session = MagicMock()
+
+    # first() returns None — no row matching (product_url, user_id)
+    mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = None
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_required] = lambda: user
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "No cached analysis"
+
+    app.dependency_overrides.clear()
+
+
+def test_get_cached_analysis_401_unauthenticated():
+    """GET /analysis without auth returns 401."""
+    mock_session = MagicMock()
+    app.dependency_overrides[get_db] = lambda: mock_session
+    # Do NOT override get_current_user_required — let it raise 401
+    # But we need get_current_user_optional to return None so the chain works
+    app.dependency_overrides[get_current_user_optional] = lambda: None
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 401
+
+    app.dependency_overrides.clear()
+
+
+# --- POST /analyze anonymous upsert skip test (R013) ---
+
+
+@patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock)
+@patch("app.routers.analyze.get_social_commerce_tips", return_value=[])
+@patch("app.routers.analyze.score_social_commerce", return_value=50)
+@patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
+@patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
+@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
+@patch("app.routers.analyze.score_structured_data", return_value=50)
+@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
+@patch("app.routers.analyze.get_social_proof_tips", return_value=["tip1"])
+@patch("app.routers.analyze.score_social_proof", return_value=50)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_anonymous_skips_upsert(
+    mock_fetch, mock_detect, mock_sp_score, mock_sp_tips,
+    mock_sd_detect, mock_sd_score, mock_sd_tips,
+    mock_co_detect, mock_co_score, mock_co_tips,
+    mock_sc_detect, mock_sc_score, mock_sc_tips, mock_axe_scan,
+):
+    """POST /analyze as anonymous user returns 200 but does NOT attempt DB upsert."""
+    mock_fetch.return_value = _VALID_HTML
+
+    mock_session = _mock_db()
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_optional] = lambda: None
+
+    client = TestClient(app)
+    resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+
+    # The upsert uses db.execute(stmt) — for anonymous users this should NOT be called.
+    # db.add is still called for the Scan row, but db.execute should be skipped.
+    mock_session.execute.assert_not_called()
+
+    app.dependency_overrides.clear()

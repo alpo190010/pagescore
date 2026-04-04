@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-from app.auth import get_current_user_optional
+from app.auth import get_current_user_optional, get_current_user_required
 from app.config import settings
 from app.database import get_db
 from app.models import ProductAnalysis, Scan, User
@@ -129,11 +129,17 @@ def _build_analysis_prompt(truncated_html: str) -> str:
 def get_cached_analysis(
     url: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
 ):
-    """Return a previously-stored analysis for *url*, or 404."""
+    """Return a previously-stored analysis for *url*, or 404.
+
+    Requires authentication — unauthenticated requests receive 401.
+    Only returns analyses owned by the authenticated user (R012).
+    """
     row = (
         db.query(ProductAnalysis)
         .filter(ProductAnalysis.product_url == url)
+        .filter(ProductAnalysis.user_id == current_user.id)
         .first()
     )
     if not row:
@@ -782,60 +788,63 @@ async def analyze(
             pass
     timings["dbScan"] = round((time.perf_counter() - t0) * 1000, 1)
 
-    # 2. Upsert product analysis
+    # 2. Upsert product analysis (authenticated users only — R013)
+    # Anonymous users skip DB persistence to avoid NOT NULL violation on user_id
+    # and to respect the composite unique constraint (product_url, user_id).
     t0 = time.perf_counter()
-    try:
-        stmt = (
-            pg_insert(ProductAnalysis)
-            .values(
-                product_url=url,
-                store_domain=parsed_url.hostname,
-                score=response_data["score"],
-                summary=response_data["summary"],
-                tips=response_data["tips"],
-                categories=response_data["categories"],
-                product_price=(
-                    str(response_data["productPrice"])
-                    if response_data["productPrice"]
-                    else None
-                ),
-                product_category=response_data["productCategory"] or None,
-                estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
-                signals=response_data.get("signals"),
-                user_id=current_user.id if current_user else None,
-            )
-            .on_conflict_do_update(
-                index_elements=["product_url"],
-                set_={
-                    "store_domain": parsed_url.hostname,
-                    "score": response_data["score"],
-                    "summary": response_data["summary"],
-                    "tips": response_data["tips"],
-                    "categories": response_data["categories"],
-                    "product_price": (
+    if current_user is not None:
+        try:
+            stmt = (
+                pg_insert(ProductAnalysis)
+                .values(
+                    product_url=url,
+                    store_domain=parsed_url.hostname,
+                    score=response_data["score"],
+                    summary=response_data["summary"],
+                    tips=response_data["tips"],
+                    categories=response_data["categories"],
+                    product_price=(
                         str(response_data["productPrice"])
                         if response_data["productPrice"]
                         else None
                     ),
-                    "product_category": response_data["productCategory"] or None,
-                    "estimated_monthly_visitors": response_data[
-                        "estimatedMonthlyVisitors"
-                    ],
-                    "signals": response_data.get("signals"),
-                    "updated_at": func.now(),
-                },
+                    product_category=response_data["productCategory"] or None,
+                    estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
+                    signals=response_data.get("signals"),
+                    user_id=current_user.id,
+                )
+                .on_conflict_do_update(
+                    index_elements=["product_url", "user_id"],
+                    set_={
+                        "store_domain": parsed_url.hostname,
+                        "score": response_data["score"],
+                        "summary": response_data["summary"],
+                        "tips": response_data["tips"],
+                        "categories": response_data["categories"],
+                        "product_price": (
+                            str(response_data["productPrice"])
+                            if response_data["productPrice"]
+                            else None
+                        ),
+                        "product_category": response_data["productCategory"] or None,
+                        "estimated_monthly_visitors": response_data[
+                            "estimatedMonthlyVisitors"
+                        ],
+                        "signals": response_data.get("signals"),
+                        "updated_at": func.now(),
+                    },
+                )
+                .returning(ProductAnalysis.id)
             )
-            .returning(ProductAnalysis.id)
-        )
-        row = db.execute(stmt).fetchone()
-        db.commit()
-        analysis_id = str(row[0]) if row else None
-    except Exception:
-        logger.exception("DB product analysis upsert error")
-        try:
-            db.rollback()
+            row = db.execute(stmt).fetchone()
+            db.commit()
+            analysis_id = str(row[0]) if row else None
         except Exception:
-            pass
+            logger.exception("DB product analysis upsert error")
+            try:
+                db.rollback()
+            except Exception:
+                pass
     timings["dbUpsert"] = round((time.perf_counter() - t0) * 1000, 1)
 
     return {**response_data, "analysisId": analysis_id}
