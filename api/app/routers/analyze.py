@@ -1,5 +1,6 @@
-"""POST /analyze endpoint — URL validation, AI scoring, DB persistence."""
+"""POST /analyze endpoint ��� URL validation, AI scoring, DB persistence."""
 
+import asyncio
 import logging
 import time
 import urllib.parse
@@ -15,7 +16,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import ProductAnalysis, Scan, User
 from app.services.entitlement import get_credits_limit, has_credits_remaining, increment_credits
-from app.services.page_renderer import render_page
+from app.services.page_renderer import render_page, measure_mobile_cta
 from app.services.openrouter import call_openrouter
 from app.services.scoring import build_category_scores, compute_weighted_score
 from app.services.social_proof_detector import detect_social_proof
@@ -36,6 +37,13 @@ from app.services.description_detector import detect_description
 from app.services.description_rubric import score_description, get_description_tips
 from app.services.trust_detector import detect_trust
 from app.services.trust_rubric import score_trust, get_trust_tips
+from app.services.mobile_cta_detector import detect_mobile_cta
+from app.services.mobile_cta_rubric import score_mobile_cta, get_mobile_cta_tips
+from app.services.page_speed_api import fetch_pagespeed_insights
+from app.services.page_speed_detector import detect_page_speed
+from app.services.page_speed_rubric import score_page_speed, get_page_speed_tips
+from app.services.cross_sell_detector import detect_cross_sell
+from app.services.cross_sell_rubric import score_cross_sell, get_cross_sell_tips
 
 logger = logging.getLogger(__name__)
 
@@ -181,19 +189,46 @@ async def analyze(
     timings: dict[str, float] = {}
     t_start = time.perf_counter()
 
-    # --- Fetch HTML ---
+    # --- Fetch HTML + mobile CTA measurement + optional PSI API (in parallel) ---
     t0 = time.perf_counter()
-    try:
-        html = await render_page(url)
-    except Exception as exc:
-        logger.exception("Failed to render page %s: %s", url, exc)
+    coros: list = [render_page(url), measure_mobile_cta(url)]
+    has_psi = bool(settings.google_pagespeed_api_key)
+    if has_psi:
+        coros.append(
+            fetch_pagespeed_insights(url, settings.google_pagespeed_api_key)
+        )
+
+    results = await asyncio.gather(*coros, return_exceptions=True)
+
+    # Unpack HTML result
+    html_result = results[0]
+    if isinstance(html_result, Exception):
+        logger.exception("Failed to render page %s: %s", url, html_result)
         return JSONResponse(
             status_code=400,
             content={
                 "error": "Could not fetch that URL. Make sure it's accessible and not behind a login."
             },
         )
+    html = html_result
     timings["pageRender"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # Unpack mobile CTA measurements (graceful degradation)
+    mobile_measurements = None
+    mobile_result = results[1]
+    if isinstance(mobile_result, Exception):
+        logger.warning("Mobile CTA measurement failed for %s: %s", url, mobile_result)
+    else:
+        mobile_measurements = mobile_result
+
+    # Unpack optional PSI result
+    psi_data = None
+    if has_psi and len(results) > 2:
+        psi_result = results[2]
+        if isinstance(psi_result, Exception):
+            logger.warning("PSI API failed for %s: %s", url, psi_result)
+        else:
+            psi_data = psi_result
 
     if len(html) < 100:
         return JSONResponse(
@@ -264,7 +299,28 @@ async def analyze(
     tr_tips = get_trust_tips(tr_signals)
     timings["trust"] = round((time.perf_counter() - t0) * 1000, 1)
 
-    # --- Mock scores for the other 11 dimensions (AI disabled) ---
+    # --- Deterministic page speed scoring (HTML + optional PSI) ---
+    t0 = time.perf_counter()
+    ps_signals = detect_page_speed(html, psi_data)
+    ps_score = score_page_speed(ps_signals)
+    ps_tips = get_page_speed_tips(ps_signals)
+    timings["pageSpeed"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic mobile CTA & UX scoring (HTML + Playwright measurements) ---
+    t0 = time.perf_counter()
+    mc_signals = detect_mobile_cta(html, measurements=mobile_measurements)
+    mc_score = score_mobile_cta(mc_signals)
+    mc_tips = get_mobile_cta_tips(mc_signals)
+    timings["mobileCta"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic cross-sell scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    cs_signals = detect_cross_sell(html)
+    cs_score = score_cross_sell(cs_signals)
+    cs_tips = get_cross_sell_tips(cs_signals)
+    timings["crossSell"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Mock scores for the other 8 dimensions (AI disabled) ---
     import random
     _mock_seed = hash(url) & 0xFFFFFFFF
     _rng = random.Random(_mock_seed)
@@ -273,14 +329,14 @@ async def analyze(
         "description": de_score,
         "images": im_score,
         "pricing": pr_score,
-        "cta": _rng.randint(35, 75),
+        "mobileCta": mc_score,
         "trust": tr_score,
         "urgency": _rng.randint(35, 75),
         "mobileUx": _rng.randint(35, 75),
-        "pageSpeed": _rng.randint(35, 75),
+        "pageSpeed": ps_score,
         "seo": _rng.randint(35, 75),
         "structuredData": sd_score,
-        "crossSell": _rng.randint(35, 75),
+        "crossSell": cs_score,
         "socialCommerce": _rng.randint(35, 75),
         "accessibility": _rng.randint(35, 75),
         "contentQuality": _rng.randint(35, 75),
@@ -295,7 +351,7 @@ async def analyze(
     # Overall score = weighted average across all dimensions
     mock_score = compute_weighted_score(mock_categories)
 
-    all_tips = sp_tips + sd_tips + co_tips + pr_tips + im_tips + ti_tips + sh_tips + de_tips + tr_tips
+    all_tips = sp_tips + sd_tips + co_tips + pr_tips + im_tips + ti_tips + sh_tips + de_tips + tr_tips + ps_tips + mc_tips + cs_tips
 
     timings["total"] = round((time.perf_counter() - t_start) * 1000, 1)
 
@@ -313,6 +369,9 @@ async def analyze(
             "shipping": sh_tips,
             "description": de_tips,
             "trust": tr_tips,
+            "pageSpeed": ps_tips,
+            "mobileCta": mc_tips,
+            "crossSell": cs_tips,
         },
         "categories": mock_categories,
         "productPrice": 0,
@@ -449,6 +508,61 @@ async def analyze(
                 "hasContactEmail": tr_signals.has_contact_email,
                 "hasTrustNearAtc": tr_signals.has_trust_near_atc,
                 "trustElementCount": tr_signals.trust_element_count,
+            },
+            "pageSpeed": {
+                "scriptCount": ps_signals.script_count,
+                "thirdPartyScriptCount": ps_signals.third_party_script_count,
+                "renderBlockingScriptCount": ps_signals.render_blocking_script_count,
+                "appScriptCount": ps_signals.app_script_count,
+                "hasLazyLoading": ps_signals.has_lazy_loading,
+                "lcpImageLazyLoaded": ps_signals.lcp_image_lazy_loaded,
+                "hasExplicitImageDimensions": ps_signals.has_explicit_image_dimensions,
+                "hasModernImageFormats": ps_signals.has_modern_image_formats,
+                "hasFontDisplaySwap": ps_signals.has_font_display_swap,
+                "hasPreconnectHints": ps_signals.has_preconnect_hints,
+                "hasDnsPrefetch": ps_signals.has_dns_prefetch,
+                "hasHeroPreload": ps_signals.has_hero_preload,
+                "inlineCssKb": ps_signals.inline_css_kb,
+                "detectedTheme": ps_signals.detected_theme,
+                "performanceScore": ps_signals.performance_score,
+                "lcpMs": ps_signals.lcp_ms,
+                "clsValue": ps_signals.cls_value,
+                "tbtMs": ps_signals.tbt_ms,
+                "fcpMs": ps_signals.fcp_ms,
+                "speedIndexMs": ps_signals.speed_index_ms,
+                "hasFieldData": ps_signals.has_field_data,
+                "fieldLcpMs": ps_signals.field_lcp_ms,
+                "fieldClsValue": ps_signals.field_cls_value,
+            },
+            "mobileCta": {
+                "ctaFound": mc_signals.cta_found,
+                "ctaText": mc_signals.cta_text,
+                "ctaCount": mc_signals.cta_count,
+                "ctaSelectorMatched": mc_signals.cta_selector_matched,
+                "hasViewportMeta": mc_signals.has_viewport_meta,
+                "hasResponsiveMeta": mc_signals.has_responsive_meta,
+                "hasStickyClass": mc_signals.has_sticky_class,
+                "hasStickyApp": mc_signals.has_sticky_app,
+                "buttonWidthPx": mc_signals.button_width_px,
+                "buttonHeightPx": mc_signals.button_height_px,
+                "meetsMin44px": mc_signals.meets_min_44px,
+                "meetsOptimal60_72px": mc_signals.meets_optimal_60_72px,
+                "aboveFold": mc_signals.above_fold,
+                "isSticky": mc_signals.is_sticky,
+                "inThumbZone": mc_signals.in_thumb_zone,
+                "isFullWidth": mc_signals.is_full_width,
+            },
+            "crossSell": {
+                "crossSellApp": cs_signals.cross_sell_app,
+                "hasCrossSellSection": cs_signals.has_cross_sell_section,
+                "widgetType": cs_signals.widget_type,
+                "productCount": cs_signals.product_count,
+                "hasBundlePricing": cs_signals.has_bundle_pricing,
+                "hasCheckboxSelection": cs_signals.has_checkbox_selection,
+                "hasAddAllToCart": cs_signals.has_add_all_to_cart,
+                "hasDiscountOnBundle": cs_signals.has_discount_on_bundle,
+                "nearBuyButton": cs_signals.near_buy_button,
+                "recommendationCountOptimal": cs_signals.recommendation_count_optimal,
             },
         },
     }

@@ -174,6 +174,64 @@ export interface TrustSignals {
   trustElementCount: number;
 }
 
+export interface PageSpeedSignals {
+  scriptCount: number;
+  thirdPartyScriptCount: number;
+  renderBlockingScriptCount: number;
+  appScriptCount: number;
+  hasLazyLoading: boolean;
+  lcpImageLazyLoaded: boolean;
+  hasExplicitImageDimensions: boolean;
+  hasModernImageFormats: boolean;
+  hasFontDisplaySwap: boolean;
+  hasPreconnectHints: boolean;
+  hasDnsPrefetch: boolean;
+  hasHeroPreload: boolean;
+  inlineCssKb: number;
+  detectedTheme: string | null;
+  performanceScore: number | null;
+  lcpMs: number | null;
+  clsValue: number | null;
+  tbtMs: number | null;
+  fcpMs: number | null;
+  speedIndexMs: number | null;
+  hasFieldData: boolean;
+  fieldLcpMs: number | null;
+  fieldClsValue: number | null;
+}
+
+export interface MobileCtaSignals {
+  ctaFound: boolean;
+  ctaText: string | null;
+  ctaCount: number;
+  ctaSelectorMatched: string | null;
+  hasViewportMeta: boolean;
+  hasResponsiveMeta: boolean;
+  hasStickyClass: boolean;
+  hasStickyApp: string | null;
+  buttonWidthPx: number | null;
+  buttonHeightPx: number | null;
+  meetsMin44px: boolean | null;
+  meetsOptimal60_72px: boolean | null;
+  aboveFold: boolean | null;
+  isSticky: boolean | null;
+  inThumbZone: boolean | null;
+  isFullWidth: boolean | null;
+}
+
+export interface CrossSellSignals {
+  crossSellApp: string | null;
+  hasCrossSellSection: boolean;
+  widgetType: string | null;
+  productCount: number;
+  hasBundlePricing: boolean;
+  hasCheckboxSelection: boolean;
+  hasAddAllToCart: boolean;
+  hasDiscountOnBundle: boolean;
+  nearBuyButton: boolean;
+  recommendationCountOptimal: boolean;
+}
+
 export interface DimensionSignals {
   socialProof?: SocialProofSignals;
   structuredData?: StructuredDataSignals;
@@ -184,6 +242,9 @@ export interface DimensionSignals {
   shipping?: ShippingSignals;
   description?: DescriptionSignals;
   trust?: TrustSignals;
+  pageSpeed?: PageSpeedSignals;
+  mobileCta?: MobileCtaSignals;
+  crossSell?: CrossSellSignals;
 }
 
 export interface FreeResult {

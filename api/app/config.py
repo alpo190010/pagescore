@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     lemonsqueezy_variant_pro: str = ""
     lemonsqueezy_variant_single_report: str = ""
     auth_secret: str = ""
+    google_pagespeed_api_key: str = ""
     webapp_url: str = "http://localhost:3000"
 
     model_config = {"env_file": ".env", "extra": "ignore"}

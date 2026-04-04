@@ -163,7 +163,9 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   const sh = rawSignals?.shipping as Record<string, unknown> | undefined;
   const de = rawSignals?.description as Record<string, unknown> | undefined;
   const tr = rawSignals?.trust as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co || pr || im || ti || sh || de || tr)
+  const ps = rawSignals?.pageSpeed as Record<string, unknown> | undefined;
+  const cs = rawSignals?.crossSell as Record<string, unknown> | undefined;
+  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co || pr || im || ti || sh || de || tr || ps || cs)
     ? {
         ...(sp ? {
           socialProof: {
@@ -311,6 +313,47 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasContactEmail: Boolean(tr.hasContactEmail),
             hasTrustNearAtc: Boolean(tr.hasTrustNearAtc),
             trustElementCount: Number(tr.trustElementCount) || 0,
+          },
+        } : {}),
+        ...(ps ? {
+          pageSpeed: {
+            scriptCount: Number(ps.scriptCount) || 0,
+            thirdPartyScriptCount: Number(ps.thirdPartyScriptCount) || 0,
+            renderBlockingScriptCount: Number(ps.renderBlockingScriptCount) || 0,
+            appScriptCount: Number(ps.appScriptCount) || 0,
+            hasLazyLoading: Boolean(ps.hasLazyLoading),
+            lcpImageLazyLoaded: Boolean(ps.lcpImageLazyLoaded),
+            hasExplicitImageDimensions: Boolean(ps.hasExplicitImageDimensions),
+            hasModernImageFormats: Boolean(ps.hasModernImageFormats),
+            hasFontDisplaySwap: Boolean(ps.hasFontDisplaySwap),
+            hasPreconnectHints: Boolean(ps.hasPreconnectHints),
+            hasDnsPrefetch: Boolean(ps.hasDnsPrefetch),
+            hasHeroPreload: Boolean(ps.hasHeroPreload),
+            inlineCssKb: Number(ps.inlineCssKb) || 0,
+            detectedTheme: (ps.detectedTheme as string) ?? null,
+            performanceScore: ps.performanceScore != null ? Number(ps.performanceScore) : null,
+            lcpMs: ps.lcpMs != null ? Number(ps.lcpMs) : null,
+            clsValue: ps.clsValue != null ? Number(ps.clsValue) : null,
+            tbtMs: ps.tbtMs != null ? Number(ps.tbtMs) : null,
+            fcpMs: ps.fcpMs != null ? Number(ps.fcpMs) : null,
+            speedIndexMs: ps.speedIndexMs != null ? Number(ps.speedIndexMs) : null,
+            hasFieldData: Boolean(ps.hasFieldData),
+            fieldLcpMs: ps.fieldLcpMs != null ? Number(ps.fieldLcpMs) : null,
+            fieldClsValue: ps.fieldClsValue != null ? Number(ps.fieldClsValue) : null,
+          },
+        } : {}),
+        ...(cs ? {
+          crossSell: {
+            crossSellApp: (cs.crossSellApp as string) ?? null,
+            hasCrossSellSection: Boolean(cs.hasCrossSellSection),
+            widgetType: (cs.widgetType as string) ?? null,
+            productCount: Number(cs.productCount) || 0,
+            hasBundlePricing: Boolean(cs.hasBundlePricing),
+            hasCheckboxSelection: Boolean(cs.hasCheckboxSelection),
+            hasAddAllToCart: Boolean(cs.hasAddAllToCart),
+            hasDiscountOnBundle: Boolean(cs.hasDiscountOnBundle),
+            nearBuyButton: Boolean(cs.nearBuyButton),
+            recommendationCountOptimal: Boolean(cs.recommendationCountOptimal),
           },
         } : {}),
       }
