@@ -1,0 +1,208 @@
+"""Scoring rubric and tip selector for trust & guarantee signals.
+
+Converts :class:`TrustSignals` into a deterministic 0-100 score
+using weighted criteria derived from VWO, MonetizePros, Build Grow
+Scale, and Forrester research on trust element conversion impact,
+and selects up to 3 prioritised improvement tips.
+"""
+
+from __future__ import annotations
+
+from app.services.trust_detector import TrustSignals
+
+
+# ---------------------------------------------------------------------------
+# Scoring rubric
+# ---------------------------------------------------------------------------
+
+
+def score_trust(signals: TrustSignals) -> int:
+    """Compute a 0-100 trust & guarantees score from extracted signals.
+
+    Weighted criteria (max 100 pts total):
+
+        Money-back guarantee:                   20 pts
+        Trust elements near Add to Cart:        15 pts
+        Return policy visible:                  12 pts
+        Security badge (Norton/McAfee/SSL):     10 pts
+        "Guaranteed Safe Checkout" badge:        8 pts
+        Live chat available:                     8 pts
+        "Secure checkout" text:                  7 pts
+        Trust badge count >= 1:                  5 pts
+        Trust badge count >= 2 (bonus):          3 pts
+        Payment trust icons:                     5 pts
+        Phone number visible:                    4 pts
+        Free shipping badge:                     3 pts
+
+    Returns:
+        Integer clamped to 0-100.
+    """
+    score = 0
+
+    # Money-back guarantee (20 pts) — +32% conversion (VWO case study)
+    if signals.has_money_back_guarantee:
+        score += 20
+
+    # Trust elements near ATC (15 pts) — 8-19% lift
+    if signals.has_trust_near_atc:
+        score += 15
+
+    # Return policy visible (12 pts) — +8-14% for AOV $75+
+    if signals.has_return_policy:
+        score += 12
+
+    # Security badge (10 pts) — +12.2% conversion (Norton/MonetizePros)
+    if signals.has_security_badge:
+        score += 10
+
+    # "Guaranteed Safe Checkout" badge (8 pts) — +11% (Build Grow Scale)
+    if signals.has_safe_checkout_badge:
+        score += 8
+
+    # Live chat available (8 pts) — +20% conversion average (Forrester)
+    if signals.has_live_chat:
+        score += 8
+
+    # "Secure checkout" text (7 pts)
+    if signals.has_secure_checkout_text:
+        score += 7
+
+    # Trust badges present (5 pts base, +3 bonus for 2+)
+    if signals.trust_badge_count >= 1:
+        score += 5
+    if signals.trust_badge_count >= 2:
+        score += 3
+
+    # Payment trust icons (5 pts)
+    if signals.has_payment_icons:
+        score += 5
+
+    # Phone number visible (4 pts) — +1.6% lift, #1 trust symbol
+    if signals.has_phone_number:
+        score += 4
+
+    # Free shipping badge (3 pts)
+    if signals.has_free_shipping_badge:
+        score += 3
+
+    return max(0, min(100, score))
+
+
+# ---------------------------------------------------------------------------
+# Tip selector
+# ---------------------------------------------------------------------------
+
+# Tips ordered by impact priority (highest first).  Each entry is a
+# (condition_callable, tip_string) pair.  The condition receives the
+# signals *and* the computed score.
+
+_TIP_RULES: list[tuple] = [
+    # 1. No money-back guarantee — biggest single conversion driver
+    (
+        lambda s, _score: not s.has_money_back_guarantee,
+        (
+            "Add a money-back guarantee badge \u2014 money-back guarantees "
+            "increase conversion by up to 32% (Alexander Jarvis VWO case study)"
+        ),
+    ),
+    # 2. No trust near ATC — placement is critical
+    (
+        lambda s, _score: not s.has_trust_near_atc and s.trust_element_count > 0,
+        (
+            "Move trust badges near your Add to Cart button \u2014 trust "
+            "signals within 300px of the ATC button deliver 8\u201319% "
+            "conversion lift; the same badge in the footer has near-zero "
+            "impact"
+        ),
+    ),
+    # 3. No return policy visible
+    (
+        lambda s, _score: not s.has_return_policy,
+        (
+            "Make your return policy visible on the product page \u2014 "
+            "return policy visibility near ATC increases conversion "
+            "8\u201314% for products over $75, and up to 19% for products "
+            "over $300"
+        ),
+    ),
+    # 4. No security badge and no safe checkout badge
+    (
+        lambda s, _score: not s.has_security_badge and not s.has_safe_checkout_badge,
+        (
+            "Add a security badge (Norton, McAfee, or SSL seal) \u2014 "
+            "security badges increase conversion by 12.2% on average "
+            "(MonetizePros/Build Grow Scale)"
+        ),
+    ),
+    # 5. No live chat
+    (
+        lambda s, _score: not s.has_live_chat,
+        (
+            "Add live chat \u2014 chat availability increases conversion "
+            "20% on average and 40% in engaged sessions; chat users spend "
+            "60% more per order (Forrester/Bold360)"
+        ),
+    ),
+    # 6. No trust badges at all
+    (
+        lambda s, _score: s.trust_badge_count == 0,
+        (
+            "Add 2\u20133 trust badges (guarantee, secure checkout, payment "
+            "icons) \u2014 trust badges increase conversion 12\u201342% when "
+            "implemented correctly; limit to 2\u20133 badges at 60\u201380px "
+            "wide"
+        ),
+    ),
+    # 7. Too many trust badges (>3) — diminishing returns
+    (
+        lambda s, _score: s.trust_badge_count > 3,
+        (
+            "Reduce to 2\u20133 trust badges \u2014 more than 3 badges "
+            "creates visual clutter and diminishes trust rather than "
+            "building it"
+        ),
+    ),
+    # 8. No phone number and no email
+    (
+        lambda s, _score: not s.has_phone_number and not s.has_contact_email,
+        (
+            "Add a visible phone number or contact email \u2014 a phone "
+            "number alone lifts conversion 1.6% and is the #1 global "
+            "trust symbol for online stores"
+        ),
+    ),
+    # 9. Congratulatory — strong trust setup
+    (
+        lambda s, score: score >= 75,
+        (
+            "Strong trust setup \u2014 your page covers guarantees, "
+            "security badges, and contact accessibility. Consider A/B "
+            "testing badge placement near the checkout CTA for further "
+            "lift"
+        ),
+    ),
+]
+
+
+def get_trust_tips(signals: TrustSignals) -> list[str]:
+    """Return up to 3 research-backed trust improvement tips.
+
+    Tips are selected based on which trust signals are missing or
+    weak, prioritised by conversion impact (most impactful first).
+
+    Args:
+        signals: Extracted trust & guarantee signals.
+
+    Returns:
+        A list of 0-3 tip strings.
+    """
+    score = score_trust(signals)
+    tips: list[str] = []
+
+    for condition, tip in _TIP_RULES:
+        if condition(signals, score):
+            tips.append(tip)
+            if len(tips) >= 3:
+                break
+
+    return tips

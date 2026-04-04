@@ -24,6 +24,18 @@ from app.services.structured_data_detector import detect_structured_data
 from app.services.structured_data_rubric import score_structured_data, get_structured_data_tips
 from app.services.checkout_detector import detect_checkout
 from app.services.checkout_rubric import score_checkout, get_checkout_tips
+from app.services.pricing_detector import detect_pricing
+from app.services.pricing_rubric import score_pricing, get_pricing_tips
+from app.services.images_detector import detect_images
+from app.services.images_rubric import score_images, get_images_tips
+from app.services.title_detector import detect_title
+from app.services.title_rubric import score_title, get_title_tips
+from app.services.shipping_detector import detect_shipping
+from app.services.shipping_rubric import score_shipping, get_shipping_tips
+from app.services.description_detector import detect_description
+from app.services.description_rubric import score_description, get_description_tips
+from app.services.trust_detector import detect_trust
+from app.services.trust_rubric import score_trust, get_trust_tips
 
 logger = logging.getLogger(__name__)
 
@@ -210,17 +222,59 @@ async def analyze(
     co_tips = get_checkout_tips(co_signals)
     timings["checkout"] = round((time.perf_counter() - t0) * 1000, 1)
 
-    # --- Mock scores for the other 18 dimensions (AI disabled) ---
+    # --- Deterministic pricing psychology scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    pr_signals = detect_pricing(html)
+    pr_score = score_pricing(pr_signals)
+    pr_tips = get_pricing_tips(pr_signals)
+    timings["pricing"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic product images scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    im_signals = detect_images(html)
+    im_score = score_images(im_signals)
+    im_tips = get_images_tips(im_signals)
+    timings["images"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic title & SEO scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    ti_signals = detect_title(html)
+    ti_score = score_title(ti_signals)
+    ti_tips = get_title_tips(ti_signals)
+    timings["title"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic shipping transparency scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    sh_signals = detect_shipping(html)
+    sh_score = score_shipping(sh_signals)
+    sh_tips = get_shipping_tips(sh_signals)
+    timings["shipping"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic description quality scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    de_signals = detect_description(html)
+    de_score = score_description(de_signals)
+    de_tips = get_description_tips(de_signals)
+    timings["description"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Deterministic trust & guarantees scoring (runs on full HTML) ---
+    t0 = time.perf_counter()
+    tr_signals = detect_trust(html)
+    tr_score = score_trust(tr_signals)
+    tr_tips = get_trust_tips(tr_signals)
+    timings["trust"] = round((time.perf_counter() - t0) * 1000, 1)
+
+    # --- Mock scores for the other 11 dimensions (AI disabled) ---
     import random
     _mock_seed = hash(url) & 0xFFFFFFFF
     _rng = random.Random(_mock_seed)
     mock_categories = {
-        "title": _rng.randint(35, 75),
-        "description": _rng.randint(35, 75),
-        "images": _rng.randint(35, 75),
-        "pricing": _rng.randint(35, 75),
+        "title": ti_score,
+        "description": de_score,
+        "images": im_score,
+        "pricing": pr_score,
         "cta": _rng.randint(35, 75),
-        "trustSignals": _rng.randint(35, 75),
+        "trust": tr_score,
         "urgency": _rng.randint(35, 75),
         "mobileUx": _rng.randint(35, 75),
         "pageSpeed": _rng.randint(35, 75),
@@ -234,13 +288,14 @@ async def analyze(
         "aiDiscoverability": _rng.randint(35, 75),
         "internationalReadiness": _rng.randint(35, 75),
         "merchantFeedQuality": _rng.randint(35, 75),
+        "shipping": sh_score,
     }
     mock_categories["socialProof"] = sp_score
 
     # Overall score = weighted average across all dimensions
     mock_score = compute_weighted_score(mock_categories)
 
-    all_tips = sp_tips + sd_tips + co_tips
+    all_tips = sp_tips + sd_tips + co_tips + pr_tips + im_tips + ti_tips + sh_tips + de_tips + tr_tips
 
     timings["total"] = round((time.perf_counter() - t_start) * 1000, 1)
 
@@ -252,6 +307,12 @@ async def analyze(
             "socialProof": sp_tips,
             "structuredData": sd_tips,
             "checkout": co_tips,
+            "pricing": pr_tips,
+            "images": im_tips,
+            "title": ti_tips,
+            "shipping": sh_tips,
+            "description": de_tips,
+            "trust": tr_tips,
         },
         "categories": mock_categories,
         "productPrice": 0,
@@ -304,6 +365,90 @@ async def analyze(
                 "hasDrawerCart": co_signals.has_drawer_cart,
                 "hasAjaxCart": co_signals.has_ajax_cart,
                 "hasStickyCheckout": co_signals.has_sticky_checkout,
+            },
+            "pricing": {
+                "hasCompareAtPrice": pr_signals.has_compare_at_price,
+                "hasStrikethroughPrice": pr_signals.has_strikethrough_price,
+                "priceValue": pr_signals.price_value,
+                "hasCharmPricing": pr_signals.has_charm_pricing,
+                "isRoundPrice": pr_signals.is_round_price,
+                "hasCountdownTimer": pr_signals.has_countdown_timer,
+                "hasScarcityMessaging": pr_signals.has_scarcity_messaging,
+                "hasFakeTimerRisk": pr_signals.has_fake_timer_risk,
+                "hasKlarnaPlacement": pr_signals.has_klarna_placement,
+                "hasAfterPayBadge": pr_signals.has_afterpay_badge,
+                "hasShopPayInstallments": pr_signals.has_shop_pay_installments,
+                "hasBnplNearPrice": pr_signals.has_bnpl_near_price,
+            },
+            "images": {
+                "imageCount": im_signals.image_count,
+                "hasVideo": im_signals.has_video,
+                "has360View": im_signals.has_360_view,
+                "hasZoom": im_signals.has_zoom,
+                "hasLifestyleImages": im_signals.has_lifestyle_images,
+                "cdnHosted": im_signals.cdn_hosted,
+                "hasModernFormat": im_signals.has_modern_format,
+                "hasHighRes": im_signals.has_high_res,
+                "altTextScore": im_signals.alt_text_score,
+            },
+            "title": {
+                "h1Text": ti_signals.h1_text,
+                "metaTitle": ti_signals.meta_title,
+                "brandName": ti_signals.brand_name,
+                "h1Count": ti_signals.h1_count,
+                "h1Length": ti_signals.h1_length,
+                "metaTitleLength": ti_signals.meta_title_length,
+                "hasH1": ti_signals.has_h1,
+                "hasSingleH1": ti_signals.has_single_h1,
+                "hasBrandInTitle": ti_signals.has_brand_in_title,
+                "hasKeywordStuffing": ti_signals.has_keyword_stuffing,
+                "isAllCaps": ti_signals.is_all_caps,
+                "hasPromotionalText": ti_signals.has_promotional_text,
+                "h1MetaDiffer": ti_signals.h1_meta_differ,
+                "hasSpecifics": ti_signals.has_specifics,
+            },
+            "shipping": {
+                "hasFreeShipping": sh_signals.has_free_shipping,
+                "hasFreeShippingThreshold": sh_signals.has_free_shipping_threshold,
+                "freeShippingThresholdValue": sh_signals.free_shipping_threshold_value,
+                "hasDeliveryDate": sh_signals.has_delivery_date,
+                "hasDeliveryEstimate": sh_signals.has_delivery_estimate,
+                "hasEddApp": sh_signals.has_edd_app,
+                "hasShippingCostShown": sh_signals.has_shipping_cost_shown,
+                "hasShippingInStructuredData": sh_signals.has_shipping_in_structured_data,
+                "hasShippingPolicyLink": sh_signals.has_shipping_policy_link,
+                "hasReturnsMentioned": sh_signals.has_returns_mentioned,
+            },
+            "description": {
+                "descriptionFound": de_signals.description_found,
+                "wordCount": de_signals.word_count,
+                "fleschKincaidGrade": de_signals.flesch_kincaid_grade,
+                "avgSentenceLength": de_signals.avg_sentence_length,
+                "sentenceCount": de_signals.sentence_count,
+                "benefitRatio": de_signals.benefit_ratio,
+                "benefitWordCount": de_signals.benefit_word_count,
+                "featureWordCount": de_signals.feature_word_count,
+                "emotionalDensity": de_signals.emotional_density,
+                "htmlTagVariety": de_signals.html_tag_variety,
+                "hasHeadings": de_signals.has_headings,
+                "hasBulletLists": de_signals.has_bullet_lists,
+                "hasEmphasis": de_signals.has_emphasis,
+            },
+            "trust": {
+                "trustBadgeApp": tr_signals.trust_badge_app,
+                "trustBadgeCount": tr_signals.trust_badge_count,
+                "hasPaymentIcons": tr_signals.has_payment_icons,
+                "hasMoneyBackGuarantee": tr_signals.has_money_back_guarantee,
+                "hasReturnPolicy": tr_signals.has_return_policy,
+                "hasFreeShippingBadge": tr_signals.has_free_shipping_badge,
+                "hasSecureCheckoutText": tr_signals.has_secure_checkout_text,
+                "hasSecurityBadge": tr_signals.has_security_badge,
+                "hasSafeCheckoutBadge": tr_signals.has_safe_checkout_badge,
+                "hasLiveChat": tr_signals.has_live_chat,
+                "hasPhoneNumber": tr_signals.has_phone_number,
+                "hasContactEmail": tr_signals.has_contact_email,
+                "hasTrustNearAtc": tr_signals.has_trust_near_atc,
+                "trustElementCount": tr_signals.trust_element_count,
             },
         },
     }

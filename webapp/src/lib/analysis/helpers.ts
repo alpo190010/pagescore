@@ -157,7 +157,13 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
   const sp = rawSignals?.socialProof as Record<string, unknown> | undefined;
   const sd = rawSignals?.structuredData as Record<string, unknown> | undefined;
   const co = rawSignals?.checkout as Record<string, unknown> | undefined;
-  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co)
+  const pr = rawSignals?.pricing as Record<string, unknown> | undefined;
+  const im = rawSignals?.images as Record<string, unknown> | undefined;
+  const ti = rawSignals?.title as Record<string, unknown> | undefined;
+  const sh = rawSignals?.shipping as Record<string, unknown> | undefined;
+  const de = rawSignals?.description as Record<string, unknown> | undefined;
+  const tr = rawSignals?.trust as Record<string, unknown> | undefined;
+  const signals: import("./types").DimensionSignals | undefined = (sp || sd || co || pr || im || ti || sh || de || tr)
     ? {
         ...(sp ? {
           socialProof: {
@@ -209,6 +215,102 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasDrawerCart: Boolean(co.hasDrawerCart),
             hasAjaxCart: Boolean(co.hasAjaxCart),
             hasStickyCheckout: Boolean(co.hasStickyCheckout),
+          },
+        } : {}),
+        ...(pr ? {
+          pricing: {
+            hasCompareAtPrice: Boolean(pr.hasCompareAtPrice),
+            hasStrikethroughPrice: Boolean(pr.hasStrikethroughPrice),
+            priceValue: pr.priceValue != null ? Number(pr.priceValue) : null,
+            hasCharmPricing: Boolean(pr.hasCharmPricing),
+            isRoundPrice: Boolean(pr.isRoundPrice),
+            hasCountdownTimer: Boolean(pr.hasCountdownTimer),
+            hasScarcityMessaging: Boolean(pr.hasScarcityMessaging),
+            hasFakeTimerRisk: Boolean(pr.hasFakeTimerRisk),
+            hasKlarnaPlacement: Boolean(pr.hasKlarnaPlacement),
+            hasAfterPayBadge: Boolean(pr.hasAfterPayBadge),
+            hasShopPayInstallments: Boolean(pr.hasShopPayInstallments),
+            hasBnplNearPrice: Boolean(pr.hasBnplNearPrice),
+          },
+        } : {}),
+        ...(im ? {
+          images: {
+            imageCount: Number(im.imageCount) || 0,
+            hasVideo: Boolean(im.hasVideo),
+            has360View: Boolean(im.has360View),
+            hasZoom: Boolean(im.hasZoom),
+            hasLifestyleImages: Boolean(im.hasLifestyleImages),
+            cdnHosted: Boolean(im.cdnHosted),
+            hasModernFormat: Boolean(im.hasModernFormat),
+            hasHighRes: Boolean(im.hasHighRes),
+            altTextScore: Number(im.altTextScore) || 0,
+          },
+        } : {}),
+        ...(ti ? {
+          title: {
+            h1Text: (ti.h1Text as string) ?? null,
+            metaTitle: (ti.metaTitle as string) ?? null,
+            brandName: (ti.brandName as string) ?? null,
+            h1Count: Number(ti.h1Count) || 0,
+            h1Length: Number(ti.h1Length) || 0,
+            metaTitleLength: Number(ti.metaTitleLength) || 0,
+            hasH1: Boolean(ti.hasH1),
+            hasSingleH1: Boolean(ti.hasSingleH1),
+            hasBrandInTitle: Boolean(ti.hasBrandInTitle),
+            hasKeywordStuffing: Boolean(ti.hasKeywordStuffing),
+            isAllCaps: Boolean(ti.isAllCaps),
+            hasPromotionalText: Boolean(ti.hasPromotionalText),
+            h1MetaDiffer: Boolean(ti.h1MetaDiffer),
+            hasSpecifics: Boolean(ti.hasSpecifics),
+          },
+        } : {}),
+        ...(sh ? {
+          shipping: {
+            hasFreeShipping: Boolean(sh.hasFreeShipping),
+            hasFreeShippingThreshold: Boolean(sh.hasFreeShippingThreshold),
+            freeShippingThresholdValue: sh.freeShippingThresholdValue != null ? Number(sh.freeShippingThresholdValue) : null,
+            hasDeliveryDate: Boolean(sh.hasDeliveryDate),
+            hasDeliveryEstimate: Boolean(sh.hasDeliveryEstimate),
+            hasEddApp: Boolean(sh.hasEddApp),
+            hasShippingCostShown: Boolean(sh.hasShippingCostShown),
+            hasShippingInStructuredData: Boolean(sh.hasShippingInStructuredData),
+            hasShippingPolicyLink: Boolean(sh.hasShippingPolicyLink),
+            hasReturnsMentioned: Boolean(sh.hasReturnsMentioned),
+          },
+        } : {}),
+        ...(de ? {
+          description: {
+            descriptionFound: Boolean(de.descriptionFound),
+            wordCount: Number(de.wordCount) || 0,
+            fleschKincaidGrade: Number(de.fleschKincaidGrade) || 0,
+            avgSentenceLength: Number(de.avgSentenceLength) || 0,
+            sentenceCount: Number(de.sentenceCount) || 0,
+            benefitRatio: Number(de.benefitRatio) || 0,
+            benefitWordCount: Number(de.benefitWordCount) || 0,
+            featureWordCount: Number(de.featureWordCount) || 0,
+            emotionalDensity: Number(de.emotionalDensity) || 0,
+            htmlTagVariety: Number(de.htmlTagVariety) || 0,
+            hasHeadings: Boolean(de.hasHeadings),
+            hasBulletLists: Boolean(de.hasBulletLists),
+            hasEmphasis: Boolean(de.hasEmphasis),
+          },
+        } : {}),
+        ...(tr ? {
+          trust: {
+            trustBadgeApp: (tr.trustBadgeApp as string) ?? null,
+            trustBadgeCount: Number(tr.trustBadgeCount) || 0,
+            hasPaymentIcons: Boolean(tr.hasPaymentIcons),
+            hasMoneyBackGuarantee: Boolean(tr.hasMoneyBackGuarantee),
+            hasReturnPolicy: Boolean(tr.hasReturnPolicy),
+            hasFreeShippingBadge: Boolean(tr.hasFreeShippingBadge),
+            hasSecureCheckoutText: Boolean(tr.hasSecureCheckoutText),
+            hasSecurityBadge: Boolean(tr.hasSecurityBadge),
+            hasSafeCheckoutBadge: Boolean(tr.hasSafeCheckoutBadge),
+            hasLiveChat: Boolean(tr.hasLiveChat),
+            hasPhoneNumber: Boolean(tr.hasPhoneNumber),
+            hasContactEmail: Boolean(tr.hasContactEmail),
+            hasTrustNearAtc: Boolean(tr.hasTrustNearAtc),
+            trustElementCount: Number(tr.trustElementCount) || 0,
           },
         } : {}),
       }
