@@ -399,21 +399,15 @@ async def analyze(
     sc_tips = get_social_commerce_tips(sc_signals)
     timings["socialCommerce"] = round((time.perf_counter() - t0) * 1000, 1)
 
-    # --- Mock scores for the other 6 dimensions (AI disabled) ---
-    import random
-    _mock_seed = hash(url) & 0xFFFFFFFF
-    _rng = random.Random(_mock_seed)
-    mock_categories = {
+    # --- All 18 dimensions are now deterministic (no mocks) ---
+    categories = {
         "title": ti_score,
         "description": de_score,
         "images": im_score,
         "pricing": pr_score,
         "mobileCta": mc_score,
         "trust": tr_score,
-        "urgency": _rng.randint(35, 75),
-        "mobileUx": _rng.randint(35, 75),
         "pageSpeed": ps_score,
-        "seo": _rng.randint(35, 75),
         "structuredData": sd_score,
         "crossSell": cs_score,
         "variantUx": vu_score,
@@ -424,18 +418,18 @@ async def analyze(
         "checkout": co_score,
         "aiDiscoverability": ad_score,
         "shipping": sh_score,
+        "socialProof": sp_score,
     }
-    mock_categories["socialProof"] = sp_score
 
     # Overall score = weighted average across all dimensions
-    mock_score = compute_weighted_score(mock_categories)
+    overall_score = compute_weighted_score(categories)
 
     all_tips = sp_tips + sd_tips + co_tips + pr_tips + im_tips + ti_tips + sh_tips + de_tips + tr_tips + ps_tips + mc_tips + cs_tips + vu_tips + sg_tips + ad_tips + cf_tips + ac_tips + sc_tips
 
     timings["total"] = round((time.perf_counter() - t_start) * 1000, 1)
 
     response_data: dict = {
-        "score": mock_score,
+        "score": overall_score,
         "summary": "Analysis complete.",
         "tips": all_tips or ["No issues detected."],
         "dimensionTips": {
@@ -458,7 +452,7 @@ async def analyze(
             "accessibility": ac_tips,
             "socialCommerce": sc_tips,
         },
-        "categories": mock_categories,
+        "categories": categories,
         "productPrice": 0,
         "productCategory": "other",
         "estimatedMonthlyVisitors": 1000,
