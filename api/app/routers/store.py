@@ -66,7 +66,6 @@ def get_store(
                     else None
                 ),
                 "productCategory": row.product_category,
-                "estimatedMonthlyVisitors": row.estimated_monthly_visitors,
                 "signals": row.signals,
                 "updatedAt": (
                     row.updated_at.isoformat() if row.updated_at else None

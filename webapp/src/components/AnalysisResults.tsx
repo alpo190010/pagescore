@@ -21,7 +21,7 @@ import { authFetch } from "@/lib/auth-fetch";
 import CompetitorComparison from "@/components/CompetitorComparison";
 import CompetitorLoader from "@/components/CompetitorLoader";
 import ScoreRing from "@/components/analysis/ScoreRing";
-import RevenueLossCard from "@/components/analysis/RevenueLossCard";
+import PluginCTACard from "@/components/analysis/PluginCTACard";
 import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
 
@@ -32,8 +32,6 @@ import CTACard from "@/components/analysis/CTACard";
 interface AnalysisResultsProps {
   result: FreeResult;
   leaks: LeakCard[];
-  lossLow: number;
-  lossHigh: number;
   domain: string;
   url: string;
   productName?: string;
@@ -52,8 +50,6 @@ interface AnalysisResultsProps {
 export default function AnalysisResults({
   result,
   leaks,
-  lossLow,
-  lossHigh,
   domain,
   url,
   productName,
@@ -135,9 +131,7 @@ export default function AnalysisResults({
             />
 
             {showRevenue && (
-              <RevenueLossCard
-                lossLow={lossLow}
-                lossHigh={lossHigh}
+              <PluginCTACard
                 onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
               />
             )}
@@ -265,12 +259,10 @@ export default function AnalysisResults({
                       </p>
                     </div>
 
-                    {/* Group revenue */}
+                    {/* Group conversion loss */}
                     <div className="text-right shrink-0 mr-2">
-                      <div className="text-xs font-bold text-[var(--success)]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
-                        {g.revenueLow === g.revenueHigh || g.revenueLow === 0
-                          ? `+$${g.revenueHigh}/mo`
-                          : `+$${g.revenueLow}–$${g.revenueHigh}/mo`}
+                      <div className="text-xs font-bold text-[var(--warning-text)]" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>
+                        ~{g.conversionLoss.toFixed(1)}% conversion loss
                       </div>
                     </div>
 

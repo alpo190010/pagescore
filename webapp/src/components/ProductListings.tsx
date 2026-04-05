@@ -61,8 +61,6 @@ export default function ProductListings({
     analyzedResults,
     contentFading,
     leaks,
-    lossLow,
-    lossHigh,
     email,
     emailStep,
     emailSubmitting,
@@ -127,8 +125,6 @@ export default function ProductListings({
       analysisError,
       selectedUrl,
       leaks,
-      lossLow,
-      lossHigh,
       contentFading,
       email,
       emailStep,
@@ -147,7 +143,7 @@ export default function ProductListings({
     [
       selectedProduct, selectedIndex, domain, analyzingHandle,
       analysisResult, analysisError, selectedUrl, leaks,
-      lossLow, lossHigh, contentFading, email, emailStep,
+      contentFading, email, emailStep,
       emailSubmitting, emailError, selectedLeak, competitorCTAName,
       handleDeepAnalyzeAndCollapse, handleRetryAnalysis, handleIssueClick,
       handleCloseModal, setEmail, setEmailStep, submitEmail,
@@ -201,7 +197,7 @@ export default function ProductListings({
               style={{ animation: "fade-in-up 500ms var(--ease-out-quart) 160ms both" }}
             >
               Pick any product from the list to get a deep conversion score,
-              revenue loss estimate, and actionable fixes.
+              actionable analysis, and prioritized fixes.
             </p>
           </div>
         )}

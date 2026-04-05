@@ -8,7 +8,7 @@ import AuthModal from "@/components/AuthModal";
 import AnalysisLoader from "@/components/AnalysisLoader";
 import PaywallModal from "@/components/PaywallModal";
 import ScoreRing from "@/components/analysis/ScoreRing";
-import RevenueLossCard from "@/components/analysis/RevenueLossCard";
+import PluginCTACard from "@/components/analysis/PluginCTACard";
 import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
 import { API_URL } from "@/lib/api";
@@ -17,9 +17,7 @@ import { SAMPLE_SCAN } from "@/lib/sample-data";
 import {
   type FreeResult,
   type LeakCard,
-  type SocialProofSignals,
   captureEvent,
-  calculateRevenueLoss,
   buildLeaks,
   extractDomain,
   parseAnalysisResponse,
@@ -152,7 +150,6 @@ function AnalyzePageContent() {
         categories: SAMPLE_SCAN.categories,
         productPrice: 0,
         productCategory: "other",
-        estimatedMonthlyVisitors: 1000,
       });
       setIsTeaser(true);
       setLoading(false);
@@ -188,10 +185,7 @@ function AnalyzePageContent() {
     setPaywallLeakKey(null);
   }, []);
 
-  const { lossLow, lossHigh } = result
-    ? calculateRevenueLoss(result.score, result.productPrice, result.estimatedMonthlyVisitors, result.productCategory)
-    : { lossLow: 0, lossHigh: 0 };
-  const leaks = result ? buildLeaks(result.categories, result.tips, lossLow, lossHigh, result.dimensionTips) : [];
+  const leaks = result ? buildLeaks(result.categories, result.tips, result.dimensionTips) : [];
 
   const openIssueModal = useCallback((leak: LeakCard) => {
     if (isTeaser) {
@@ -310,7 +304,7 @@ function AnalyzePageContent() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
                 <ScoreRing variant="full" score={result.score} animatedScore={animatedScore} domain={domain || url} summary={result.summary} categories={result.categories} leaksCount={leaks.length} />
                 {showRevenue && (
-                  <RevenueLossCard variant="full" lossLow={lossLow} lossHigh={lossHigh} onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+                  <PluginCTACard variant="full" onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
                 )}
               </div>
             </div>

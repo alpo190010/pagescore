@@ -55,6 +55,9 @@ export const CATEGORY_REVENUE_IMPACT: Record<string, string> = {
   accessibility: "Low-Medium", contentFreshness: "Low-Medium",
 };
 
+/** Re-exported from conversion-model.ts (pure TS, SSR-safe). */
+export { DIMENSION_IMPACT_WEIGHTS } from "./conversion-model";
+
 export const CATEGORY_PROBLEMS: Record<string, { low: string; mid: string }> = {
   pageSpeed: { low: "Page loads too slowly. A 1-second delay cuts conversions ~7%", mid: "Page speed could be faster. Only 48% of Shopify stores pass Core Web Vitals on mobile" },
   images: { low: "Product imagery is insufficient. 56% of users explore images before reading anything", mid: "Image gallery lacks variety. Missing lifestyle, scale, or texture shots" },

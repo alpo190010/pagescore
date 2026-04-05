@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --port 3005",
     "build": "next build",
-    "start": "next start --port 3005"
+    "start": "next start --port 3005",
+    "test": "vitest run"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -22,5 +23,8 @@
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
   }
 }

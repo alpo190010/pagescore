@@ -4,6 +4,7 @@ import {
   scoreColor, scoreColorText, scoreColorTintBg,
   getStatusLabel, getExplanation,
 } from "@/lib/report-helpers";
+import { calculateConversionLoss } from "@/lib/analysis/conversion-model";
 
 interface ReportData {
   id: string;
@@ -80,13 +81,17 @@ export default async function ReportTokenPage({
   }
 
   const { score, url, summary, tips, categories } = report;
-  const lossLow = (100 - score) * 4;
-  const lossHigh = (100 - score) * 8;
 
   const sortedCategories = Object.entries(categories)
     .filter(([key]) => ACTIVE_REPORT_DIMENSIONS.has(key))
     .map(([key, val]) => ({ key, score: val as number }))
     .sort((a, b) => a.score - b.score);
+
+  /* Aggregate % conversion loss across all active dimensions */
+  const dimLosses = sortedCategories.map(({ key, score: s }) => calculateConversionLoss(s, key));
+  const avgConversionLoss = sortedCategories.length > 0
+    ? Math.round((dimLosses.reduce((sum, l) => sum + l, 0) / sortedCategories.length) * 10) / 10
+    : 0;
   const actionPlanItems = sortedCategories.slice(0, 3).map((cat, i) => {
     const tip = tips[i] || `Improve your ${cat.key} score (currently ${cat.score}/100)`;
     return { priority: i + 1, category: cat.key, score: cat.score, tip };
@@ -118,11 +123,11 @@ export default async function ReportTokenPage({
             </div>
             <p className="text-sm mb-4 text-[var(--text-secondary)]">{summary}</p>
 
-            {/* Revenue impact */}
+            {/* Conversion loss impact */}
             <div className="mt-6 p-4 sm:p-5 text-center rounded-xl bg-[var(--error-light)]">
-              <p className="text-sm text-[var(--text-secondary)]">Estimated revenue loss for this product</p>
+              <p className="text-sm text-[var(--text-secondary)]">Estimated average conversion loss</p>
               <p className="font-extrabold mt-1 text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
-                ${lossLow}–${lossHigh}/month
+                ~{avgConversionLoss}% avg conversion loss
               </p>
             </div>
 
@@ -145,6 +150,7 @@ export default async function ReportTokenPage({
             {Object.entries(categories).filter(([key]) => ACTIVE_REPORT_DIMENSIONS.has(key)).map(([key, catScore]) => {
               const label = REPORT_CATEGORY_LABELS[key] || key;
               const explanation = getExplanation(key, catScore);
+              const dimLoss = calculateConversionLoss(catScore, key);
 
               return (
                 <div
@@ -154,12 +160,19 @@ export default async function ReportTokenPage({
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                     <h2 className="font-semibold text-base sm:text-lg text-[var(--text-primary)]">{label}</h2>
-                    <span
-                      className="px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto whitespace-nowrap"
-                      style={{ backgroundColor: scoreColorTintBg(catScore), color: scoreColorText(catScore) }}
-                    >
-                      {catScore}/100 · {getStatusLabel(catScore)}
-                    </span>
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                        style={{ backgroundColor: scoreColorTintBg(catScore), color: scoreColorText(catScore) }}
+                      >
+                        {catScore}/100 · {getStatusLabel(catScore)}
+                      </span>
+                      {dimLoss > 0 && (
+                        <span className="text-[11px] font-medium whitespace-nowrap" style={{ color: "var(--warning-text)" }}>
+                          ~{dimLoss}% conversion loss
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm sm:text-[15px] leading-relaxed text-[var(--text-secondary)]">{explanation}</p>
                 </div>

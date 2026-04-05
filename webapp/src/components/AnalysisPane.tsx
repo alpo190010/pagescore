@@ -35,8 +35,6 @@ export interface AnalysisPaneProps {
   analysisError: string;
   selectedUrl: string;
   leaks: LeakCard[];
-  lossLow: number;
-  lossHigh: number;
   contentFading: boolean;
 
   /* ── Email / modal state ── */
@@ -66,8 +64,6 @@ export default function AnalysisPane({
   analysisError,
   selectedUrl,
   leaks,
-  lossLow,
-  lossHigh,
   contentFading,
   email,
   emailStep,
@@ -210,8 +206,6 @@ export default function AnalysisPane({
           <AnalysisResults
             result={analysisResult}
             leaks={leaks}
-            lossLow={lossLow}
-            lossHigh={lossHigh}
             domain={domain}
             url={selectedUrl}
             productName={selectedProduct?.slug.replace(/-/g, " ")}

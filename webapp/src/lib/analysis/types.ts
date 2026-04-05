@@ -362,7 +362,6 @@ export interface FreeResult {
   categories: CategoryScores;
   productPrice: number;
   productCategory: string;
-  estimatedMonthlyVisitors: number;
   signals?: DimensionSignals;
 }
 
@@ -372,8 +371,7 @@ export interface LeakCard {
   catScore: number;
   impact: string;
   revenue: string;
-  revenueLow: number;
-  revenueHigh: number;
+  conversionLoss: number;
   tip: string;
   problem: string;
   category: string;

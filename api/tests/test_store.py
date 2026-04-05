@@ -207,7 +207,6 @@ def test_store_found_full_response():
     assert a["score"] == 55
     assert a["productPrice"] == "29.99"
     assert a["productCategory"] == "electronics"
-    assert a["estimatedMonthlyVisitors"] == 2000
     assert "updatedAt" in a
     assert a["tips"] == ["tip1", "tip2"]
     assert a["categories"] == {"pageSpeed": 60}

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
-import { type FreeResult, scoreColorTintBg, scoreColorText, calculateRevenueLoss } from "@/lib/analysis";
+import { type FreeResult, scoreColorTintBg, scoreColorText, calculateConversionLoss, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 /* ══════════════════════════════════════════════════════════════
    ProductGrid — Collapsible product sidebar
@@ -44,23 +44,27 @@ export default function ProductGrid({
   /* ── Store-wide totals from analyzed products ── */
   const storeTotals = useMemo(() => {
     if (analyzedResults.size === 0) return null;
-    let totalLossLow = 0;
-    let totalLossHigh = 0;
     let totalScore = 0;
+    let totalConversionLoss = 0;
     let count = 0;
     for (const result of analyzedResults.values()) {
-      const { lossLow, lossHigh } = calculateRevenueLoss(
-        result.score, result.productPrice, result.estimatedMonthlyVisitors, result.productCategory,
-      );
-      totalLossLow += lossLow;
-      totalLossHigh += lossHigh;
       totalScore += result.score;
+      // Per-product avg conversion loss across active dimensions
+      let productLossSum = 0;
+      let dimCount = 0;
+      for (const key of ACTIVE_DIMENSIONS) {
+        const catScore = result.categories?.[key as keyof typeof result.categories];
+        if (catScore != null) {
+          productLossSum += calculateConversionLoss(catScore as number, key);
+          dimCount++;
+        }
+      }
+      if (dimCount > 0) totalConversionLoss += productLossSum / dimCount;
       count++;
     }
     return {
       avgScore: Math.round(totalScore / count),
-      lossLow: totalLossLow,
-      lossHigh: totalLossHigh,
+      avgConversionLoss: Math.round((totalConversionLoss / count) * 10) / 10,
       analyzed: count,
     };
   }, [analyzedResults]);
@@ -139,20 +143,22 @@ export default function ProductGrid({
                   Avg score
                 </div>
               </div>
+
               <div
-                className="flex-1 rounded-xl px-3 py-2.5 text-center text-white"
-                style={{ background: "var(--gradient-error)" }}
+                className="flex-1 rounded-xl px-3 py-2.5 text-center"
+                style={{ background: "var(--warning-light, #fef3c7)" }}
               >
                 <div
                   className="text-xl font-extrabold leading-none"
-                  style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+                  style={{ color: "var(--warning-text, #92400e)", fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
                 >
-                  ${storeTotals.lossHigh.toLocaleString()}
+                  ~{storeTotals.avgConversionLoss}%
                 </div>
-                <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide text-white/70">
-                  /mo lost
+                <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide" style={{ color: "var(--warning-text, #92400e)", opacity: 0.7 }}>
+                  Avg conversion loss
                 </div>
               </div>
+
             </div>
             {storeTotals.analyzed < products.length && (
               <div className="mt-2.5">
@@ -173,9 +179,7 @@ export default function ProductGrid({
                     }}
                   />
                 </div>
-                <p className="text-[10px] text-[var(--on-surface-variant)] mt-1 italic">
-                  Real losses are likely higher
-                </p>
+
               </div>
             )}
           </div>
@@ -357,25 +361,30 @@ export default function ProductGrid({
                 </div>
               </div>
 
-              {/* Revenue loss strip — full width, only when analyzed */}
+              {/* Conversion loss strip — full width, only when analyzed */}
               {cachedResult && !isAnalyzing && (() => {
-                const { lossLow, lossHigh } = calculateRevenueLoss(
-                  cachedResult.score,
-                  cachedResult.productPrice,
-                  cachedResult.estimatedMonthlyVisitors,
-                  cachedResult.productCategory,
-                );
+                // Compute per-product avg conversion loss
+                let lossSum = 0;
+                let dimCount = 0;
+                for (const key of ACTIVE_DIMENSIONS) {
+                  const catScore = cachedResult.categories?.[key as keyof typeof cachedResult.categories];
+                  if (catScore != null) {
+                    lossSum += calculateConversionLoss(catScore as number, key);
+                    dimCount++;
+                  }
+                }
+                const avgLoss = dimCount > 0 ? Math.round((lossSum / dimCount) * 10) / 10 : 0;
                 return (
                   <div
                     className="px-4 py-2.5 flex items-center justify-between"
                     style={{ background: "var(--gradient-error)" }}
                   >
-                    <span className="text-white/70 text-[11px] font-semibold uppercase tracking-wide">Revenue lost</span>
+                    <span className="text-white/70 text-[11px] font-semibold uppercase tracking-wide">Conversion loss</span>
                     <span
                       className="text-white text-base font-extrabold tracking-tight"
                       style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
                     >
-                      ${lossLow}–${lossHigh}<span className="text-white/60 text-xs font-semibold">/mo</span>
+                      ~{avgLoss}% avg loss
                     </span>
                   </div>
                 );

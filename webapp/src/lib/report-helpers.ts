@@ -21,7 +21,12 @@ export const REPORT_CATEGORY_LABELS: Record<string, string> = {
  * Dimensions with real scoring. Must match ACTIVE_DIMENSIONS in analysis/constants.tsx.
  * Can't import from there because it pulls in React icons → breaks Server Components.
  */
-export const ACTIVE_REPORT_DIMENSIONS: ReadonlySet<string> = new Set(["socialProof"]);
+export const ACTIVE_REPORT_DIMENSIONS: ReadonlySet<string> = new Set([
+  "socialProof", "structuredData", "checkout", "pricing", "images", "title",
+  "shipping", "description", "trust", "pageSpeed", "mobileCta", "crossSell",
+  "variantUx", "sizeGuide", "aiDiscoverability", "contentFreshness",
+  "accessibility", "socialCommerce",
+]);
 export function getStatusLabel(score: number): string {
   if (score >= 70) return "Strong";
   if (score >= 40) return "Room to improve";

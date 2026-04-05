@@ -28,7 +28,7 @@ _AI_RESPONSE = {
     "categories": {"pageSpeed": 65, "images": 80},
     "productPrice": 29.99,
     "productCategory": "fashion",
-    "estimatedMonthlyVisitors": 2000,
+
 }
 
 

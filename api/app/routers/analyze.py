@@ -95,7 +95,6 @@ def _build_analysis_prompt(truncated_html: str) -> str:
         '- "categories": scores 0-100 for ALL 18 dimensions below\n'
         '- "productPrice": extract the product price as a number (e.g. 49.99). Return 0 if not found.\n'
         '- "productCategory": one of: "fashion", "electronics", "beauty", "home", "food", "fitness", "jewelry", "other"\n'
-        '- "estimatedMonthlyVisitors": your best estimate based on page signals. 500 small, 2000 medium, 10000 large.\n'
         '\n'
         'Score ALL 18 dimensions (0-100, be STRICT):\n'
         '\n'
@@ -461,7 +460,6 @@ async def analyze(
         "categories": categories,
         "productPrice": 0,
         "productCategory": "other",
-        "estimatedMonthlyVisitors": 1000,
         "timings": timings,
         "signals": {
             "socialProof": {
@@ -809,7 +807,7 @@ async def analyze(
                         else None
                     ),
                     product_category=response_data["productCategory"] or None,
-                    estimated_monthly_visitors=response_data["estimatedMonthlyVisitors"],
+                    estimated_monthly_visitors=None,
                     signals=response_data.get("signals"),
                     user_id=current_user.id,
                 )
@@ -827,9 +825,7 @@ async def analyze(
                             else None
                         ),
                         "product_category": response_data["productCategory"] or None,
-                        "estimated_monthly_visitors": response_data[
-                            "estimatedMonthlyVisitors"
-                        ],
+                        "estimated_monthly_visitors": None,
                         "signals": response_data.get("signals"),
                         "updated_at": func.now(),
                     },
@@ -848,3 +844,6 @@ async def analyze(
     timings["dbUpsert"] = round((time.perf_counter() - t0) * 1000, 1)
 
     return {**response_data, "analysisId": analysis_id}
+_id}
+urn {**response_data, "analysisId": analysis_id}
+_id}

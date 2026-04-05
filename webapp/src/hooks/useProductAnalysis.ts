@@ -7,7 +7,6 @@ import {
   type FreeResult,
   type CompetitorResult,
   buildLeaks,
-  calculateRevenueLoss,
   captureEvent,
   parseAnalysisResponse,
 } from "@/lib/analysis";
@@ -84,17 +83,8 @@ export function useProductAnalysis({
     resetEmailState,
   } = useEmailModal({ selectedUrl, analysisResult });
 
-  const { lossLow, lossHigh } = analysisResult
-    ? calculateRevenueLoss(
-        analysisResult.score,
-        analysisResult.productPrice,
-        analysisResult.estimatedMonthlyVisitors,
-        analysisResult.productCategory,
-      )
-    : { lossLow: 0, lossHigh: 0 };
-
   const leaks = analysisResult
-    ? buildLeaks(analysisResult.categories, analysisResult.tips, lossLow, lossHigh, analysisResult.dimensionTips)
+    ? buildLeaks(analysisResult.categories, analysisResult.tips, analysisResult.dimensionTips)
     : [];
 
   /* ── Abort cleanup ── */
@@ -255,8 +245,6 @@ export function useProductAnalysis({
     analyzedResults,
     contentFading,
     leaks,
-    lossLow,
-    lossHigh,
     email,
     emailStep,
     emailSubmitting,
