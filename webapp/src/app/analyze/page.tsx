@@ -21,6 +21,7 @@ import {
   buildLeaks,
   extractDomain,
   parseAnalysisResponse,
+  calculateDollarLossPerThousand,
   useCountUp,
 } from "@/lib/analysis";
 
@@ -304,7 +305,11 @@ function AnalyzePageContent() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
                 <ScoreRing variant="full" score={result.score} animatedScore={animatedScore} domain={domain || url} summary={result.summary} categories={result.categories} leaksCount={leaks.length} />
                 {showRevenue && (
-                  <PluginCTACard variant="full" onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+                  <PluginCTACard
+                    variant="full"
+                    dollarLoss={calculateDollarLossPerThousand(result.categories, result.productPrice, result.productCategory)}
+                    onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  />
                 )}
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, } from "react";
 import { useSession } from "next-auth/react";
 import {
   ArrowsClockwiseIcon,
@@ -15,6 +15,7 @@ import {
   captureEvent,
   groupLeaks,
   scoreColor,
+  calculateDollarLossPerThousand,
 } from "@/lib/analysis";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
@@ -86,6 +87,12 @@ export default function AnalysisResults({
   /* ── Grouped leaks ── */
   const grouped = useMemo(() => groupLeaks(leaks), [leaks]);
 
+  /* ── Dollar loss for PluginCTACard ── */
+  const dollarLoss = useMemo(
+    () => calculateDollarLossPerThousand(result.categories, result.productPrice, result.productCategory),
+    [result.categories, result.productPrice, result.productCategory],
+  );
+
   /* ── Collapsed groups — worst group (index 0) starts expanded, rest collapsed ── */
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -132,6 +139,7 @@ export default function AnalysisResults({
 
             {showRevenue && (
               <PluginCTACard
+                dollarLoss={dollarLoss}
                 onViewBreakdown={() => issuesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
               />
             )}
