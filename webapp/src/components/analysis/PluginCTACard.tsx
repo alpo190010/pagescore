@@ -55,7 +55,7 @@ export default function PluginCTACard({
             style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
           >
             {hasDollar
-              ? `You're losing ~$${dollarLoss.toFixed(2)} per 1,000 visitors`
+              ? <>You&rsquo;re losing <span className="text-red-400">~${dollarLoss.toFixed(2)}</span> per 1,000 visitors</>
               : "See your real dollar impact"}
           </h3>
           {hasDollar && (
