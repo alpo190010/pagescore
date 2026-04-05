@@ -12,8 +12,8 @@ export function captureEvent(event: string, properties?: Record<string, unknown>
   });
 }
 
-/* calculateConversionLoss re-exported from conversion-model.ts (pure TS, SSR-safe) */
-export { calculateConversionLoss } from "./conversion-model";
+/* calculateConversionLoss & calculateDollarLossPerThousand re-exported from conversion-model.ts (pure TS, SSR-safe) */
+export { calculateConversionLoss, calculateDollarLossPerThousand } from "./conversion-model";
 
 /** Score → CSS color variable */
 export function scoreColor(score: number): string {

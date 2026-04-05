@@ -3,6 +3,8 @@
    Safe for Server Component / SSR import.
    ══════════════════════════════════════════════════════════════ */
 
+import type { CategoryScores } from './types';
+
 /**
  * Numeric conversion-impact weights per dimension, used by calculateConversionLoss().
  * Tiers: Very High 0.25, High 0.20, Medium-High 0.13, Medium 0.08, Low-Medium 0.05.
@@ -45,4 +47,84 @@ export function calculateConversionLoss(score: number, dimensionKey: string): nu
   const clamped = Math.min(100, Math.max(0, score));
   const loss = ((100 - clamped) / 100) * weight * 100;
   return Math.round(loss * 10) / 10;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Category Benchmarks — research-backed conversion rates (%)
+   floor: worst observed performers
+   avg:   category median
+   achievable: top-quartile performers
+   ══════════════════════════════════════════════════════════════ */
+
+export interface CategoryBenchmark {
+  floor: number;
+  avg: number;
+  achievable: number;
+}
+
+export const CATEGORY_BENCHMARKS: Record<string, CategoryBenchmark> = {
+  fashion:     { floor: 0.50, avg: 1.90, achievable: 2.80 },
+  beauty:      { floor: 0.60, avg: 2.50, achievable: 3.70 },
+  food:        { floor: 0.40, avg: 1.50, achievable: 3.00 },
+  home:        { floor: 0.30, avg: 1.20, achievable: 2.00 },
+  electronics: { floor: 0.30, avg: 1.20, achievable: 2.00 },
+  fitness:     { floor: 0.40, avg: 1.60, achievable: 2.40 },
+  jewelry:     { floor: 0.20, avg: 0.80, achievable: 1.40 },
+  other:       { floor: 0.35, avg: 1.40, achievable: 2.20 },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   Dollar-Loss Model (D058)
+   ══════════════════════════════════════════════════════════════ */
+
+/**
+ * Piecewise-linear conversion-rate estimator.
+ * score 0–65 → floor → avg  (low segment)
+ * score 65–100 → avg → achievable  (high segment)
+ * Returns a percentage value (e.g. 1.90 means 1.90%).
+ */
+function scoreToConversionRate(score: number, category: string): number {
+  const clamped = Math.min(100, Math.max(0, score));
+  const bench = CATEGORY_BENCHMARKS[category] ?? CATEGORY_BENCHMARKS['other'];
+
+  if (clamped <= 65) {
+    return bench.floor + (bench.avg - bench.floor) * (clamped / 65);
+  }
+  return bench.avg + (bench.achievable - bench.avg) * ((clamped - 65) / 35);
+}
+
+/**
+ * Estimated revenue loss per 1 000 visitors compared to the achievable
+ * conversion rate for the product's category.
+ *
+ * Returns 0 when productPrice ≤ 0 (R031).
+ * Falls back to "other" for unknown categories.
+ * Result is non-negative and rounded to 2 decimal places.
+ */
+export function calculateDollarLossPerThousand(
+  categories: CategoryScores,
+  productPrice: number,
+  productCategory: string,
+): number {
+  if (productPrice <= 0) return 0;
+
+  const bench = CATEGORY_BENCHMARKS[productCategory] ?? CATEGORY_BENCHMARKS['other'];
+  const achievableCR = bench.achievable / 100;
+
+  // Weighted average score across dimensions present in both maps
+  let weightedSum = 0;
+  let weightTotal = 0;
+  for (const dim of Object.keys(categories) as (keyof CategoryScores)[]) {
+    const w = DIMENSION_IMPACT_WEIGHTS[dim];
+    if (w !== undefined) {
+      weightedSum += categories[dim] * w;
+      weightTotal += w;
+    }
+  }
+
+  const weightedScore = weightTotal > 0 ? weightedSum / weightTotal : 0;
+  const estimatedCR = scoreToConversionRate(weightedScore, productCategory) / 100;
+
+  const dollarLoss = (achievableCR - estimatedCR) * 1000 * productPrice;
+  return Math.max(0, Math.round(dollarLoss * 100) / 100);
 }

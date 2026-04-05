@@ -4,11 +4,13 @@ import { StorefrontIcon, ArrowRightIcon } from "@phosphor-icons/react";
 
 interface PluginCTACardProps {
   variant?: "compact" | "full";
+  dollarLoss?: number;
   onViewBreakdown: () => void;
 }
 
 export default function PluginCTACard({
   variant = "compact",
+  dollarLoss,
   onViewBreakdown,
 }: PluginCTACardProps) {
   const full = variant === "full";
@@ -48,15 +50,18 @@ export default function PluginCTACard({
           className={`${full ? "text-lg sm:text-xl" : "text-base sm:text-lg"} font-extrabold text-white leading-tight`}
           style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
         >
-          See your real dollar impact
+          {dollarLoss && dollarLoss > 0
+            ? `You're losing ~$${dollarLoss.toFixed(2)} per 1,000 visitors`
+            : "See your real dollar impact"}
         </h3>
       </div>
 
       <p
         className={`relative z-10 text-white/55 leading-relaxed ${full ? "text-sm my-5" : "text-[13px] my-4"}`}
       >
-        Connect your Shopify store to turn conversion scores into
-        real revenue estimates based on your actual traffic &amp; sales data.
+        {dollarLoss && dollarLoss > 0
+          ? "Connect your Shopify store to recover this revenue with real traffic data."
+          : "Connect your Shopify store to turn conversion scores into real revenue estimates based on your actual traffic & sales data."}
       </p>
 
       <button
