@@ -20,16 +20,8 @@ import {
   LockIcon,
 } from "@phosphor-icons/react";
 
-export const CATEGORY_BENCHMARKS: Record<string, { avg: number; achievable: number }> = {
-  fashion:      { avg: 1.90, achievable: 2.80 },
-  beauty:       { avg: 2.50, achievable: 3.70 },
-  food:         { avg: 1.50, achievable: 3.00 },
-  home:         { avg: 1.20, achievable: 2.00 },
-  electronics:  { avg: 1.20, achievable: 2.00 },
-  fitness:      { avg: 1.60, achievable: 2.40 },
-  jewelry:      { avg: 0.80, achievable: 1.40 },
-  other:        { avg: 1.40, achievable: 2.20 },
-};
+/** Re-exported from conversion-model.ts (pure TS, SSR-safe). */
+export { CATEGORY_BENCHMARKS } from './conversion-model';
 
 export const CATEGORY_LABELS: Record<string, string> = {
   pageSpeed: "Page Speed", images: "Product Images", socialProof: "Reviews & Social Proof",
