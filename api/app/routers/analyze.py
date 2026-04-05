@@ -844,6 +844,3 @@ async def analyze(
     timings["dbUpsert"] = round((time.perf_counter() - t0) * 1000, 1)
 
     return {**response_data, "analysisId": analysis_id}
-_id}
-urn {**response_data, "analysisId": analysis_id}
-_id}
