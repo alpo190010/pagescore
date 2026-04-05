@@ -1,0 +1,43 @@
+export function formatDate(
+  iso: string | null,
+  opts?: { includeYear?: boolean },
+): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso.includes("T") ? iso : iso + "T00:00:00");
+    const fmt: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+    if (opts?.includeYear !== false) fmt.year = "numeric";
+    return d.toLocaleDateString("en-US", fmt);
+  } catch {
+    return "—";
+  }
+}
+
+export function planBadgeStyle(tier: string): React.CSSProperties {
+  switch (tier) {
+    case "pro":
+      return { background: "var(--brand)", color: "var(--brand-light)" };
+    case "growth":
+      return { background: "var(--success)", color: "#fff" };
+    case "starter":
+      return {
+        background: "var(--surface-container-high)",
+        color: "var(--text-primary)",
+      };
+    default:
+      return {
+        background: "var(--surface-container)",
+        color: "var(--text-secondary)",
+      };
+  }
+}
+
+export function roleBadgeStyle(role: string): React.CSSProperties {
+  if (role === "admin") {
+    return { background: "var(--brand)", color: "var(--brand-light)" };
+  }
+  return {
+    background: "var(--surface-container)",
+    color: "var(--text-secondary)",
+  };
+}
