@@ -4,7 +4,7 @@ import {
   scoreColor, scoreColorText, scoreColorTintBg,
   getStatusLabel, getExplanation,
 } from "@/lib/report-helpers";
-import { calculateConversionLoss } from "@/lib/analysis/conversion-model";
+import { calculateConversionLoss, calculateDollarLossPerThousand } from "@/lib/analysis/conversion-model";
 
 interface ReportData {
   id: string;
@@ -16,6 +16,8 @@ interface ReportData {
   categories: CategoryScores;
   timestamp: string;
   used: boolean;
+  productPrice?: number;
+  productCategory?: string;
 }
 
 /** Safely map a loose Record<string, number> to the 18-field CategoryScores (0-defaults). */
@@ -92,6 +94,14 @@ export default async function ReportTokenPage({
   const avgConversionLoss = sortedCategories.length > 0
     ? Math.round((dimLosses.reduce((sum, l) => sum + l, 0) / sortedCategories.length) * 10) / 10
     : 0;
+
+  /* Dollar loss per 1,000 visitors (graceful: $0 when productPrice missing/zero) */
+  const dollarLoss = calculateDollarLossPerThousand(
+    categories,
+    report.productPrice ?? 0,
+    report.productCategory ?? 'other',
+  );
+
   const actionPlanItems = sortedCategories.slice(0, 3).map((cat, i) => {
     const tip = tips[i] || `Improve your ${cat.key} score (currently ${cat.score}/100)`;
     return { priority: i + 1, category: cat.key, score: cat.score, tip };
@@ -126,9 +136,20 @@ export default async function ReportTokenPage({
             {/* Conversion loss impact */}
             <div className="mt-6 p-4 sm:p-5 text-center rounded-xl bg-[var(--error-light)]">
               <p className="text-sm text-[var(--text-secondary)]">Estimated average conversion loss</p>
-              <p className="font-extrabold mt-1 text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
-                ~{avgConversionLoss}% avg conversion loss
-              </p>
+              {dollarLoss > 0 ? (
+                <>
+                  <p className="font-extrabold mt-1 text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
+                    ~${dollarLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lost per 1,000 visitors
+                  </p>
+                  <p className="text-sm mt-1 text-[var(--text-secondary)]">
+                    ~{avgConversionLoss}% avg conversion loss
+                  </p>
+                </>
+              ) : (
+                <p className="font-extrabold mt-1 text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
+                  ~{avgConversionLoss}% avg conversion loss
+                </p>
+              )}
             </div>
 
             {/* Score pills */}
