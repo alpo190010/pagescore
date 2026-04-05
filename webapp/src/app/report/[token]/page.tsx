@@ -5,6 +5,8 @@ import {
   getStatusLabel, getExplanation,
 } from "@/lib/report-helpers";
 import { calculateConversionLoss, calculateDollarLossPerThousand } from "@/lib/analysis/conversion-model";
+import DollarLossAmount from "@/components/analysis/DollarLossAmount";
+import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
 
 interface ReportData {
   id: string;
@@ -138,9 +140,12 @@ export default async function ReportTokenPage({
               <p className="text-sm text-[var(--text-secondary)]">Estimated average conversion loss</p>
               {dollarLoss > 0 ? (
                 <>
-                  <p className="font-extrabold mt-1 text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
-                    ~${dollarLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lost per 1,000 visitors
-                  </p>
+                  <div className="flex items-center justify-center gap-1.5 mt-1">
+                    <p className="font-extrabold text-[var(--error-text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
+                      <DollarLossAmount value={dollarLoss} className="text-red-600" /> lost per 1,000 visitors
+                    </p>
+                    <DollarLossTooltip size={16} variant="muted" />
+                  </div>
                   <p className="text-sm mt-1 text-[var(--text-secondary)]">
                     ~{avgConversionLoss}% avg conversion loss
                   </p>

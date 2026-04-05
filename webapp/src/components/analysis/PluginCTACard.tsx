@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { StorefrontIcon, ArrowRightIcon, InfoIcon } from "@phosphor-icons/react";
+import { StorefrontIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import DollarLossAmount from "@/components/analysis/DollarLossAmount";
+import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
 
 interface PluginCTACardProps {
   variant?: "compact" | "full";
@@ -15,7 +16,6 @@ export default function PluginCTACard({
   onViewBreakdown,
 }: PluginCTACardProps) {
   const full = variant === "full";
-  const [showTooltip, setShowTooltip] = useState(false);
   const hasDollar = dollarLoss != null && dollarLoss > 0;
 
   return (
@@ -55,48 +55,12 @@ export default function PluginCTACard({
             style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
           >
             {hasDollar
-              ? <>You&rsquo;re losing <span className="text-red-400">~${dollarLoss.toFixed(2)}</span> per 1,000 visitors</>
+              ? <>You&rsquo;re losing <DollarLossAmount value={dollarLoss} /> per 1,000 visitors</>
               : "See your real dollar impact"}
           </h3>
           {hasDollar && (
-            <div
-              className="relative flex-shrink-0 mt-0.5"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
-              <button
-                type="button"
-                aria-label="How we calculate this"
-                className="cursor-pointer text-white/40 hover:text-white/70 transition-colors"
-                onClick={() => setShowTooltip((v) => !v)}
-              >
-                <InfoIcon size={16} weight="regular" />
-              </button>
-              {showTooltip && (
-                <div
-                  className="absolute top-full right-0 mt-2 w-64 rounded-xl px-4 py-3 text-xs leading-relaxed text-white/90 z-50"
-                  style={{
-                    background: "#1a1a1a",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <p className="font-semibold text-white mb-1">How we calculate this</p>
-                  <p>
-                    Based on your product price, category conversion rate benchmarks
-                    (Shopify &amp; industry data), and your page&rsquo;s scores — estimating
-                    lost revenue per 1,000 visitors vs. top stores in your category.
-                  </p>
-                  {/* Arrow */}
-                  <div
-                    className="absolute bottom-full right-3 w-0 h-0"
-                    style={{
-                      borderLeft: "6px solid transparent",
-                      borderRight: "6px solid transparent",
-                      borderBottom: "6px solid #1a1a1a",
-                    }}
-                  />
-                </div>
-              )}
+            <div className="mt-0.5">
+              <DollarLossTooltip size={16} variant="light" />
             </div>
           )}
         </div>

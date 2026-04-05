@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { PackageIcon, SidebarSimpleIcon, InfoIcon } from "@phosphor-icons/react";
+import { useMemo } from "react";
+import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import DollarLossAmount from "@/components/analysis/DollarLossAmount";
+import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
 import { type FreeResult, scoreColorTintBg, scoreColorText, calculateConversionLoss, calculateDollarLossPerThousand, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 /* ══════════════════════════════════════════════════════════════
@@ -29,9 +31,8 @@ export interface ProductGridProps {
   onToggleCollapse: () => void;
 }
 
-/* ── Store-wide dollar loss stat with info tooltip ── */
+/* ── Store-wide dollar loss stat with shared tooltip ── */
 function DollarLossStat({ avgDollarLoss, avgConversionLoss }: { avgDollarLoss: number; avgConversionLoss: number }) {
-  const [showTip, setShowTip] = useState(false);
   return (
     <div
       className="flex-1 rounded-xl px-3 py-2.5 text-center relative"
@@ -41,42 +42,12 @@ function DollarLossStat({ avgDollarLoss, avgConversionLoss }: { avgDollarLoss: n
         <>
           <div className="flex items-center justify-center gap-1">
             <div
-              className="text-xl font-extrabold leading-none text-red-600"
+              className="text-xl font-extrabold leading-none"
               style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
             >
-              ~${avgDollarLoss.toFixed(2)}
+              <DollarLossAmount value={avgDollarLoss} className="text-red-600" />
             </div>
-            <div
-              className="relative"
-              onMouseEnter={() => setShowTip(true)}
-              onMouseLeave={() => setShowTip(false)}
-            >
-              <button
-                type="button"
-                aria-label="How we calculate this"
-                className="cursor-pointer text-[var(--warning-text,#92400e)] opacity-40 hover:opacity-70 transition-opacity"
-                onClick={() => setShowTip((v) => !v)}
-              >
-                <InfoIcon size={13} weight="regular" />
-              </button>
-              {showTip && (
-                <div
-                  className="absolute top-full right-0 mt-1.5 w-56 rounded-xl px-3.5 py-2.5 text-[11px] leading-relaxed text-white/90 z-50"
-                  style={{ background: "#1a1a1a", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}
-                >
-                  <p className="font-semibold text-white mb-0.5">How we calculate this</p>
-                  <p>
-                    Based on product price, category conversion rate benchmarks
-                    (Shopify &amp; industry data), and page scores — estimating
-                    lost revenue per 1,000 visitors vs. top stores.
-                  </p>
-                  <div
-                    className="absolute bottom-full right-2 w-0 h-0"
-                    style={{ borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderBottom: "5px solid #1a1a1a" }}
-                  />
-                </div>
-              )}
-            </div>
+            <DollarLossTooltip size={13} variant="muted" />
           </div>
           <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide" style={{ color: "var(--warning-text, #92400e)", opacity: 0.7 }}>
             Avg lost / 1k visitors
@@ -458,7 +429,7 @@ export default function ProductGrid({
                       style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
                     >
                       {dollarLoss > 0
-                        ? <><span className="text-red-300">~${dollarLoss.toFixed(2)}</span> / 1k visitors</>
+                        ? <><DollarLossAmount value={dollarLoss} className="text-red-300" /> / 1k visitors</>
                         : `~${avgLoss}% avg loss`
                       }
                     </span>
