@@ -17,12 +17,15 @@ import { SAMPLE_SCAN } from "@/lib/sample-data";
 import {
   type FreeResult,
   type LeakCard,
+  type PlanTier,
   captureEvent,
   buildLeaks,
   extractDomain,
   parseAnalysisResponse,
   calculateDollarLossPerThousand,
   useCountUp,
+  getDimensionAccess,
+  STARTER_DIMENSIONS,
 } from "@/lib/analysis";
 
 /* ── Plan data shape from GET /user/plan ── */
@@ -71,8 +74,20 @@ function AnalyzePageContent() {
 
   const animatedScore = useCountUp(showCard ? (result?.score ?? 0) : 0);
 
+  // Derive plan tier from plan data
+  const planTier: PlanTier = (planData?.plan as PlanTier) ?? "free";
+
   // Derived: shallow mode when free-tier
-  const isShallow = planData?.plan === "free";
+  const isShallow = planTier === "free";
+
+  // Whether user has full access (growth/pro see all dimensions unlocked)
+  const hasFullAccess = planTier === "growth" || planTier === "pro";
+
+  // Starter tier: partial access (7 of 18 dimensions)
+  const isStarter = planTier === "starter";
+
+  // How many dimensions are unlocked for the current tier
+  const unlockedCount = hasFullAccess ? 18 : isStarter ? STARTER_DIMENSIONS.size : 0;
 
   // Session-aware analysis: teaser for anonymous, real scan for authenticated
   useEffect(() => {
@@ -193,29 +208,32 @@ function AnalyzePageContent() {
       handleSignIn();
       return;
     }
-    if (isShallow) {
+    // Per-dimension gating: check if this specific dimension is locked for the user's plan
+    const access = getDimensionAccess(planTier, leak.key);
+    if (access === "locked") {
       setPaywallLeakKey(leak.key);
       setPaywallOpen(true);
-      captureEvent("paywall_opened", { category: leak.key, impact: leak.impact, trigger: "issue_card" });
+      captureEvent("paywall_opened", { category: leak.key, impact: leak.impact, trigger: "issue_card", plan: planTier });
       return;
     }
-    // Paid users: no modal from analyze page anymore (full report is visible inline)
-    captureEvent("issue_clicked", { category: leak.key, impact: leak.impact });
-  }, [isTeaser, isShallow, handleSignIn]);
+    // Unlocked dimension: card is expandable inline, no modal needed
+    captureEvent("issue_clicked", { category: leak.key, impact: leak.impact, plan: planTier });
+  }, [isTeaser, planTier, handleSignIn]);
 
   const openCTAModal = useCallback(() => {
     if (isTeaser) {
       handleSignIn();
       return;
     }
-    if (isShallow) {
+    // Both free and starter users see upgrade CTAs
+    if (!hasFullAccess) {
       setPaywallLeakKey(leaks[0]?.key || null);
       setPaywallOpen(true);
-      captureEvent("paywall_opened", { trigger: "cta_card", url });
+      captureEvent("paywall_opened", { trigger: "cta_card", url, plan: planTier });
       return;
     }
     captureEvent("cta_card_clicked", { url });
-  }, [isTeaser, isShallow, handleSignIn, leaks, url]);
+  }, [isTeaser, hasFullAccess, handleSignIn, leaks, url, planTier]);
 
 
   // ── Credit exhaustion screen ──
@@ -264,6 +282,7 @@ function AnalyzePageContent() {
           userId={planData?.userId ?? ""}
           analyzedUrl={url}
           leakKey={null}
+          userPlan={planTier}
         />
       </div>
     );
@@ -323,32 +342,50 @@ function AnalyzePageContent() {
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] tracking-tight" style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}>Issues Found</h2>
                 <p className="text-[var(--on-surface-variant)] text-sm sm:text-base mt-1">
                   {isShallow
-                    ? `${leaks.length} conversion leaks identified. Upgrade to see detailed fixes.`
-                    : `${leaks.length} conversion leaks identified. Click any to see the details.`
+                    ? `${leaks.length} conversion leaks identified. Subscribe to see detailed fixes.`
+                    : isStarter
+                      ? `${leaks.length} conversion leaks identified. ${unlockedCount} dimensions unlocked — upgrade to access all ${leaks.length}.`
+                      : `${leaks.length} conversion leaks identified. Click any to see the details.`
                   }
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {leaks.map((leak, i) => (
-                <IssueCard
-                  key={leak.key}
-                  variant="full"
-                  leak={leak}
-                  index={i}
-                  onClick={() => openIssueModal(leak)}
-                  expandable={!isTeaser && !isShallow}
-                  signals={!isTeaser && !isShallow ? result?.signals : undefined}
-                />
-              ))}
-              {(isTeaser || isShallow) && (
+              {leaks.map((leak, i) => {
+                const dimAccess = isTeaser ? "locked" as const : getDimensionAccess(planTier, leak.key);
+                const isUnlocked = dimAccess === "unlocked";
+                return (
+                  <IssueCard
+                    key={leak.key}
+                    variant="full"
+                    leak={leak}
+                    index={i}
+                    onClick={() => openIssueModal(leak)}
+                    expandable={isUnlocked}
+                    locked={!isUnlocked}
+                    signals={isUnlocked ? result?.signals : undefined}
+                  />
+                );
+              })}
+              {/* CTA card for free, starter, and teaser users */}
+              {(isTeaser || !hasFullAccess) && (
                 <CTACard
                   variant="full"
                   leaksCount={leaks.length}
                   animationDelay={leaks.length * 70}
                   onClick={openCTAModal}
-                  label={isShallow ? "Unlock Full Report" : undefined}
-                  buttonLabel={isShallow ? "Upgrade Now" : undefined}
+                  label={
+                    isTeaser ? undefined
+                    : isShallow ? "Get All Fixes"
+                    : isStarter ? "Unlock All Dimensions"
+                    : undefined
+                  }
+                  buttonLabel={
+                    isTeaser ? undefined
+                    : isShallow ? "Subscribe Now"
+                    : isStarter ? "Upgrade Now"
+                    : undefined
+                  }
                 />
               )}
             </div>
@@ -395,7 +432,7 @@ function AnalyzePageContent() {
           </section>
         )}
 
-        {/* Shallow mode: upgrade CTA instead of FeaturedInsight */}
+        {/* Free tier: subscribe CTA */}
         {result && showLeaks && !isTeaser && isShallow && (
           <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16" style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}>
             <div className="rounded-2xl p-8 sm:p-12 text-center border border-[var(--border)]" style={{ background: "var(--surface)" }}>
@@ -406,22 +443,59 @@ function AnalyzePageContent() {
                 className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] mb-3"
                 style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
               >
-                Unlock Detailed Fixes
+                Subscribe to Get Fixes
               </h2>
               <p className="text-[var(--on-surface-variant)] text-sm sm:text-base mb-6 max-w-md mx-auto">
-                You&apos;re seeing a preview. Upgrade to get step-by-step fixes, actionable recommendations, and full reports for every issue.
+                You&apos;re on the free plan. Subscribe to unlock step-by-step fixes, actionable recommendations, and full reports for every issue.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setPaywallOpen(true);
                   setPaywallLeakKey(null);
-                  captureEvent("paywall_opened", { trigger: "shallow_upgrade_cta" });
+                  captureEvent("paywall_opened", { trigger: "free_subscribe_cta", plan: planTier });
                 }}
                 className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring hover:brightness-110 transition-all"
                 style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))" }}
               >
-                Upgrade to Full Report
+                Subscribe Now
+              </button>
+            </div>
+            <div className="text-center mt-12">
+              <button type="button" onClick={handleScanAnother} className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring" style={{ background: "var(--gradient-primary)" }}>
+                Analyze Another Page
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Starter tier: upgrade CTA to unlock remaining dimensions */}
+        {result && showLeaks && !isTeaser && isStarter && (
+          <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16" style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}>
+            <div className="rounded-2xl p-8 sm:p-12 text-center border border-[var(--border)]" style={{ background: "var(--surface)" }}>
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
+                <LockKeyIcon size={28} weight="regular" color="var(--brand)" />
+              </div>
+              <h2
+                className="text-2xl sm:text-3xl font-extrabold text-[var(--on-surface)] mb-3"
+                style={{ fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
+              >
+                Unlock All {leaks.length} Dimensions
+              </h2>
+              <p className="text-[var(--on-surface-variant)] text-sm sm:text-base mb-6 max-w-md mx-auto">
+                You&apos;re on Starter with {unlockedCount} dimensions unlocked. Upgrade to Growth to access detailed fixes for all {leaks.length} conversion dimensions.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaywallOpen(true);
+                  setPaywallLeakKey(null);
+                  captureEvent("paywall_opened", { trigger: "starter_upgrade_cta", plan: planTier });
+                }}
+                className="cursor-pointer inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white polish-hover-lift polish-focus-ring hover:brightness-110 transition-all"
+                style={{ background: "linear-gradient(135deg, var(--brand), var(--primary-dim))" }}
+              >
+                Upgrade to Growth
               </button>
             </div>
             <div className="text-center mt-12">
@@ -439,6 +513,7 @@ function AnalyzePageContent() {
           userId={planData?.userId ?? ""}
           analyzedUrl={url}
           leakKey={paywallLeakKey}
+          userPlan={planTier}
         />
 
         {/* AuthModal for teaser sign-in */}

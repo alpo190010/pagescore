@@ -3,7 +3,7 @@
    Safe for Server Component / SSR import.
    ══════════════════════════════════════════════════════════════ */
 
-import type { CategoryScores } from './types';
+import type { CategoryScores, PlanTier } from './types';
 
 /**
  * Numeric conversion-impact weights per dimension, used by calculateConversionLoss().
@@ -35,6 +35,30 @@ export const DIMENSION_IMPACT_WEIGHTS: Record<string, number> = {
   accessibility: 0.05,
   contentFreshness: 0.05,
 };
+
+/* ══════════════════════════════════════════════════════════════
+   Tier Gating — starter-plan dimension access (D076)
+   ══════════════════════════════════════════════════════════════ */
+
+/** The 7 dimensions unlocked on the Starter plan (D076). */
+export const STARTER_DIMENSIONS: ReadonlySet<string> = new Set([
+  "socialProof", "images", "checkout", "title", "pricing", "shipping", "trust",
+]);
+
+/** Whether a dimension's fix checklist is visible to the user. */
+export type DimensionAccess = "unlocked" | "locked";
+
+/**
+ * Resolve whether `dimensionKey` is accessible on the given `plan`.
+ * - growth / pro → all dimensions unlocked
+ * - starter     → only STARTER_DIMENSIONS unlocked
+ * - free        → all locked
+ */
+export function getDimensionAccess(plan: PlanTier, dimensionKey: string): DimensionAccess {
+  if (plan === "growth" || plan === "pro") return "unlocked";
+  if (plan === "starter" && STARTER_DIMENSIONS.has(dimensionKey)) return "unlocked";
+  return "locked";
+}
 
 /**
  * Per-dimension conversion loss as a percentage (0–25).

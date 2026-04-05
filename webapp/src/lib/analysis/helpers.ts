@@ -14,7 +14,9 @@ export function captureEvent(event: string, properties?: Record<string, unknown>
 }
 
 /* calculateConversionLoss & calculateDollarLossPerThousand re-exported from conversion-model.ts (pure TS, SSR-safe) */
-export { calculateConversionLoss, calculateDollarLossPerThousand } from "./conversion-model";
+export { calculateConversionLoss, calculateDollarLossPerThousand, getDimensionAccess, STARTER_DIMENSIONS } from "./conversion-model";
+export type { PlanTier } from "./types";
+export type { DimensionAccess } from "./conversion-model";
 
 /** Score → CSS color variable */
 export function scoreColor(score: number): string {

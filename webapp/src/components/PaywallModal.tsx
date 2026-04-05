@@ -7,19 +7,18 @@ import {
   CrownIcon,
   RocketLaunchIcon,
   BuildingsIcon,
+  CheckCircleIcon,
 } from "@phosphor-icons/react";
 import { captureEvent } from "@/lib/analysis";
+import type { PlanTier } from "@/lib/analysis/types";
 
 /* ══════════════════════════════════════════════════════════════
-   PaywallModal — Upgrade prompt for free-tier users
-   Two sections:
-     (a) "Get This Report — $9.99" — one-time single-report purchase
-     (b) "Or Subscribe" — Starter / Growth / Pro tier checkout links
-   Checkout URLs go to LemonSqueezy with custom fields for userId + url.
+   PaywallModal — Subscription upgrade prompt (tier-aware)
+   Shows Starter / Growth / Pro checkout links via LemonSqueezy.
+   userPlan controls header copy and grays out current tier.
    ══════════════════════════════════════════════════════════════ */
 
 const LS_STORE_URL = process.env.NEXT_PUBLIC_LS_STORE_URL ?? "";
-const LS_VARIANT_SINGLE = process.env.NEXT_PUBLIC_LS_VARIANT_SINGLE_REPORT ?? "";
 const LS_VARIANT_STARTER = process.env.NEXT_PUBLIC_LS_VARIANT_STARTER ?? "";
 const LS_VARIANT_GROWTH = process.env.NEXT_PUBLIC_LS_VARIANT_GROWTH ?? "";
 const LS_VARIANT_PRO = process.env.NEXT_PUBLIC_LS_VARIANT_PRO ?? "";
@@ -79,6 +78,7 @@ interface PaywallModalProps {
   userId: string;
   analyzedUrl: string;
   leakKey: string | null;
+  userPlan?: PlanTier;
 }
 
 export default function PaywallModal({
@@ -87,6 +87,7 @@ export default function PaywallModal({
   userId,
   analyzedUrl,
   leakKey,
+  userPlan = "free",
 }: PaywallModalProps) {
   const [modalClosing, setModalClosing] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -150,8 +151,7 @@ export default function PaywallModal({
     if (e.target === e.currentTarget) handleClose();
   }
 
-  const singleReportUrl = buildCheckoutUrl(LS_VARIANT_SINGLE, userId, analyzedUrl);
-  const hasSingleReport = !!singleReportUrl;
+  const isStarter = userPlan === "starter";
 
   return (
     <div
@@ -184,73 +184,59 @@ export default function PaywallModal({
         </button>
 
         <div className="p-6 sm:p-8">
-          {/* Header */}
+          {/* Header — tier-aware */}
           <div className="text-center mb-6">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
               <LockKeyIcon size={28} weight="regular" color="var(--brand)" />
             </div>
             <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
-              Unlock Full Report
+              {isStarter ? "Upgrade to unlock all dimensions" : "Subscribe to get fixes"}
             </h3>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Get detailed fixes, actionable recommendations, and step-by-step
-              guides to boost your conversion rate.
+              {isStarter
+                ? "You're on Starter with 7 dimensions. Upgrade to access all 18 conversion dimensions with detailed fixes."
+                : "Get detailed fixes, actionable recommendations, and step-by-step guides to boost your conversion rate."
+              }
             </p>
           </div>
 
-          {/* ── Section A: Single Report ── */}
-          {hasSingleReport ? (
-            <a
-              href={singleReportUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() =>
-                captureEvent("paywall_single_report_clicked", {
-                  userId,
-                  url: analyzedUrl,
-                  leakKey,
-                })
-              }
-              className="cursor-pointer block w-full px-6 py-4 rounded-2xl text-center font-semibold text-white polish-hover-lift transition-all"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--brand), var(--primary-dim))",
-              }}
-            >
-              <span className="text-base">Get This Report</span>
-              <span className="block text-2xl font-extrabold mt-0.5">$9.99</span>
-              <span className="block text-xs text-white/70 mt-1">
-                One-time purchase • Instant access
-              </span>
-            </a>
-          ) : (
-            <div className="w-full px-6 py-4 rounded-2xl text-center bg-[var(--surface-container)] opacity-50">
-              <span className="text-sm text-[var(--text-tertiary)]">
-                Single report purchase coming soon
-              </span>
-            </div>
-          )}
-
-          {/* ── Divider ── */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[var(--border)]" />
-            <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Or Subscribe
-            </span>
-            <div className="flex-1 h-px bg-[var(--border)]" />
-          </div>
-
-          {/* ── Section B: Subscription Tiers ── */}
+          {/* ── Subscription Tiers ── */}
           <div className="space-y-3">
             {TIERS.map((tier) => {
+              const isCurrent = isStarter && tier.key === "starter";
               const checkoutUrl = buildCheckoutUrl(
                 tier.variant,
                 userId,
                 analyzedUrl,
               );
-              const available = !!checkoutUrl;
+              const available = !!checkoutUrl && !isCurrent;
 
-              return available ? (
+              return isCurrent ? (
+                <div
+                  key={tier.key}
+                  className="flex items-center gap-4 p-4 rounded-2xl border border-[var(--border)] opacity-50"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-container-high)] flex items-center justify-center text-[var(--on-surface-variant)] shrink-0">
+                    {tier.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-bold text-[var(--text-primary)]">
+                        {tier.name}
+                      </span>
+                      <span className="text-lg font-extrabold text-[var(--text-tertiary)]">
+                        {tier.price}
+                      </span>
+                      <span className="text-xs text-[var(--text-tertiary)]">
+                        {tier.period}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5 flex items-center gap-1">
+                      <CheckCircleIcon size={12} weight="fill" /> Current plan
+                    </p>
+                  </div>
+                </div>
+              ) : available ? (
                 <a
                   key={tier.key}
                   href={checkoutUrl}

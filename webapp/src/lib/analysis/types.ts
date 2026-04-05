@@ -5,6 +5,9 @@
 /** Whether a dimension is evaluated once per store or once per product page. */
 export type DimensionScope = "store" | "product";
 
+/** Plan tier for feature gating (D076). */
+export type PlanTier = "free" | "starter" | "growth" | "pro";
+
 export interface CategoryScores {
   pageSpeed: number;
   images: number;

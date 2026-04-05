@@ -5,7 +5,7 @@ import { XIcon } from "@phosphor-icons/react";
 
 /* ══════════════════════════════════════════════════════════════
    BottomSheet — Slide-up overlay for mobile viewports
-   z-40 (below EmailModal z-50)
+   z-40
    Swipe-to-dismiss, scroll containment, body scroll lock
    ══════════════════════════════════════════════════════════════ */
 

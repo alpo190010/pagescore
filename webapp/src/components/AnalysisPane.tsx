@@ -12,7 +12,6 @@ import {
 import { type FreeResult, type LeakCard } from "@/lib/analysis";
 import AnalysisResults from "@/components/AnalysisResults";
 import AnalysisLoader from "@/components/AnalysisLoader";
-import EmailModal from "@/components/EmailModal";
 
 /* ══════════════════════════════════════════════════════════════
    AnalysisPane — Product preview + analysis lifecycle states
@@ -37,22 +36,10 @@ export interface AnalysisPaneProps {
   leaks: LeakCard[];
   contentFading: boolean;
 
-  /* ── Email / modal state ── */
-  email: string;
-  emailStep: "form" | "queued" | "pricing" | "sent" | null;
-  emailSubmitting: boolean;
-  emailError: string;
-  selectedLeak: string | null;
-  competitorCTAName: string | null;
-
   /* ── Callbacks ── */
   onDeepAnalyze: () => void;
   onRetryAnalysis: () => void;
   onIssueClick: (key: string) => void;
-  onCloseModal: () => void;
-  onEmailChange: (email: string) => void;
-  onSubmitEmail: (e: React.FormEvent) => void;
-  onStepChange: (step: "form" | "queued" | "pricing" | "sent") => void;
 }
 
 export default function AnalysisPane({
@@ -65,19 +52,9 @@ export default function AnalysisPane({
   selectedUrl,
   leaks,
   contentFading,
-  email,
-  emailStep,
-  emailSubmitting,
-  emailError,
-  selectedLeak,
-  competitorCTAName,
   onDeepAnalyze,
   onRetryAnalysis,
   onIssueClick,
-  onCloseModal,
-  onEmailChange,
-  onSubmitEmail,
-  onStepChange,
 }: AnalysisPaneProps) {
   return (
     <div
@@ -213,23 +190,6 @@ export default function AnalysisPane({
             productImage={selectedProduct?.image}
             onIssueClick={onIssueClick}
             onAnalyzeAgain={onDeepAnalyze}
-          />
-
-          <EmailModal
-            isOpen={emailStep !== null}
-            onClose={onCloseModal}
-            selectedLeak={selectedLeak}
-            competitorCTAName={null}
-            leaks={leaks}
-            email={email}
-            onEmailChange={onEmailChange}
-            onSubmit={onSubmitEmail}
-            emailSubmitting={emailSubmitting}
-            emailError={emailError}
-            emailStep={emailStep}
-            url={selectedUrl}
-            score={analysisResult.score}
-            onStepChange={onStepChange}
           />
         </div>
       )}

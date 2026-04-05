@@ -47,6 +47,7 @@ import {
   PhoneIcon,
   ChatCircleIcon,
   LockSimpleIcon,
+  LockKeyIcon,
   ArrowUUpLeftIcon,
   EyeIcon,
   CursorClickIcon,
@@ -63,6 +64,8 @@ interface IssueCardProps {
   variant?: "compact" | "full";
   /** When true, card expands inline with full details instead of triggering onClick */
   expandable?: boolean;
+  /** When true, dimension is locked behind a paywall — shows lock icon instead of expand/arrow */
+  locked?: boolean;
   /** Dimension signals for detailed breakdown */
   signals?: DimensionSignals;
 }
@@ -1336,6 +1339,7 @@ export default function IssueCard({
   onClick,
   variant = "compact",
   expandable = false,
+  locked = false,
   signals,
 }: IssueCardProps) {
   const full = variant === "full";
@@ -1405,7 +1409,12 @@ export default function IssueCard({
               {leak.revenue}
             </div>
           </div>
-          {expandable ? (
+          {locked ? (
+            <LockKeyIcon
+              className="w-5 h-5 text-[var(--on-surface-variant)] group-hover:text-[var(--brand)] transition-all duration-200"
+              weight="regular"
+            />
+          ) : expandable ? (
             <CaretDownIcon
               className={`w-5 h-5 text-[var(--on-surface-variant)] group-hover:text-[var(--brand)] transition-all duration-200 ${expanded ? "rotate-180" : ""}`}
               weight="bold"

@@ -10,7 +10,7 @@ import { validatePassword } from "@/lib/validators";
 
 /* ══════════════════════════════════════════════════════════════
    AuthModal — Sign-in / Sign-up with Google + email/password
-   Follows EmailModal pattern: focus trap, escape, backdrop click,
+   Follows modal pattern: focus trap, escape, backdrop click,
    enter/exit animations, design tokens, aria attrs.
    ══════════════════════════════════════════════════════════════ */
 

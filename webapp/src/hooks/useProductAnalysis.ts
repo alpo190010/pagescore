@@ -9,11 +9,8 @@ import {
   captureEvent,
   parseAnalysisResponse,
 } from "@/lib/analysis";
-import { useEmailModal } from "@/hooks/useEmailModal";
-
 /* ══════════════════════════════════════════════════════════════
    useProductAnalysis — state + fetch logic for product analysis
-   Email / modal state delegated to useEmailModal.
    ══════════════════════════════════════════════════════════════ */
 
 interface Product {
@@ -60,22 +57,6 @@ export function useProductAnalysis({
   const selectedProduct = selectedIndex !== null ? products[selectedIndex] : null;
   const selectedUrl = selectedProduct?.url ?? "";
 
-  /* ── Email / modal state (delegated) ── */
-  const {
-    email,
-    emailSubmitting,
-    emailError,
-    selectedLeak,
-    competitorCTAName,
-    emailStep,
-    setEmail,
-    setEmailStep,
-    submitEmail,
-    handleIssueClick,
-    handleCloseModal,
-    resetEmailState,
-  } = useEmailModal({ selectedUrl, analysisResult });
-
   const leaks = analysisResult
     ? buildLeaks(analysisResult.categories, analysisResult.tips, analysisResult.dimensionTips)
     : [];
@@ -116,7 +97,6 @@ export function useProductAnalysis({
       setSelectedIndex(index);
       setAnalysisError("");
       setAnalyzingHandle(null);
-      resetEmailState();
       const cached = analyzedResultsRef.current.get(product.slug);
       if (cached) {
         setAnalysisResult(cached);
@@ -127,7 +107,7 @@ export function useProductAnalysis({
       rightPaneRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       onSkuChange?.(product.slug);
     },
-    [selectedIndex, products, onSkuChange, rightPaneRef, resetEmailState],
+    [selectedIndex, products, onSkuChange, rightPaneRef],
   );
 
   /* ── Fetch: Deep analysis ── */
@@ -144,7 +124,6 @@ export function useProductAnalysis({
     setAnalyzingHandle(product.slug);
     setAnalysisResult(null);
     setAnalysisError("");
-    resetEmailState();
     setContentFading(false);
 
     rightPaneRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -173,7 +152,7 @@ export function useProductAnalysis({
       setAnalysisError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setAnalyzingHandle(null);
     }
-  }, [selectedIndex, products, onSkuChange, rightPaneRef, resetEmailState]);
+  }, [selectedIndex, products, onSkuChange, rightPaneRef]);
 
   const handleRetryAnalysis = useCallback(() => {
     if (selectedProduct && selectedIndex !== null) {
@@ -192,19 +171,8 @@ export function useProductAnalysis({
     analyzedResults,
     contentFading,
     leaks,
-    email,
-    emailStep,
-    emailSubmitting,
-    emailError,
-    selectedLeak,
-    competitorCTAName,
     handleSelectProduct,
     handleDeepAnalyze,
     handleRetryAnalysis,
-    handleIssueClick,
-    handleCloseModal,
-    setEmail,
-    setEmailStep,
-    submitEmail,
   };
 }

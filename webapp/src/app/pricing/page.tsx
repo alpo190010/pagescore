@@ -22,8 +22,6 @@ const LS_STORE_URL = process.env.NEXT_PUBLIC_LS_STORE_URL ?? "";
 const LS_VARIANT_STARTER = process.env.NEXT_PUBLIC_LS_VARIANT_STARTER ?? "";
 const LS_VARIANT_GROWTH = process.env.NEXT_PUBLIC_LS_VARIANT_GROWTH ?? "";
 const LS_VARIANT_PRO = process.env.NEXT_PUBLIC_LS_VARIANT_PRO ?? "";
-const LS_VARIANT_SINGLE =
-  process.env.NEXT_PUBLIC_LS_VARIANT_SINGLE_REPORT ?? "";
 
 function buildCheckoutUrl(variant: string, userId: string): string {
   if (!LS_STORE_URL || !variant) return "";
@@ -71,7 +69,7 @@ const PRICING_TIERS: PricingTier[] = [
     description: "Full reports for growing stores",
     features: [
       { text: "10 scans per month", included: true },
-      { text: "Full detailed reports", included: true },
+      { text: "7 key dimension fixes", included: true },
       { text: "Fix recommendations", included: true },
       { text: "Detailed report breakdowns", included: true },
     ],
@@ -87,7 +85,7 @@ const PRICING_TIERS: PricingTier[] = [
     description: "More scans for scaling brands",
     features: [
       { text: "30 scans per month", included: true },
-      { text: "Full detailed reports", included: true },
+      { text: "All 18 dimension fixes", included: true },
       { text: "Fix recommendations", included: true },
       { text: "Detailed report breakdowns", included: true },
     ],
@@ -104,7 +102,7 @@ const PRICING_TIERS: PricingTier[] = [
     description: "Maximum scans for power users",
     features: [
       { text: "100 scans per month", included: true },
-      { text: "Full detailed reports", included: true },
+      { text: "All 18 dimension fixes", included: true },
       { text: "Fix recommendations", included: true },
       { text: "Detailed report breakdowns", included: true },
     ],
@@ -296,28 +294,7 @@ export default function PricingPage() {
               })}
             </div>
 
-            {/* ── Single Report Callout ── */}
-            <div className="mt-12 text-center">
-              <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-8 py-5 rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-                <p className="text-[var(--on-surface)] font-semibold">
-                  Or buy a single report for{" "}
-                  <span
-                    className="text-[var(--brand)] font-extrabold"
-                    style={{
-                      fontFamily: "var(--font-manrope), Manrope, sans-serif",
-                    }}
-                  >
-                    $9.99
-                  </span>
-                </p>
-                <span className="hidden sm:block text-[var(--outline)]">
-                  •
-                </span>
-                <p className="text-sm text-[var(--on-surface-variant)]">
-                  One-time purchase, instant access to full results
-                </p>
-              </div>
-            </div>
+
           </div>
         </section>
 
