@@ -228,6 +228,11 @@ h1, h2, h3 {
   }
 }
 
+/* ── Containment — isolate card paint/layout from siblings ── */
+.contain-card {
+  contain: layout style paint;
+}
+
 /* ── Animations ── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }

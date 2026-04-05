@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   CaretRightIcon,
   CaretDownIcon,
@@ -1333,7 +1333,7 @@ function ContentFreshnessChecklist({ cf }: { cf: ContentFreshnessSignals }) {
   );
 }
 
-export default function IssueCard({
+const IssueCard = memo(function IssueCard({
   leak,
   index,
   onClick,
@@ -1361,7 +1361,7 @@ export default function IssueCard({
 
   return (
     <div
-      className={`group text-left bg-[var(--surface)] rounded-[1.5rem] ${full ? "p-6 sm:p-7" : "p-5 sm:p-6"} flex flex-col border border-[var(--outline-variant)]/20 ${expanded ? "border-[var(--brand)]/40" : "hover:border-[var(--brand)]/40"} transition-all duration-300 ${expanded ? "" : "hover:-translate-y-1"} hover:shadow-[var(--shadow-card-hover)]`}
+      className={`contain-card group text-left bg-[var(--surface)] rounded-[1.5rem] ${full ? "p-6 sm:p-7" : "p-5 sm:p-6"} flex flex-col border border-[var(--outline-variant)]/20 ${expanded ? "border-[var(--brand)]/40" : "hover:border-[var(--brand)]/40"} transition-all duration-300 ${expanded ? "" : "hover:-translate-y-1"} hover:shadow-[var(--shadow-card-hover)]`}
       style={{
         boxShadow: "var(--shadow-subtle)",
         animation: `fade-in-up 400ms ease-out ${index * 70}ms both`,
@@ -1594,4 +1594,6 @@ export default function IssueCard({
       )}
     </div>
   );
-}
+});
+
+export default IssueCard;

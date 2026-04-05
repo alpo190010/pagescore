@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   MagnifyingGlassIcon,
   ImageIcon,
@@ -143,12 +144,14 @@ export default function AnalysisLoader({ url }: { url: string }) {
                       <PackageIcon size={48} weight="regular" color="var(--outline)" />
                     </div>
                   ) : (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <Image
                       src={product.images[selectedImage] || product.image}
                       alt={product.title}
+                      width={380}
+                      height={260}
                       className="w-full h-[200px] lg:h-[260px] object-contain bg-white p-4"
                       onError={() => setImgError(true)}
+                      unoptimized
                     />
                   )}
                   {/* Thumbnail strip */}
@@ -165,8 +168,7 @@ export default function AnalysisLoader({ url }: { url: string }) {
                               : "border-[var(--border)] hover:border-[var(--text-tertiary)]"
                           }`}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <Image src={img} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized />
                         </button>
                       ))}
                     </div>

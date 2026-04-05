@@ -17,7 +17,8 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
-import AuthModal from "./AuthModal";
+import dynamic from "next/dynamic";
+const AuthModal = dynamic(() => import("./AuthModal"), { ssr: false });
 import AlpoLogo from "./AlpoLogo";
 
 /* ══════════════════════════════════════════════════════════════

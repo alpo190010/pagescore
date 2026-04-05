@@ -12,7 +12,8 @@ import {
   Lightning,
 } from "@phosphor-icons/react";
 import { useState } from "react";
-import AuthModal from "@/components/AuthModal";
+import dynamic from "next/dynamic";
+const AuthModal = dynamic(() => import("@/components/AuthModal"), { ssr: false });
 import Footer from "@/components/Footer";
 
 /* ══════════════════════════════════════════════════════════════

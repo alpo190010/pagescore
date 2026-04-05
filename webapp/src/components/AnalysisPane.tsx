@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   PackageIcon,
   ArrowSquareOutIcon,
@@ -62,6 +63,7 @@ export default function AnalysisPane({
         opacity: contentFading ? 0 : 1,
         transform: contentFading ? "translateY(8px)" : "translateY(0)",
         transition: "opacity 250ms ease, transform 250ms ease",
+        minHeight: contentFading ? "500px" : undefined,
       }}
     >
       {/* ── Product selected, not yet analyzed ── */}
@@ -74,11 +76,13 @@ export default function AnalysisPane({
             {/* Product image */}
             <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl overflow-hidden bg-[var(--surface-container-low)] border border-[var(--border)] shadow-lg mb-6">
               {selectedProduct.image ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
+                <Image
                   src={selectedProduct.image}
                   alt=""
+                  width={144}
+                  height={144}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import DollarLossAmount from "@/components/analysis/DollarLossAmount";
 import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
@@ -71,6 +71,213 @@ function DollarLossStat({ avgDollarLoss, avgConversionLoss }: { avgDollarLoss: n
     </div>
   );
 }
+
+/* ── Memoized product card — only re-renders when its own props change ── */
+const ProductCard = memo(function ProductCard({
+  product,
+  index,
+  isSelected,
+  isAnalyzing,
+  cachedResult,
+  collapsed,
+  onSelectProduct,
+}: {
+  product: Product;
+  index: number;
+  isSelected: boolean;
+  isAnalyzing: boolean;
+  cachedResult: FreeResult | undefined;
+  collapsed: boolean;
+  onSelectProduct: (index: number) => void;
+}) {
+  /* ── Collapsed: thumbnail-only buttons ── */
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        role="listitem"
+        onClick={() => onSelectProduct(index)}
+        className={`
+          cursor-pointer w-full flex items-center justify-center
+          rounded-2xl transition-all duration-150 relative
+          ${isSelected
+            ? "ring-2 ring-[var(--brand)] ring-offset-2 ring-offset-[var(--surface)]"
+            : "hover:ring-2 hover:ring-slate-300 hover:ring-offset-2 hover:ring-offset-[var(--surface)]"
+          }
+        `}
+        aria-current={isSelected ? "true" : undefined}
+        aria-label={product.slug.replace(/-/g, " ")}
+        title={product.slug.replace(/-/g, " ")}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-slate-400 overflow-hidden shrink-0 relative">
+          {product.image && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={product.image}
+              alt=""
+              className="w-full h-full object-cover peer"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).classList.add("hidden");
+              }}
+            />
+          )}
+          <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
+            <PackageIcon size={24} weight="regular" color="var(--outline)" />
+          </div>
+
+          {/* Analyzing spinner overlay */}
+          {isAnalyzing && (
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
+              <span
+                className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
+                style={{ animation: "spin 0.8s linear infinite" }}
+              />
+            </div>
+          )}
+
+          {/* Score dot */}
+          {cachedResult && !isAnalyzing && (
+            <div
+              className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-[var(--surface)] font-display"
+              style={{
+                background: scoreColorTintBg(cachedResult.score),
+                color: scoreColorText(cachedResult.score),
+              }}
+            >
+              {cachedResult.score}
+            </div>
+          )}
+        </div>
+      </button>
+    );
+  }
+
+  /* ── Expanded: full card ── */
+  return (
+    <button
+      type="button"
+      role="listitem"
+      onClick={() => onSelectProduct(index)}
+      className={`cursor-pointer w-full text-left rounded-2xl transition-all duration-150 relative overflow-hidden border ${
+        isSelected
+          ? "border-[var(--brand)]"
+          : "border-slate-200 bg-white hover:border-slate-300"
+      }`}
+      style={isSelected ? { background: "var(--brand-light)" } : undefined}
+      aria-current={isSelected ? "true" : undefined}
+    >
+      <div className="flex items-start gap-4 p-4">
+        {/* Thumbnail with score overlay */}
+        <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 relative">
+          {product.image && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={product.image}
+              alt=""
+              className="w-full h-full object-cover peer"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).classList.add("hidden");
+              }}
+            />
+          )}
+          <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
+            <PackageIcon size={24} weight="regular" color="var(--outline)" />
+          </div>
+          {cachedResult && !isAnalyzing && (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: `color-mix(in oklch, ${scoreColorText(cachedResult.score)} 55%, transparent)` }}
+            >
+              <span
+                className="text-white text-lg font-black font-display"
+              >
+                {cachedResult.score}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Info column */}
+        <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+          <p
+            className="text-base font-bold text-slate-900 truncate capitalize leading-snug font-display"
+          >
+            {product.slug.replace(/-/g, " ")}
+          </p>
+
+          {isAnalyzing ? (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
+              style={{
+                background: "var(--surface-brand-subtle)",
+                color: "var(--brand)",
+              }}
+            >
+              <span
+                className="w-3 h-3 rounded-full border-[1.5px] border-[var(--brand)] border-t-transparent inline-block"
+                style={{ animation: "spin 0.8s linear infinite" }}
+              />
+              Scanning
+            </span>
+          ) : cachedResult ? (
+            <span
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase w-fit font-display"
+              style={{
+                background: scoreColorTintBg(cachedResult.score),
+                color: scoreColorText(cachedResult.score),
+              }}
+            >
+              {cachedResult.score >= 70 ? "Good" : cachedResult.score >= 40 ? "Needs work" : "Critical"} · {cachedResult.score}/100
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
+              style={{
+                background: "var(--surface-muted)",
+                color: "var(--text-tertiary)",
+              }}
+            >
+              Ready to scan
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Conversion loss strip — full width, only when analyzed */}
+      {cachedResult && !isAnalyzing && (() => {
+        let lossSum = 0;
+        let dimCount = 0;
+        for (const key of PRODUCT_LEVEL_DIMENSIONS) {
+          const catScore = cachedResult.categories?.[key as keyof typeof cachedResult.categories];
+          if (catScore != null) {
+            lossSum += calculateConversionLoss(catScore as number, key);
+            dimCount++;
+          }
+        }
+        const avgLoss = dimCount > 0 ? Math.round((lossSum / dimCount) * 10) / 10 : 0;
+        const dollarLoss = calculateDollarLossPerThousand(cachedResult.categories, cachedResult.productPrice, cachedResult.productCategory);
+        return (
+          <div
+            className="px-4 py-2.5 flex items-center justify-between"
+            style={{ background: "var(--gradient-error)" }}
+          >
+            <span className="text-white/70 text-[11px] font-semibold uppercase tracking-wide">Conversion loss</span>
+            <span
+              className="text-white text-base font-extrabold tracking-tight font-display"
+            >
+              {dollarLoss > 0
+                ? <><DollarLossAmount value={dollarLoss} className="text-white" /> / 1k visitors</>
+                : `~${avgLoss}% avg loss`
+              }
+            </span>
+          </div>
+        );
+      })()}
+    </button>
+  );
+});
 
 export default function ProductGrid({
   products,
@@ -233,203 +440,18 @@ export default function ProductGrid({
         role="list"
         aria-label="Products"
       >
-        {sortedIndices.map((i) => {
-          const product = products[i];
-          const isSelected = selectedIndex === i;
-          const isAnalyzing = analyzingHandle === product.slug;
-          const cachedResult = analyzedResults.get(product.slug);
-
-          /* ── Collapsed: thumbnail-only buttons ── */
-          if (collapsed) {
-            return (
-              <button
-                key={product.url}
-                type="button"
-                role="listitem"
-                onClick={() => onSelectProduct(i)}
-                className={`
-                  cursor-pointer w-full flex items-center justify-center
-                  rounded-2xl transition-all duration-150 relative
-                  ${isSelected
-                    ? "ring-2 ring-[var(--brand)] ring-offset-2 ring-offset-[var(--surface)]"
-                    : "hover:ring-2 hover:ring-slate-300 hover:ring-offset-2 hover:ring-offset-[var(--surface)]"
-                  }
-                `}
-                aria-current={isSelected ? "true" : undefined}
-                aria-label={product.slug.replace(/-/g, " ")}
-                title={product.slug.replace(/-/g, " ")}
-              >
-                <div className="w-16 h-16 rounded-2xl bg-slate-400 overflow-hidden shrink-0 relative">
-                  {product.image && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={product.image}
-                      alt=""
-                      className="w-full h-full object-cover peer"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).classList.add("hidden");
-                      }}
-                    />
-                  )}
-                  <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
-                    <PackageIcon size={24} weight="regular" color="var(--outline)" />
-                  </div>
-
-                  {/* Analyzing spinner overlay */}
-                  {isAnalyzing && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
-                      <span
-                        className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
-                        style={{ animation: "spin 0.8s linear infinite" }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Score dot */}
-                  {cachedResult && !isAnalyzing && (
-                    <div
-                      className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-[var(--surface)] font-display"
-                      style={{
-                        background: scoreColorTintBg(cachedResult.score),
-                        color: scoreColorText(cachedResult.score),
-                      }}
-                    >
-                      {cachedResult.score}
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          }
-
-          /* ── Expanded: full card ── */
-          return (
-            <button
-              key={product.url}
-              type="button"
-              role="listitem"
-              onClick={() => onSelectProduct(i)}
-              className={`cursor-pointer w-full text-left rounded-2xl transition-all duration-150 relative overflow-hidden border ${
-                isSelected
-                  ? "border-[var(--brand)]"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-              }`}
-              style={isSelected ? { background: "var(--brand-light)" } : undefined}
-              aria-current={isSelected ? "true" : undefined}
-            >
-              <div className="flex items-start gap-4 p-4">
-                {/* Thumbnail with score overlay */}
-                <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 relative">
-                  {product.image && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={product.image}
-                      alt=""
-                      className="w-full h-full object-cover peer"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).classList.add("hidden");
-                      }}
-                    />
-                  )}
-                  <div className={`absolute inset-0 flex items-center justify-center ${product.image ? "hidden peer-[.hidden]:flex" : "flex"}`}>
-                    <PackageIcon size={24} weight="regular" color="var(--outline)" />
-                  </div>
-                  {cachedResult && !isAnalyzing && (
-                    <div
-                      className="absolute inset-0 flex items-center justify-center"
-                      style={{ background: `color-mix(in oklch, ${scoreColorText(cachedResult.score)} 55%, transparent)` }}
-                    >
-                      <span
-                        className="text-white text-lg font-black font-display"
-                      >
-                        {cachedResult.score}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Info column */}
-                <div className="min-w-0 flex-1 flex flex-col gap-1.5">
-                  <p
-                    className="text-base font-bold text-slate-900 truncate capitalize leading-snug font-display"
-                  >
-                    {product.slug.replace(/-/g, " ")}
-                  </p>
-
-                  {isAnalyzing ? (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
-                      style={{
-                        background: "var(--surface-brand-subtle)",
-                        color: "var(--brand)",
-                      }}
-                    >
-                      <span
-                        className="w-3 h-3 rounded-full border-[1.5px] border-[var(--brand)] border-t-transparent inline-block"
-                        style={{ animation: "spin 0.8s linear infinite" }}
-                      />
-                      Scanning
-                    </span>
-                  ) : cachedResult ? (
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase w-fit font-display"
-                      style={{
-                        background: scoreColorTintBg(cachedResult.score),
-                        color: scoreColorText(cachedResult.score),
-                      }}
-                    >
-                      {cachedResult.score >= 70 ? "Good" : cachedResult.score >= 40 ? "Needs work" : "Critical"} · {cachedResult.score}/100
-                    </span>
-                  ) : (
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
-                      style={{
-                        background: "var(--surface-muted)",
-                        color: "var(--text-tertiary)",
-                      }}
-                    >
-                      Ready to scan
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Conversion loss strip — full width, only when analyzed */}
-              {cachedResult && !isAnalyzing && (() => {
-                // Compute per-product avg conversion loss
-                let lossSum = 0;
-                let dimCount = 0;
-                for (const key of PRODUCT_LEVEL_DIMENSIONS) {
-                  const catScore = cachedResult.categories?.[key as keyof typeof cachedResult.categories];
-                  if (catScore != null) {
-                    lossSum += calculateConversionLoss(catScore as number, key);
-                    dimCount++;
-                  }
-                }
-                const avgLoss = dimCount > 0 ? Math.round((lossSum / dimCount) * 10) / 10 : 0;
-                const dollarLoss = calculateDollarLossPerThousand(cachedResult.categories, cachedResult.productPrice, cachedResult.productCategory);
-                return (
-                  <div
-                    className="px-4 py-2.5 flex items-center justify-between"
-                    style={{ background: "var(--gradient-error)" }}
-                  >
-                    <span className="text-white/70 text-[11px] font-semibold uppercase tracking-wide">Conversion loss</span>
-                    <span
-                      className="text-white text-base font-extrabold tracking-tight font-display"
-                    >
-                      {dollarLoss > 0
-                        ? <><DollarLossAmount value={dollarLoss} className="text-white" /> / 1k visitors</>
-                        : `~${avgLoss}% avg loss`
-                      }
-                    </span>
-                  </div>
-                );
-              })()}
-            </button>
-          );
-        })}
+        {sortedIndices.map((i) => (
+          <ProductCard
+            key={products[i].url}
+            product={products[i]}
+            index={i}
+            isSelected={selectedIndex === i}
+            isAnalyzing={analyzingHandle === products[i].slug}
+            cachedResult={analyzedResults.get(products[i].slug)}
+            collapsed={collapsed}
+            onSelectProduct={onSelectProduct}
+          />
+        ))}
       </div>
     </aside>
   );

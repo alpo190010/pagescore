@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { WarningCircleIcon, LockKeyIcon } from "@phosphor-icons/react";
-import AuthModal from "@/components/AuthModal";
+import dynamic from "next/dynamic";
 import AnalysisLoader from "@/components/AnalysisLoader";
-import PaywallModal from "@/components/PaywallModal";
+const AuthModal = dynamic(() => import("@/components/AuthModal"), { ssr: false });
+const PaywallModal = dynamic(() => import("@/components/PaywallModal"), { ssr: false });
 import ScoreRing from "@/components/analysis/ScoreRing";
 import PluginCTACard from "@/components/analysis/PluginCTACard";
 import IssueCard from "@/components/analysis/IssueCard";
@@ -202,7 +203,10 @@ function AnalyzePageContent() {
     setPaywallLeakKey(null);
   }, []);
 
-  const leaks = result ? buildLeaks(result.categories, result.tips, result.dimensionTips) : [];
+  const leaks = useMemo(
+    () => result ? buildLeaks(result.categories, result.tips, result.dimensionTips) : [],
+    [result]
+  );
 
   const openIssueModal = useCallback((leak: LeakCard) => {
     if (isTeaser) {

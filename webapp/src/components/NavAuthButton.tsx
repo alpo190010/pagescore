@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import AuthModal from "./AuthModal";
+import dynamic from "next/dynamic";
+const AuthModal = dynamic(() => import("./AuthModal"), { ssr: false });
 
 export default function NavAuthButton() {
   const { data: session, status } = useSession();

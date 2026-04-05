@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { scoreColor, scoreColorText, scoreColorTintBg, type CategoryScores, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 interface ScoreRingProps {
@@ -41,12 +42,14 @@ export default function ScoreRing({
       {/* ── Zone 1: Product identity ── */}
       <div className="flex items-center gap-3 mb-5">
         {productImage && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={productImage}
             alt=""
+            width={full ? 44 : 36}
+            height={full ? 44 : 36}
             className={`${full ? "w-11 h-11" : "w-9 h-9"} rounded-xl object-cover shrink-0`}
             style={{ border: "1px solid var(--outline-variant)" }}
+            unoptimized
           />
         )}
         <div className="min-w-0 flex-1">
