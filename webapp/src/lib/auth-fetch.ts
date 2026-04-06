@@ -37,7 +37,9 @@ export async function getAuthToken(): Promise<string | null> {
 
   // Fall back to Auth.js session cookie
   try {
-    const res = await fetch("/api/auth/token");
+    const res = await fetch("/api/auth/token", {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (!res.ok) {
       tokenCache = { token: null, expiresAt: Date.now() + TOKEN_TTL_MS };
       return null;

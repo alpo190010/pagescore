@@ -44,7 +44,7 @@ export default function ScoreRing({
         {productImage && (
           <Image
             src={productImage}
-            alt=""
+            alt={productName || "Product"}
             width={full ? 44 : 36}
             height={full ? 44 : 36}
             className={`${full ? "w-11 h-11" : "w-9 h-9"} rounded-xl object-cover shrink-0`}

@@ -55,10 +55,15 @@ export default function AnalysisResults({
   const [userPlan, setUserPlan] = useState<string>("free");
   useEffect(() => {
     if (status !== "authenticated") return;
-    authFetch(`${API_URL}/user/plan`)
+    const controller = new AbortController();
+    authFetch(`${API_URL}/user/plan`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { if (data?.plan) setUserPlan(data.plan); })
-      .catch((err) => { console.warn("Failed to fetch user plan:", err); });
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.warn("Failed to fetch user plan:", err);
+      });
+    return () => controller.abort();
   }, [status]);
   const isPaid = status === "authenticated" && userPlan !== "free";
 

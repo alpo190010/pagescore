@@ -129,7 +129,7 @@ export default function AnalysisLoader({ url }: { url: string }) {
   const hasProduct = product && (product.image || product.title);
 
   return (
-    <section className="w-full flex justify-center mt-6 sm:mt-10 mb-8 px-4" aria-label="Analysis in progress">
+    <section className="w-full flex justify-center mt-6 sm:mt-10 mb-8 px-4" aria-label="Analysis in progress" aria-busy={activeStep < STEPS.length - 1}>
       <div className={`w-full ${hasProduct ? "max-w-[900px]" : "max-w-[480px]"}`}>
         <div className={`flex flex-col ${hasProduct ? "lg:flex-row" : ""} bg-[var(--surface)] border-[1.5px] border-[var(--border)] rounded-2xl overflow-hidden`}>
 

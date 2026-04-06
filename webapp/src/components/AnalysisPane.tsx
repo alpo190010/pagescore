@@ -78,7 +78,7 @@ export default function AnalysisPane({
               {selectedProduct.image ? (
                 <Image
                   src={selectedProduct.image}
-                  alt=""
+                  alt={selectedProduct.slug.replace(/-/g, " ")}
                   width={144}
                   height={144}
                   className="w-full h-full object-cover"
@@ -128,11 +128,12 @@ export default function AnalysisPane({
             <button
               type="button"
               onClick={onDeepAnalyze}
-              className="cursor-pointer inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-base font-bold text-white bg-[var(--brand)] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20"
+              disabled={!!analyzingHandle}
+              className="cursor-pointer inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-base font-bold text-white bg-[var(--brand)] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--brand)]/20 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ animation: "fade-in-up 400ms var(--ease-out-quart) 200ms both" }}
             >
               <SparkleIcon size={18} weight="fill" />
-              Run Deep Analysis
+              {analyzingHandle ? "Analyzing…" : "Run Deep Analysis"}
             </button>
             <p
               className="text-xs text-[var(--on-surface-variant)] mt-3 opacity-60"

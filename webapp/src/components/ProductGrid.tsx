@@ -114,7 +114,7 @@ const ProductCard = memo(function ProductCard({
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={product.image}
-              alt=""
+              alt={product.slug.replace(/-/g, " ")}
               className="w-full h-full object-cover peer"
               loading="lazy"
               onError={(e) => {
@@ -174,7 +174,7 @@ const ProductCard = memo(function ProductCard({
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={product.image}
-              alt=""
+              alt={product.slug.replace(/-/g, " ")}
               className="w-full h-full object-cover peer"
               loading="lazy"
               onError={(e) => {

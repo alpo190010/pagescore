@@ -152,6 +152,10 @@ export function useProductAnalysis({
       if (err instanceof DOMException && err.name === "AbortError") return;
       setAnalysisError(err instanceof Error ? err.message : getUserFriendlyError(0));
       setAnalyzingHandle(null);
+    } finally {
+      if (!controller.signal.aborted) {
+        setContentFading(false);
+      }
     }
   }, [selectedIndex, products, onSkuChange, rightPaneRef]);
 
