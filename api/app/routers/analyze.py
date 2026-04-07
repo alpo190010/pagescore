@@ -6,7 +6,7 @@ import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -65,6 +65,8 @@ from app.services.social_commerce_detector import detect_social_commerce, Social
 from app.services.social_commerce_rubric import score_social_commerce, get_social_commerce_tips
 from app.services.url_validator import validate_url
 
+from app.rate_limit import limiter
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -106,7 +108,9 @@ def get_cached_analysis(
 
 
 @router.post("/analyze")
+@limiter.limit("5/minute")
 async def analyze(
+    request: Request,
     body: AnalyzeRequest,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),

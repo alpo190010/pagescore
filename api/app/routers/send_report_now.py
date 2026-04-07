@@ -3,12 +3,14 @@
 import logging
 import re
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.services.email_sender import send_email
 from app.services.email_templates import build_full_report
+
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,8 @@ class SendReportNowBody(BaseModel):
 
 
 @router.post("/send-report-now")
-def send_report_now(body: SendReportNowBody):
+@limiter.limit("5/minute")
+def send_report_now(request: Request, body: SendReportNowBody):
     email = (body.email or "").strip()
 
     # Validate email

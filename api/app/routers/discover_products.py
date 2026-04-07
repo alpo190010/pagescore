@@ -7,7 +7,7 @@ import time
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -38,6 +38,8 @@ from app.services.ai_discoverability_rubric import score_ai_discoverability, get
 from app.services.page_speed_rubric import score_page_speed, get_page_speed_tips
 from app.services.scoring import STORE_WIDE_KEYS, IMPACT_WEIGHTS, clamp_score
 from app.services.url_validator import validate_url
+
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -585,7 +587,9 @@ async def _run_store_wide_analysis(
 
 
 @router.post("/discover-products")
+@limiter.limit("5/minute")
 async def discover_products(
+    request: Request,
     body: DiscoverProductsRequest,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
