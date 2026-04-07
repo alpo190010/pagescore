@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -22,6 +22,8 @@ from app.services.auth_service import (
     verify_password,
 )
 from app.services.email_sender import send_email
+
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +87,8 @@ class UserProfileResponse(BaseModel):
 
 
 @router.post("/auth/signup", status_code=201)
-def signup(req: SignupRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def signup(request: Request, req: SignupRequest, db: Session = Depends(get_db)):
     """Create a new email/password account and send a verification email."""
     # Validate password strength
     error = validate_password(req.password)
@@ -129,7 +132,8 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/login")
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticate with email and password."""
     user = db.query(User).filter(User.email == req.email).first()
 
@@ -179,7 +183,8 @@ def verify_email(req: VerifyEmailRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/forgot-password")
-def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def forgot_password(request: Request, req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Send a password-reset email (never reveals whether the email exists)."""
     user = db.query(User).filter(User.email == req.email).first()
 

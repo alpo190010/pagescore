@@ -3,7 +3,7 @@
 import logging
 import re
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Report, Subscriber
+
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,8 @@ class RequestReportBody(BaseModel):
 
 
 @router.post("/request-report")
-def request_report(body: RequestReportBody, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def request_report(request: Request, body: RequestReportBody, db: Session = Depends(get_db)):
     email = (body.email or "").strip()
     url = body.url or ""
 

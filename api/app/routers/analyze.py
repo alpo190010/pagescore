@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -62,29 +63,18 @@ from app.services.accessibility_detector import detect_accessibility
 from app.services.accessibility_rubric import score_accessibility, get_accessibility_tips
 from app.services.social_commerce_detector import detect_social_commerce, SocialCommerceSignals
 from app.services.social_commerce_rubric import score_social_commerce, get_social_commerce_tips
+from app.services.url_validator import validate_url
+from app.services.scan_dedup import try_acquire_scan, release_scan
+
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Hostnames / prefixes blocked for SSRF prevention.
-_BLOCKED_EXACT = {"localhost", "0.0.0.0", "[::1]"}
-_BLOCKED_PREFIXES = ("127.", "10.", "192.168.", "172.")
-_BLOCKED_SUFFIX = ".local"
 
-
-def _is_blocked_host(hostname: str) -> bool:
-    h = hostname.lower()
-    if h in _BLOCKED_EXACT:
-        return True
-    if any(h.startswith(p) for p in _BLOCKED_PREFIXES):
-        return True
-    if h.endswith(_BLOCKED_SUFFIX):
-        return True
-    return False
-
-
-# _build_analysis_prompt removed — all scoring is now deterministic (no AI)
+class AnalyzeRequest(BaseModel):
+    url: str = Field(..., min_length=1)
 
 
 @router.get("/analysis")
@@ -119,41 +109,19 @@ def get_cached_analysis(
 
 
 @router.post("/analyze")
+@limiter.limit("5/minute")
 async def analyze(
     request: Request,
+    body: AnalyzeRequest,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
-    try:
-        body = await request.json()
-    except Exception:
-        return JSONResponse(status_code=400, content={"error": "URL is required"})
-
-    url = body.get("url") if isinstance(body, dict) else None
-    if not url or not isinstance(url, str) or not url.strip():
-        return JSONResponse(status_code=400, content={"error": "URL is required"})
-
-    url = url.strip()
-
-    # --- URL validation ---
-    if len(url) > 2048:
-        return JSONResponse(status_code=400, content={"error": "URL is too long"})
+    # --- URL validation via shared SSRF-safe validator ---
+    url, error = validate_url(body.url)
+    if error:
+        return JSONResponse(status_code=400, content={"error": error})
 
     parsed_url = urllib.parse.urlparse(url)
-    if not parsed_url.scheme or not parsed_url.hostname:
-        return JSONResponse(status_code=400, content={"error": "Invalid URL format"})
-
-    if parsed_url.scheme not in ("http", "https"):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Only HTTP/HTTPS URLs are supported"},
-        )
-
-    if _is_blocked_host(parsed_url.hostname):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Internal URLs are not allowed"},
-        )
 
     # --- Credit check (only for authenticated users) ---
     if current_user and not has_credits_remaining(current_user):
@@ -167,8 +135,37 @@ async def analyze(
             },
         )
 
+    # --- Scan dedup (authenticated users only, per D091) ---
+    if current_user:
+        if not try_acquire_scan(url, str(current_user.id)):
+            return JSONResponse(
+                status_code=409,
+                content={"error": "A scan for this URL is already in progress"},
+            )
+
+    # Track whether we acquired the dedup lock so we can release it on all paths
+    _dedup_acquired = bool(current_user)
+
     timings: dict[str, float] = {}
     t_start = time.perf_counter()
+
+    try:
+        return await _do_analyze(request, url, parsed_url, db, current_user, timings, t_start)
+    finally:
+        if _dedup_acquired and current_user:
+            release_scan(url, str(current_user.id))
+
+
+async def _do_analyze(
+    request: Request,
+    url: str,
+    parsed_url,
+    db: Session,
+    current_user: User | None,
+    timings: dict[str, float],
+    t_start: float,
+):
+    """Inner implementation of /analyze — extracted for try/finally dedup release."""
 
     # --- StoreAnalysis cache lookup (authenticated users only) ---
     store_cache = None
