@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { InfoIcon } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
+import Tooltip from "@/components/ui/Tooltip";
 
 /* ══════════════════════════════════════════════════════════════
-   DollarLossTooltip — Reusable (i) icon + hover/click tooltip
-   explaining how dollar loss is calculated.
+   DollarLossTooltip — (i) icon that explains dollar loss calc.
+   Uses shared Tooltip primitive for hover display + arrow.
 
    Usage:
      <DollarLossTooltip />                     — default 16px, white icon
@@ -20,54 +20,37 @@ interface DollarLossTooltipProps {
   variant?: "light" | "muted";
 }
 
-const TOOLTIP_TEXT =
-  "Based on product price, category conversion rate benchmarks (Shopify & industry data), and page scores — estimating lost revenue per 1,000 visitors vs. top stores in your category.";
+const TOOLTIP_CONTENT = (
+  <div className="w-64">
+    <p className="font-semibold text-white mb-1">How we calculate this</p>
+    <p className="text-white/90">
+      Based on product price, category conversion rate benchmarks (Shopify &amp;
+      industry data), and page scores — estimating lost revenue per 1,000
+      visitors vs. top stores in your category.
+    </p>
+  </div>
+);
 
 export default function DollarLossTooltip({
   size = 16,
   variant = "light",
 }: DollarLossTooltipProps) {
-  const [show, setShow] = useState(false);
-
   const iconClass =
     variant === "light"
       ? "text-white/40 hover:text-white/70"
       : "text-[var(--warning-text)] opacity-40 hover:opacity-70";
 
   return (
-    <div
-      className="relative flex-shrink-0"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
+    <Tooltip content={TOOLTIP_CONTENT} side="bottom" sideOffset={8}>
       <Button
         type="button"
         variant="ghost"
         size="icon"
         aria-label="How we calculate this"
-        className={`transition-colors ${iconClass} w-auto h-auto p-0`}
-        onClick={() => setShow((v) => !v)}
+        className={`transition-colors ${iconClass} w-auto h-auto p-0 flex-shrink-0`}
       >
         <InfoIcon size={size} weight="regular" />
       </Button>
-      {show && (
-        <div
-          className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-64 rounded-xl px-4 py-3 text-xs leading-relaxed text-white/90 z-50"
-          style={{ background: "var(--tooltip-bg)", boxShadow: "var(--shadow-tooltip)" }}
-        >
-          <p className="font-semibold text-white mb-1">How we calculate this</p>
-          <p>{TOOLTIP_TEXT}</p>
-          {/* Arrow */}
-          <div
-            className="absolute bottom-full left-3 sm:left-auto sm:right-3 w-0 h-0"
-            style={{
-              borderLeft: "6px solid transparent",
-              borderRight: "6px solid transparent",
-              borderBottom: "6px solid var(--tooltip-bg)",
-            }}
-          />
-        </div>
-      )}
-    </div>
+    </Tooltip>
   );
 }

@@ -20,6 +20,7 @@ import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 const AuthModal = dynamic(() => import("./AuthModal"), { ssr: false });
 import Button from "./ui/Button";
+import Tooltip from "./ui/Tooltip";
 import AlpoLogo from "./AlpoLogo";
 
 /* ══════════════════════════════════════════════════════════════
@@ -174,23 +175,20 @@ export default function Sidebar() {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-                  active
-                    ? "bg-[var(--surface-container)] text-[var(--on-surface)]"
-                    : "text-[var(--outline)] hover:bg-[var(--surface-container-low)] hover:text-[var(--on-surface-variant)]"
-                }`}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon size={22} weight="fill" />
-                {/* Tooltip */}
-                <span className="absolute left-full ml-3 px-2.5 py-1 rounded-xl text-xs font-medium bg-[var(--inverse-surface)] text-[var(--inverse-on-surface)] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-[var(--shadow-brand-sm)]">
-                  {item.label}
-                </span>
-              </Link>
+              <Tooltip key={item.href} content={item.label} side="right" sideOffset={12} variant="compact" delayDuration={150}>
+                <Link
+                  href={item.href}
+                  className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
+                    active
+                      ? "bg-[var(--surface-container)] text-[var(--on-surface)]"
+                      : "text-[var(--outline)] hover:bg-[var(--surface-container-low)] hover:text-[var(--on-surface-variant)]"
+                  }`}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon size={22} weight="fill" />
+                </Link>
+              </Tooltip>
             );
           })}
         </nav>

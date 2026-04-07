@@ -320,10 +320,10 @@ h1, h2, h3, h4, h5, h6 {
   to { opacity: 0; transform: scale(0.92) translateY(10px); }
 }
 
-.modal-backdrop-enter { animation: backdrop-enter 250ms var(--ease-out-quart) both; }
-.modal-backdrop-exit { animation: backdrop-exit 200ms var(--ease-out-quart) both; }
-.modal-content-enter { animation: modal-enter 300ms var(--ease-out-quart) both; }
-.modal-content-exit { animation: modal-exit 200ms var(--ease-out-quart) both; }
+.ModalOverlay[data-state="open"] { animation: backdrop-enter 250ms var(--ease-out-quart) both; }
+.ModalOverlay[data-state="closed"] { animation: backdrop-exit 200ms var(--ease-out-quart) both; }
+.ModalContent[data-state="open"] { animation: modal-enter 300ms var(--ease-out-quart) both; }
+.ModalContent[data-state="closed"] { animation: modal-exit 200ms var(--ease-out-quart) both; }
 
 @keyframes drawer-slide-up {
   from { transform: translateY(100%); }

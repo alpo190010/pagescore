@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   XIcon,
   LockKeyIcon,
@@ -12,6 +12,7 @@ import {
 import { captureEvent } from "@/lib/analysis";
 import type { PlanTier } from "@/lib/analysis/types";
 import Button from "@/components/ui/Button";
+import Modal, { ModalTitle, ModalClose } from "@/components/ui/Modal";
 
 /* ══════════════════════════════════════════════════════════════
    PaywallModal — Subscription upgrade prompt (tier-aware)
@@ -90,111 +91,33 @@ export default function PaywallModal({
   leakKey,
   userPlan = "free",
 }: PaywallModalProps) {
-  const [modalClosing, setModalClosing] = useState(false);
   const [checkoutClicked, setCheckoutClicked] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  // Focus save/restore
-  useEffect(() => {
-    if (!isOpen) return;
-    const trigger = document.activeElement;
-    return () => {
-      if (trigger instanceof HTMLElement) trigger.focus();
-    };
-  }, [isOpen]);
-
-  // Lock body scroll while modal is open
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [isOpen]);
-
-  // Escape key + focus trap
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setModalClosing(true);
-        setTimeout(() => {
-          setModalClosing(false);
-          onCloseRef.current();
-        }, 200);
-        return;
-      }
-      if (e.key === "Tab" && modalRef.current) {
-        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  function handleClose() {
-    setModalClosing(true);
-    setTimeout(() => {
-      setModalClosing(false);
-      onClose();
-    }, 200);
-  }
-
-  function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) handleClose();
-  }
 
   const isStarter = userPlan === "starter";
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
-      style={{
-        backgroundColor: "var(--overlay-backdrop)",
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Upgrade to unlock full report"
+    <Modal
+      open={isOpen}
+      onOpenChange={(v) => !v && onClose()}
+      ariaLabel="Upgrade to unlock full report"
+      className="max-h-[90vh] overflow-y-auto"
     >
-      <div
-        ref={modalRef}
-        className={`relative w-full max-w-md bg-[var(--surface)] rounded-2xl overflow-hidden ${modalClosing ? "modal-content-exit" : "modal-content-enter"}`}
-        style={{ boxShadow: "var(--shadow-modal)", maxHeight: "90vh", overflowY: "auto" }}
-      >
         <div
           className="h-1 w-full"
           style={{ background: "var(--gradient-primary)" }}
         />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          shape="pill"
-          onClick={handleClose}
-          className="absolute top-4 right-4 w-11 h-11 hover:bg-[var(--bg)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] z-10"
-          aria-label="Close"
-        >
-          <XIcon size={18} weight="bold" />
-        </Button>
+        <ModalClose>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            shape="pill"
+            className="absolute top-4 right-4 w-11 h-11 hover:bg-[var(--bg)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] z-10"
+            aria-label="Close"
+          >
+            <XIcon size={18} weight="bold" />
+          </Button>
+        </ModalClose>
 
         <div className="p-6 sm:p-8">
           {/* Header — tier-aware */}
@@ -202,9 +125,11 @@ export default function PaywallModal({
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--brand-light)] border border-[var(--brand-border)]">
               <LockKeyIcon size={28} weight="regular" color="var(--brand)" />
             </div>
-            <h3 className="font-display text-xl font-bold mb-2 text-[var(--text-primary)]">
-              {isStarter ? "Upgrade to unlock all dimensions" : "Subscribe to get fixes"}
-            </h3>
+            <ModalTitle asChild>
+              <h3 className="font-display text-xl font-bold mb-2 text-[var(--text-primary)]">
+                {isStarter ? "Upgrade to unlock all dimensions" : "Subscribe to get fixes"}
+              </h3>
+            </ModalTitle>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
               {isStarter
                 ? "You're on Starter with 7 dimensions. Upgrade to access all 18 conversion dimensions with detailed fixes."
@@ -323,7 +248,6 @@ export default function PaywallModal({
             Secure checkout via LemonSqueezy. Cancel anytime.
           </p>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -6,3 +6,6 @@ export { default as Spinner } from "./Spinner";
 export { default as Skeleton } from "./Skeleton";
 export { default as ProgressBar } from "./ProgressBar";
 export { default as StatusIcon } from "./StatusIcon";
+export { default as Modal, ModalTitle, ModalDescription, ModalClose } from "./Modal";
+export { default as Tooltip } from "./Tooltip";
+export { default as Card } from "./Card";

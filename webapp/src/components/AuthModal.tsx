@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { XIcon } from "@phosphor-icons/react";
 import { signIn } from "next-auth/react";
 import { API_URL } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui";
+import Modal, { ModalTitle, ModalClose } from "@/components/ui/Modal";
 import { validatePassword } from "@/lib/validators";
 import { getUserFriendlyError } from "@/lib/errors";
 
 /* ══════════════════════════════════════════════════════════════
    AuthModal — Sign-in / Sign-up with Google + email/password
-   Follows modal pattern: focus trap, escape, backdrop click,
-   enter/exit animations, design tokens, aria attrs.
+   Uses shared Modal primitive (Radix Dialog) for focus trap,
+   scroll lock, escape key, and enter/exit animations.
    ══════════════════════════════════════════════════════════════ */
 
 type AuthMode = "signin" | "signup";
@@ -27,12 +28,8 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
   const router = useRouter();
-  const modalRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
 
   const [mode, setMode] = useState<AuthMode>("signin");
-  const [modalClosing, setModalClosing] = useState(false);
 
   // Form fields
   const [email, setEmail] = useState("");
@@ -56,75 +53,8 @@ export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalPro
       setSuccess("");
       setPasswordHint("");
       setSubmitting(false);
-      setModalClosing(false);
     }
   }, [isOpen]);
-
-  // ── Lock body scroll while modal is open ──
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [isOpen]);
-
-  // ── Focus save/restore ──
-  useEffect(() => {
-    if (!isOpen) return;
-    const trigger = document.activeElement;
-    return () => {
-      if (trigger instanceof HTMLElement) trigger.focus();
-    };
-  }, [isOpen]);
-
-  // ── Escape key + focus trap ──
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setModalClosing(true);
-        setTimeout(() => {
-          setModalClosing(false);
-          onCloseRef.current();
-        }, 200);
-        return;
-      }
-      if (e.key === "Tab" && modalRef.current) {
-        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  // ── Close with exit animation ──
-  function handleClose() {
-    setModalClosing(true);
-    setTimeout(() => {
-      setModalClosing(false);
-      onClose();
-    }, 200);
-  }
-
-  function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) handleClose();
-  }
 
   // ── Toggle between sign-in and sign-up ──
   function toggleMode() {
@@ -160,7 +90,7 @@ export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalPro
       });
 
       if (result?.ok) {
-        handleClose();
+        onClose();
         if (callbackUrl) {
           router.push(callbackUrl);
         } else {
@@ -222,26 +152,11 @@ export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalPro
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
-        modalClosing ? "modal-backdrop-exit" : "modal-backdrop-enter"
-      }`}
-      style={{
-        backgroundColor: "var(--overlay-backdrop)",
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-label={mode === "signin" ? "Sign in" : "Create account"}
+    <Modal
+      open={isOpen}
+      onOpenChange={(v) => !v && onClose()}
+      ariaLabel={mode === "signin" ? "Sign in" : "Create account"}
     >
-      <div
-        ref={modalRef}
-        className={`relative w-full max-w-md bg-[var(--surface)] rounded-2xl overflow-hidden ${
-          modalClosing ? "modal-content-exit" : "modal-content-enter"
-        }`}
-        style={{ boxShadow: "var(--shadow-modal)" }}
-      >
         {/* Gradient top bar */}
         <div
           className="h-1 w-full"
@@ -249,23 +164,26 @@ export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalPro
         />
 
         {/* Close button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          shape="pill"
-          onClick={handleClose}
-          className="absolute top-4 right-4 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)]"
-          aria-label="Close"
-        >
-          <XIcon size={18} weight="bold" />
-        </Button>
+        <ModalClose>
+          <Button
+            variant="ghost"
+            size="icon"
+            shape="pill"
+            className="absolute top-4 right-4 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)]"
+            aria-label="Close"
+          >
+            <XIcon size={18} weight="bold" />
+          </Button>
+        </ModalClose>
 
         <div className="p-6 sm:p-8">
           {/* Header */}
           <div className="text-center mb-6">
-            <h3 className="font-display text-xl font-bold mb-1 text-[var(--text-primary)]">
-              {mode === "signin" ? "Sign In" : "Create Account"}
-            </h3>
+            <ModalTitle asChild>
+              <h3 className="font-display text-xl font-bold mb-1 text-[var(--text-primary)]">
+                {mode === "signin" ? "Sign In" : "Create Account"}
+              </h3>
+            </ModalTitle>
             <p className="text-sm text-[var(--text-secondary)]">
               {mode === "signin"
                 ? "Welcome back! Sign in to your account."
@@ -455,7 +373,6 @@ export default function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalPro
             )}
           </p>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
