@@ -164,7 +164,7 @@ const ProductCard = memo(function ProductCard({
       size="md"
       role="listitem"
       onClick={() => onSelectProduct(index)}
-      className={`cursor-pointer w-full text-left rounded-2xl transition-all duration-150 relative overflow-hidden border polish-focus-ring ${
+      className={`cursor-pointer w-full text-left rounded-2xl transition-all duration-150 relative overflow-hidden border polish-focus-ring flex flex-col items-stretch justify-start !p-0 h-auto ${
         isSelected
           ? "border-[var(--brand)]"
           : "border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] hover:border-[var(--surface-container-high)]"
@@ -173,7 +173,7 @@ const ProductCard = memo(function ProductCard({
       aria-current={isSelected ? "true" : undefined}
       aria-label={product.slug.replace(/-/g, " ")}
     >
-      <div className="flex items-start gap-4 p-4">
+      <div className="flex items-start gap-4 p-4 w-full">
         {/* Thumbnail with score overlay */}
         <div className="w-16 h-16 rounded-full bg-[var(--surface-container-highest)] overflow-hidden shrink-0 relative">
           {product.image && (
@@ -208,7 +208,7 @@ const ProductCard = memo(function ProductCard({
         {/* Info column */}
         <div className="min-w-0 flex-1 flex flex-col gap-1.5">
           <p
-            className="text-base font-bold text-[var(--on-surface)] truncate capitalize leading-snug font-display"
+            className="text-base font-bold text-[var(--on-surface)] line-clamp-2 break-words capitalize leading-snug font-display"
             title={product.slug.replace(/-/g, " ")}
           >
             {product.slug.replace(/-/g, " ")}
@@ -267,7 +267,7 @@ const ProductCard = memo(function ProductCard({
         const dollarLoss = calculateDollarLossPerThousand(cachedResult.categories, cachedResult.productPrice, cachedResult.productCategory);
         return (
           <div
-            className="px-4 py-2.5 flex items-center justify-between"
+            className="px-4 py-2.5 flex items-center justify-between w-full"
             style={{ background: "var(--gradient-error)" }}
           >
             <span className="text-white/70 text-[11px] font-semibold uppercase tracking-wide">Conversion loss</span>
