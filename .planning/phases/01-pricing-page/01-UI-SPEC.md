@@ -55,12 +55,12 @@ Source: detected from `pricing/page.tsx` class names + `globals.css` font declar
 |------|------|--------|-------------|-------------|----------------|
 | Body | 16px | 400 (regular) | 1.5 | Inter | `text-base` |
 | Label/small | 14px | 400 (regular) | 1.5 | Inter | `text-sm` |
-| Subheading | 18px | 700 (bold) | 1.4 | Manrope | `font-display text-lg font-bold` |
+| Subheading | 18px | 800 (extrabold) | 1.4 | Manrope | `font-display text-lg font-extrabold` |
 | Display/H1 | 48px (desktop) / 36px (mobile) | 800 (extrabold) | 1.1 | Manrope | `font-display text-4xl sm:text-5xl font-extrabold leading-[1.1]` |
 
 Rules:
 - All headings use `font-display` (Manrope). Body and labels use default (Inter).
-- Exactly 2 weights in use: 400 (regular) for body/label, 700–800 (bold/extrabold) for headings.
+- Exactly 2 weights in use: 400 (regular) for body/label, 800 (extrabold) for all headings.
 - `tracking-tight` applied to H1 only.
 - `text-[var(--on-surface)]` for primary text; `text-[var(--on-surface-variant)]` for secondary/muted text.
 
@@ -243,6 +243,7 @@ No third-party registries. All components are project-owned or use existing Radi
 | Waitlist local-state confirmation (no backend in Phase 1) | RESEARCH.md Pitfall 5 |
 | Typography scale (text-sm/base/lg/4xl classes) | `pricing/page.tsx` — direct inspection |
 | Color 60/30/10 split | `globals.css` token inspection |
+| Subheading weight consolidated to 800 (extrabold) | Checker revision 2026-04-15 — 2-weight constraint |
 
 ---
 
