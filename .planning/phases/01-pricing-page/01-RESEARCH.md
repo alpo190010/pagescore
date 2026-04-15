@@ -332,17 +332,19 @@ const AuthModal = dynamic(() => import("@/components/AuthModal"), {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **PaywallModal fate after gutting**
+1. **PaywallModal fate after gutting** (RESOLVED)
    - What we know: D-10 says "remove or simplify." analyze/page.tsx dynamically imports it twice. Phase 2 (GATE-01/02/03) will need some kind of gate/prompt for anonymous users.
    - What's unclear: Should Phase 1 delete the file entirely (forcing Phase 2 to create a new one) or leave a stripped shell (maintaining the import contract)?
    - Recommendation: Simplify to a minimal "sign up to get full access" modal shell — remove all pricing tiers/checkout logic, keep the Modal component and auth flow. This preserves the import contract for analyze/page.tsx so Phase 2 can evolve it without a breaking change.
+   - **Resolution:** Plan 01-01 Task 2 simplifies PaywallModal to a minimal "Sign up to get full access" shell, removing all LemonSqueezy/checkout/tier logic while preserving the Modal component and import contract for Phase 2.
 
-2. **STARTER_DIMENSIONS after PlanTier change**
+2. **STARTER_DIMENSIONS after PlanTier change** (RESOLVED)
    - What we know: The constant is exported from conversion-model.ts and imported in analyze/page.tsx (used for `unlockedCount`).
    - What's unclear: Should it be deleted now (creating a dead import error in analyze/page) or kept for Phase 2?
    - Recommendation: Remove STARTER_DIMENSIONS in the same task as the PlanTier type change. Update analyze/page.tsx to remove the `unlockedCount` derivation based on it simultaneously.
+   - **Resolution:** Plan 01-01 Task 1 deletes STARTER_DIMENSIONS from conversion-model.ts and removes its re-export from helpers.ts. Plan 01-01 Task 2 simultaneously removes the STARTER_DIMENSIONS import and `unlockedCount` derivation from analyze/page.tsx.
 
 ---
 
