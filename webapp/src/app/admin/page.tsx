@@ -262,10 +262,6 @@ function planBarColor(tier: string): string {
   switch (tier) {
     case "pro":
       return "var(--brand)";
-    case "growth":
-      return "var(--success)";
-    case "starter":
-      return "var(--surface-container-high)";
     default:
       return "var(--surface-container)";
   }
