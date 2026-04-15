@@ -36,7 +36,7 @@ interface UsersResponse {
 }
 
 const ROLE_OPTIONS = ["all", "user", "admin"] as const;
-const PLAN_OPTIONS = ["all", "free", "starter", "growth", "pro"] as const;
+const PLAN_OPTIONS = ["all", "free", "pro"] as const;
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
