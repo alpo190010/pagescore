@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Nothing (first phase)
 **Requirements**: PRICE-01, PRICE-02, PRICE-03
 **Success Criteria** (what must be TRUE):
-  1. User visiting /pricing sees exactly one plan card describing the free tier (unlimited scans, full scoring, recommendations, revenue leak estimates)
+  1. User visiting /pricing sees exactly one plan card describing the free tier (3 scans per month, full scoring, recommendations, revenue leak estimates)
   2. User sees a Pro waitlist CTA below the free plan card
   3. No mention of $79, old pricing tiers, or any paid plan is visible anywhere on /pricing
 **Plans**: 2 plans

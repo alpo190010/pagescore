@@ -227,7 +227,7 @@ function AnalyzePageContent() {
       handleSignIn();
       return;
     }
-    // Both free and starter users see upgrade CTAs
+    // Both free and teaser users see upgrade CTAs
     if (!hasFullAccess) {
       setPaywallLeakKey(leaks[0]?.key || null);
       setPaywallOpen(true);
