@@ -27,7 +27,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User visiting /pricing sees exactly one plan card describing the free tier (unlimited scans, full scoring, recommendations, revenue leak estimates)
   2. User sees a Pro waitlist CTA below the free plan card
   3. No mention of $79, old pricing tiers, or any paid plan is visible anywhere on /pricing
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Narrow PlanTier type to free|pro and update all 8 consumer files
+- [ ] 01-02-PLAN.md — Rewrite pricing page to 2-card layout with waitlist auth gate
 
 ### Phase 2: Paywall Gates
 **Goal**: Anonymous users have a clear, non-blocking reason to sign up after running a scan
@@ -68,7 +72,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Pricing Page | 0/TBD | Not started | - |
+| 1. Pricing Page | 0/2 | Planned | - |
 | 2. Paywall Gates | 0/TBD | Not started | - |
 | 3. Waitlist | 0/TBD | Not started | - |
 | 4. Doc Cleanup | 0/TBD | Not started | - |
