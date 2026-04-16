@@ -23,6 +23,7 @@ from app.routers.send_report_now import router as send_report_now_router
 from app.routers.store import router as store_router
 from app.routers.user_plan import router as user_plan_router
 from app.routers.user_scans import router as user_scans_router
+from app.routers.user_waitlist import router as user_waitlist_router
 from app.routers.auth_routes import router as auth_router
 from app.routers.webhook import router as webhook_router
 from app.routers.admin_users import router as admin_users_router
@@ -80,6 +81,7 @@ app.include_router(request_report_router)
 app.include_router(send_report_now_router)
 app.include_router(user_plan_router)
 app.include_router(user_scans_router)
+app.include_router(user_waitlist_router)
 app.include_router(webhook_router)
 app.include_router(admin_users_router)
 app.include_router(admin_analytics_router)

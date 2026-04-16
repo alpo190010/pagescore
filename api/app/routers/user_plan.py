@@ -39,4 +39,5 @@ def user_plan(
         ),
         "hasCreditsRemaining": has_credits_remaining(current_user),
         "customerPortalUrl": current_user.lemon_customer_portal_url,
+        "proWaitlist": current_user.pro_waitlist,
     }
