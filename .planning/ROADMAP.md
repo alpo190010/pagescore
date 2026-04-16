@@ -57,7 +57,12 @@ Plans:
   1. An anonymous user clicking the Pro CTA is directed to sign up (not silently ignored)
   2. An authenticated user clicking the Pro CTA is recorded in the database with a waitlist flag on their user record
   3. After clicking the Pro CTA, a signed-in user sees a confirmation that they are on the waitlist
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Backend foundation: migration, model, endpoint, router registration, /user/plan augmentation
+- [ ] 03-02-PLAN.md — Frontend wiring: PricingActions backend calls, auto-enroll, Suspense boundary
+- [ ] 03-03-PLAN.md — Admin visibility: users badge/filter, analytics waitlistCount stat card
 
 ### Phase 4: Doc Cleanup
 **Goal**: All stale documentation reflects current product positioning with no references to old branding or pricing
@@ -68,7 +73,12 @@ Plans:
   2. MARKETING.md frames the product around conversion analysis and free access, not one-time reports
   3. DASHBOARD.md contains no references to the $7 report flow
   4. status.json contains no stale feature flags from the old positioning
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Backend foundation: migration, model, endpoint, router registration, /user/plan augmentation
+- [ ] 03-02-PLAN.md — Frontend wiring: PricingActions backend calls, auto-enroll, Suspense boundary
+- [ ] 03-03-PLAN.md — Admin visibility: users badge/filter, analytics waitlistCount stat card
 
 ## Progress
 
