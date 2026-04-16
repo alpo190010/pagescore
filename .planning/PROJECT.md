@@ -41,7 +41,7 @@ Merchants can instantly see what's costing them sales on their product pages —
 
 <!-- Current scope for v1.0 Minimum Launch -->
 
-- [ ] Simplified pricing page
+- [x] Simplified pricing page — Phase 1 complete (2026-04-16)
 - [ ] Paywall gates for unauthorized vs signed-up users
 - [ ] Waitlist email capture for Pro
 - [ ] Stale docs cleanup
@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-15 after milestone v1.0 initialization*
+*Last updated: 2026-04-16 after Phase 1 (Pricing Page) completion*
