@@ -45,12 +45,11 @@ export type DimensionAccess = "unlocked" | "locked";
 
 /**
  * Resolve whether a dimension is accessible on the given plan.
- * - pro  -> all dimensions unlocked
- * - free -> all locked
+ * All authenticated users (free or pro) see full recommendations.
+ * The anonymous gate is enforced at call sites via isAnonymous flag, not here.
  */
 export function getDimensionAccess(plan: PlanTier, _dimensionKey: string): DimensionAccess {
-  if (plan === "pro") return "unlocked";
-  return "locked";
+  return "unlocked";
 }
 
 /**
