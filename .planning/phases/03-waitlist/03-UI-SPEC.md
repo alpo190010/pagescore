@@ -56,11 +56,13 @@ Exceptions:
 | Role | Size | Weight | Line Height | Font | Notes |
 |------|------|--------|-------------|------|-------|
 | Body | 16px (text-base) | 400 regular | 1.5 | Inter | Default page and card copy |
-| Label / small | 14px (text-sm) | 600 semibold | 1.5 | Inter | Confirmation message, badge labels, table cells |
+| Label / small | 14px (text-sm) | 400 regular | 1.5 | Inter | Confirmation message, badge labels, table cells |
 | Heading | 20px (text-xl) | 700 bold | 1.2 | Manrope | Modal title ("Sign In", "Create Account") |
-| Display | 24px (text-2xl) | 800 extrabold | 1.2 | Manrope | Admin page headings ("Users", "Dashboard") |
+| Display | 24px (text-2xl) | 700 bold | 1.2 | Manrope | Admin page headings ("Users", "Dashboard") |
 
-**Source:** AuthModal.tsx (text-xl font-bold heading, text-sm body), admin/users/page.tsx (text-2xl font-extrabold), globals.css font-family declarations
+**Weights used:** 400 (regular) for all body and label copy; 700 (bold) for all heading and display roles. No other weights loaded.
+
+**Source:** AuthModal.tsx (text-xl font-bold heading, text-sm body), admin/users/page.tsx (text-2xl font-extrabold demoted to font-bold), globals.css font-family declarations
 
 ---
 
