@@ -44,7 +44,7 @@ Merchants can instantly see what's costing them sales on their product pages —
 - [x] Simplified pricing page — Phase 1 complete (2026-04-16)
 - [x] Paywall gates for unauthorized vs signed-up users — Phase 2 complete (2026-04-16)
 - [ ] Waitlist email capture for Pro
-- [ ] Stale docs cleanup
+- [x] Stale docs cleanup — Phase 4 complete (2026-04-16)
 
 ### Out of Scope
 
@@ -63,7 +63,7 @@ Merchants can instantly see what's costing them sales on their product pages —
 - **Scan cost:** ~$0.01/scan (all rule-based, no LLM API calls). Playwright headless browser is the main cost, amortized over a VPS.
 - **Business model direction:** Free scan = hook, AI fixes = future paid product. Waitlist validates demand before building.
 - **Target customer:** Small solo Shopify merchants (1-50 products), graduating to growing brands later.
-- **Stale artifacts:** README.md, MARKETING.md, DASHBOARD.md, status.json still reference old "PageScore landing page analyzer" with $7 one-time pricing.
+- **Stale artifacts:** Cleaned up in Phase 4 — MARKETING.md, DASHBOARD.md, status.json deleted; README.md rewritten for alpo.ai.
 
 ## Constraints
 
@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 after Phase 1 (Pricing Page) completion*
+*Last updated: 2026-04-16 after Phase 4 (Doc Cleanup) completion*
