@@ -12,9 +12,9 @@ const ALL_DIMENSION_KEYS = [...ACTIVE_DIMENSIONS];
 
 describe("getDimensionAccess", () => {
   describe("free plan", () => {
-    it("returns locked for all 18 active dimensions", () => {
+    it("returns unlocked for all 18 active dimensions", () => {
       for (const key of ALL_DIMENSION_KEYS) {
-        expect(getDimensionAccess("free", key)).toBe("locked" satisfies DimensionAccess);
+        expect(getDimensionAccess("free", key)).toBe("unlocked" satisfies DimensionAccess);
       }
     });
   });
@@ -28,8 +28,8 @@ describe("getDimensionAccess", () => {
   });
 
   describe("unknown dimension key", () => {
-    it("returns locked for free plan", () => {
-      expect(getDimensionAccess("free", "nonexistent")).toBe("locked");
+    it("returns unlocked for free plan", () => {
+      expect(getDimensionAccess("free", "nonexistent")).toBe("unlocked");
     });
 
     it("returns unlocked for pro plan (all dims unlocked)", () => {
