@@ -60,7 +60,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Backend foundation: migration, model, endpoint, router registration, /user/plan augmentation
+- [x] 03-01-PLAN.md — Backend foundation: migration, model, endpoint, router registration, /user/plan augmentation
 - [ ] 03-02-PLAN.md — Frontend wiring: PricingActions backend calls, auto-enroll, Suspense boundary
 - [ ] 03-03-PLAN.md — Admin visibility: users badge/filter, analytics waitlistCount stat card
 
