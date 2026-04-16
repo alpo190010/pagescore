@@ -46,7 +46,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Add anonymous-only 3/day rate limit and flip tier gating to unlocked
-- [ ] 02-02-PLAN.md — Rewrite results page UI: locked cards, anonymous scan, CTACard, PaywallModal deletion
+- [x] 02-02-PLAN.md — Rewrite results page UI: locked cards, anonymous scan, CTACard, PaywallModal deletion
 - [ ] 02-03-PLAN.md — Visual verification of paywall gate flow
 
 ### Phase 3: Waitlist
