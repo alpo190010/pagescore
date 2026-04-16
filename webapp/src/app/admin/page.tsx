@@ -20,6 +20,7 @@ interface AnalyticsData {
   scans_over_time: { date: string; count: number }[];
   plan_distribution: { plan_tier: string; count: number }[];
   total_credits_used: number;
+  waitlistCount: number;
 }
 
 /** Format a large number with locale grouping (e.g. 1,234) */
@@ -70,7 +71,7 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           {/* Skeleton stat cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
             ))}
           </div>
@@ -96,6 +97,7 @@ export default function AdminDashboardPage() {
               label="Credits Used"
               value={fmtNum(data.total_credits_used)}
             />
+            <StatCard label="Pro Waitlist" value={fmtNum(data.waitlistCount)} />
           </div>
 
           {/* ── Bar charts ── */}

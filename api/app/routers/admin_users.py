@@ -54,6 +54,7 @@ def _user_to_dict(user: User) -> dict:
         "email_verified": user.email_verified,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        "pro_waitlist": user.pro_waitlist,
     }
 
 
@@ -81,6 +82,7 @@ def list_users(
     search: Optional[str] = None,
     role: Optional[str] = None,
     plan_tier: Optional[str] = None,
+    pro_waitlist: Optional[bool] = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     admin_user: User = Depends(get_current_user_admin),
@@ -103,6 +105,9 @@ def list_users(
 
     if plan_tier:
         query = query.filter(User.plan_tier == plan_tier)
+
+    if pro_waitlist is not None:
+        query = query.filter(User.pro_waitlist == pro_waitlist)
 
     total = query.count()
     users = (

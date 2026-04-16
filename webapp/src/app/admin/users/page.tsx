@@ -7,7 +7,7 @@ import { API_URL } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Badge, Skeleton, Select } from "@/components/ui";
-import { formatDate } from "@/lib/format";
+import { formatDate, waitlistBadgeStyle } from "@/lib/format";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 
@@ -26,6 +26,7 @@ interface AdminUser {
   email_verified: boolean;
   created_at: string | null;
   updated_at: string | null;
+  pro_waitlist: boolean;
 }
 
 interface UsersResponse {
@@ -37,6 +38,7 @@ interface UsersResponse {
 
 const ROLE_OPTIONS = ["all", "user", "admin"] as const;
 const PLAN_OPTIONS = ["all", "free", "pro"] as const;
+const WAITLIST_OPTIONS = ["all", "waitlisted"] as const;
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -47,6 +49,7 @@ export default function AdminUsersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
+  const [waitlistFilter, setWaitlistFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +65,7 @@ export default function AdminUsersPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [roleFilter, planFilter]);
+  }, [roleFilter, planFilter, waitlistFilter]);
 
   const fetchUsers = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -74,6 +77,7 @@ export default function AdminUsersPage() {
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (roleFilter !== "all") params.set("role", roleFilter);
       if (planFilter !== "all") params.set("plan_tier", planFilter);
+      if (waitlistFilter === "waitlisted") params.set("pro_waitlist", "true");
 
       const res = await authFetch(`${API_URL}/admin/users?${params}`, { signal });
       if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
@@ -87,7 +91,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, debouncedSearch, roleFilter, planFilter]);
+  }, [page, perPage, debouncedSearch, roleFilter, planFilter, waitlistFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -145,6 +149,18 @@ export default function AdminUsersPage() {
             </option>
           ))}
         </Select>
+
+        <Select
+          value={waitlistFilter}
+          onChange={(e) => setWaitlistFilter(e.target.value)}
+          aria-label="Filter by waitlist"
+        >
+          {WAITLIST_OPTIONS.map((w) => (
+            <option key={w} value={w}>
+              {w === "all" ? "All users" : "Waitlisted"}
+            </option>
+          ))}
+        </Select>
       </div>
 
       {/* Error state */}
@@ -164,7 +180,7 @@ export default function AdminUsersPage() {
         <EmptyState
           title="No users found"
           description={
-            debouncedSearch || roleFilter !== "all" || planFilter !== "all"
+            debouncedSearch || roleFilter !== "all" || planFilter !== "all" || waitlistFilter !== "all"
               ? "Try adjusting your search or filters."
               : "No users have signed up yet."
           }
@@ -189,6 +205,9 @@ export default function AdminUsersPage() {
                   </th>
                   <th className="text-left px-4 py-3 font-semibold text-[var(--text-secondary)]">
                     Plan
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-[var(--text-secondary)]">
+                    Waitlist
                   </th>
                   <th className="text-left px-4 py-3 font-semibold text-[var(--text-secondary)]">
                     Joined
@@ -223,6 +242,13 @@ export default function AdminUsersPage() {
                       <Badge plan={user.plan_tier}>
                         {user.plan_tier}
                       </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.pro_waitlist && (
+                        <Badge style={waitlistBadgeStyle()}>
+                          Waitlisted
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatDate(user.created_at)}

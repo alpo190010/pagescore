@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   CheckCircle,
@@ -144,8 +145,10 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {/* CTA — client island */}
-                    <PricingActions tier={{ key: tier.key, ctaLabel: tier.ctaLabel }} />
+                    {/* CTA -- client island */}
+                    <Suspense fallback={null}>
+                      <PricingActions tier={{ key: tier.key, ctaLabel: tier.ctaLabel }} />
+                    </Suspense>
                   </div>
                 );
               })}

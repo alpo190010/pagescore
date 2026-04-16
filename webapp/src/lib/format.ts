@@ -34,3 +34,10 @@ export function roleBadgeStyle(role: string): React.CSSProperties {
     color: "var(--text-secondary)",
   };
 }
+
+export function waitlistBadgeStyle(): React.CSSProperties {
+  return {
+    background: "#84cc16",
+    color: "#3f6212",
+  };
+}

@@ -96,6 +96,13 @@ def get_analytics(
     # --- Total credits used ---
     total_credits_used = db.query(func.sum(User.credits_used)).scalar() or 0
 
+    # --- Waitlist count ---
+    waitlist_count = (
+        db.query(func.count(User.id))
+        .filter(User.pro_waitlist == True)
+        .scalar()
+    ) or 0
+
     return {
         "total_users": total_users,
         "signups_over_time": signups_over_time,
@@ -103,4 +110,5 @@ def get_analytics(
         "scans_over_time": scans_over_time,
         "plan_distribution": plan_distribution,
         "total_credits_used": total_credits_used,
+        "waitlistCount": waitlist_count,
     }
