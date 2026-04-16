@@ -149,6 +149,9 @@ class User(Base):
     # --- Role ---
     role = Column(Text, server_default="user", nullable=False)
 
+    # --- Waitlist ---
+    pro_waitlist = Column(Boolean, nullable=False, server_default=text("false"))
+
 
 class Subscriber(Base):
     __tablename__ = "subscribers"
