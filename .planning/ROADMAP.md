@@ -41,8 +41,13 @@ Plans:
   1. An anonymous user who runs a scan sees dimension scores for all 18 dimensions but no recommendation text
   2. A signed-in user who runs a scan sees all 18 dimensions with full recommendation text
   3. The results page displays a signup prompt to anonymous users explaining what they unlock by creating an account
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 02-01-PLAN.md — Add anonymous-only 3/day rate limit and flip tier gating to unlocked
+- [ ] 02-02-PLAN.md — Rewrite results page UI: locked cards, anonymous scan, CTACard, PaywallModal deletion
+- [ ] 02-03-PLAN.md — Visual verification of paywall gate flow
 
 ### Phase 3: Waitlist
 **Goal**: Pro interest is captured in the database and users receive immediate confirmation
@@ -68,11 +73,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Pricing Page | 0/2 | Planned | - |
-| 2. Paywall Gates | 0/TBD | Not started | - |
+| 2. Paywall Gates | 0/3 | Planned | - |
 | 3. Waitlist | 0/TBD | Not started | - |
 | 4. Doc Cleanup | 0/TBD | Not started | - |
