@@ -53,6 +53,14 @@ alpo/
 - Docker and Docker Compose
 - PostgreSQL (or use Docker Compose)
 
+### Installation
+
+```bash
+git clone <repo-url>
+cp .env.production.template .env
+# Edit .env with your values
+```
+
 ### Environment Variables
 
 | Variable | Required | Purpose |
@@ -68,14 +76,6 @@ alpo/
 | `NEXT_PUBLIC_BASE_URL` | Yes | Public base URL for the webapp |
 
 > **Dormant (not required to run core product):** `OPENAI_API_KEY` (OpenRouter key for optional AI features), `RESEND_API_KEY` (email, unused at launch), `LEMONSQUEEZY_WEBHOOK_SECRET` and `LEMONSQUEEZY_VARIANT_*` (payments, no paid tier yet).
-
-### Installation
-
-```bash
-git clone <repo-url>
-cp .env.production.template .env
-# Edit .env with your values
-```
 
 ---
 
