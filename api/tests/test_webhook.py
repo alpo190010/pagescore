@@ -569,7 +569,7 @@ class TestSubscriptionUpdated:
         assert user.current_period_end == datetime(2026, 6, 1, tzinfo=timezone.utc)
         db.commit.assert_called_once()
 
-    @patch("app.routers.webhook.get_tier_for_variant", return_value="growth")
+    @patch("app.routers.webhook.get_tier_for_variant", return_value="starter")
     @patch("app.routers.webhook.settings")
     def test_tier_change_updates_plan(self, mock_settings, mock_tier):
         """When variant changes, plan_tier is updated."""
@@ -584,13 +584,13 @@ class TestSubscriptionUpdated:
         client = TestClient(app)
 
         body = _subscription_updated_body(
-            variant_id="var_growth",
+            variant_id="var_starter",
             renews_at="2026-05-01T00:00:00Z",  # same period = no credit reset
         )
         resp = _send_webhook(client, body)
 
         assert resp.status_code == 200
-        assert user.plan_tier == "growth"
+        assert user.plan_tier == "starter"
 
     @patch("app.routers.webhook.settings")
     def test_user_not_found_by_subscription_id_returns_ok(self, mock_settings):
@@ -638,7 +638,7 @@ class TestSubscriptionCancelled:
         """Cancellation sets current_period_end but keeps plan_tier."""
         mock_settings.lemonsqueezy_webhook_secret = WEBHOOK_SECRET
         user = _make_mock_user(
-            plan_tier="growth",
+            plan_tier="starter",
             lemon_subscription_id="sub_123",
         )
         db = _mock_db_with_user(user)
@@ -649,7 +649,7 @@ class TestSubscriptionCancelled:
         resp = _send_webhook(client, body)
 
         assert resp.status_code == 200
-        assert user.plan_tier == "growth"  # NOT downgraded
+        assert user.plan_tier == "starter"  # NOT downgraded
         assert user.current_period_end == datetime(2026, 5, 15, tzinfo=timezone.utc)
         db.commit.assert_called_once()
 
@@ -836,7 +836,7 @@ class TestSubscriptionUpdatedEdgeCases:
         """Unknown variant during update doesn't change tier."""
         mock_settings.lemonsqueezy_webhook_secret = WEBHOOK_SECRET
         user = _make_mock_user(
-            plan_tier="growth",
+            plan_tier="starter",
             lemon_subscription_id="sub_123",
             current_period_end=datetime(2026, 5, 1, tzinfo=timezone.utc),
         )
@@ -851,7 +851,7 @@ class TestSubscriptionUpdatedEdgeCases:
         resp = _send_webhook(client, body)
 
         assert resp.status_code == 200
-        assert user.plan_tier == "growth"  # unchanged
+        assert user.plan_tier == "starter"  # unchanged
 
     @patch("app.routers.webhook.get_tier_for_variant", return_value="starter")
     @patch("app.routers.webhook.settings")
@@ -877,13 +877,13 @@ class TestSubscriptionUpdatedEdgeCases:
         assert user.lemon_subscription_id is None
         assert user.lemon_customer_id is None
 
-    @patch("app.routers.webhook.get_tier_for_variant", return_value="growth")
+    @patch("app.routers.webhook.get_tier_for_variant", return_value="starter")
     @patch("app.routers.webhook.settings")
     def test_portal_url_updated_on_active(self, mock_settings, mock_tier):
         """Portal URL is updated from subscription_updated payload."""
         mock_settings.lemonsqueezy_webhook_secret = WEBHOOK_SECRET
         user = _make_mock_user(
-            plan_tier="growth",
+            plan_tier="starter",
             lemon_subscription_id="sub_123",
             lemon_customer_portal_url="https://old-portal.example.com",
             current_period_end=datetime(2026, 5, 1, tzinfo=timezone.utc),

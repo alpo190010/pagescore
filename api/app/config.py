@@ -9,13 +9,11 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     lemonsqueezy_webhook_secret: str = ""
     lemonsqueezy_variant_starter: str = ""
-    lemonsqueezy_variant_growth: str = ""
-    lemonsqueezy_variant_pro: str = ""
+    lemonsqueezy_variant_starter_annual: str = ""
     lemonsqueezy_variant_single_report: str = ""
     auth_secret: str = ""
     google_pagespeed_api_key: str = ""
     webapp_url: str = "http://localhost:3000"
-    anon_daily_limit: int = 100
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

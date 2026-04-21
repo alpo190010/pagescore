@@ -2,17 +2,26 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import { LinkIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { isValidUrl, isProductPageUrl, extractDomain } from "@/lib/analysis/helpers";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+const AuthModal = dynamic(() => import("@/components/AuthModal"), {
+  ssr: false,
+});
+
 export default function HeroForm() {
   const router = useRouter();
   const pathname = usePathname();
+  const { status } = useSession();
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingDestination, setPendingDestination] = useState<string | null>(null);
 
   // Reset stuck submitting state when navigation bounces back to /
   useEffect(() => {
@@ -20,6 +29,14 @@ export default function HeroForm() {
       setSubmitting(false);
     }
   }, [pathname, submitting]);
+
+  // If user authenticates via the modal, continue to their intended destination.
+  useEffect(() => {
+    if (status === "authenticated" && pendingDestination) {
+      router.push(pendingDestination);
+      setPendingDestination(null);
+    }
+  }, [status, pendingDestination, router]);
 
   const handleUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,15 +57,22 @@ export default function HeroForm() {
         );
         return;
       }
-      setSubmitting(true);
-      if (isProductPageUrl(validUrl)) {
-        router.push(`/analyze?url=${encodeURIComponent(validUrl)}`);
-      } else {
-        const domain = extractDomain(validUrl) || validUrl;
-        router.push(`/scan/${encodeURIComponent(domain)}`);
+
+      const destination = isProductPageUrl(validUrl)
+        ? `/analyze?url=${encodeURIComponent(validUrl)}`
+        : `/scan/${encodeURIComponent(extractDomain(validUrl) || validUrl)}`;
+
+      if (status !== "authenticated") {
+        // Require sign-in before running any scan. Remember where to go next.
+        setPendingDestination(destination);
+        setAuthModalOpen(true);
+        return;
       }
+
+      setSubmitting(true);
+      router.push(destination);
     },
-    [url, submitting, router],
+    [url, submitting, router, status],
   );
 
   return (
@@ -97,6 +121,14 @@ export default function HeroForm() {
           </div>
         </div>
       )}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode="signup"
+        heading="Sign up to run your first scan"
+        subheading="It's free — 3 scans per month on the free plan."
+      />
     </>
   );
 }

@@ -6,7 +6,7 @@
 export type DimensionScope = "store" | "product";
 
 /** Plan tier for feature gating. */
-export type PlanTier = "free" | "pro";
+export type PlanTier = "free" | "starter" | "pro";
 
 export interface CategoryScores {
   pageSpeed: number;
@@ -369,6 +369,12 @@ export interface FreeResult {
   productPrice: number;
   productCategory: string;
   signals?: DimensionSignals;
+  /** Backend-reported plan tier of the requester. */
+  planTier?: "free" | "starter" | "pro";
+  /** True when fix recommendations are gated (free tier). Backend strips tips in this case. */
+  recommendationsLocked?: boolean;
+  /** Remaining scans in the current calendar month. null = unlimited. */
+  creditsRemaining?: number | null;
 }
 
 export interface StoreAnalysisData {

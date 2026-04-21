@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.auth import get_current_user_optional, get_current_user_required
+from app.auth import get_current_user_required
 from app.database import get_db
 from app.main import app
 from app.models import User
@@ -51,8 +51,13 @@ _AI_RESPONSE = {
 }
 
 
-def _make_user(plan_tier: str = "free", credits_used: int = 0) -> User:
-    """Build a User ORM instance with plan fields set."""
+def _make_user(plan_tier: str = "starter", credits_used: int = 0) -> User:
+    """Build a User ORM instance with plan fields set.
+
+    Default is 'starter' (unlimited + full recommendations) so pipeline tests
+    that assert on `tips` / `dimensionTips` content don't need to pass an
+    explicit override. Credit-gating tests pass plan_tier="free" explicitly.
+    """
     user = User()
     user.id = uuid.uuid4()
     user.google_sub = "google-sub-test"
@@ -85,8 +90,9 @@ def _get_client(db_override=None, user_override=None):
     """Return a TestClient with DB and auth overrides.
 
     By default injects a mock DB and an authenticated free-tier user
-    with credits remaining.  Overrides get_current_user_optional since
-    the /analyze endpoint uses optional auth.
+    with credits remaining. /analyze now requires authentication, so
+    all tests must either provide a user_override or allow the default
+    free-tier fixture.
     """
     if db_override is not None:
         app.dependency_overrides[get_db] = lambda: db_override
@@ -94,9 +100,9 @@ def _get_client(db_override=None, user_override=None):
         app.dependency_overrides[get_db] = lambda: _mock_db()
 
     if user_override is not None:
-        app.dependency_overrides[get_current_user_optional] = lambda: user_override
+        app.dependency_overrides[get_current_user_required] = lambda: user_override
     else:
-        app.dependency_overrides[get_current_user_optional] = lambda: _make_user()
+        app.dependency_overrides[get_current_user_required] = lambda: _make_user()
 
     client = TestClient(app)
     return client
@@ -105,29 +111,14 @@ def _get_client(db_override=None, user_override=None):
 # --- Auth / credit enforcement tests ---
 
 
-@patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock)
-@patch("app.routers.analyze.get_social_commerce_tips", return_value=[])
-@patch("app.routers.analyze.score_social_commerce", return_value=50)
-@patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
-@patch("app.routers.analyze.get_checkout_tips", return_value=[])
-@patch("app.routers.analyze.score_checkout", return_value=50)
-@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
-@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
-@patch("app.routers.analyze.score_structured_data", return_value=50)
-@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
-@patch("app.routers.analyze.get_social_proof_tips", return_value=["tip1"])
-@patch("app.routers.analyze.score_social_proof", return_value=50)
-@patch("app.routers.analyze.detect_social_proof")
-@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_anonymous_user_allowed(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips, mock_sc_detect, mock_sc_score, mock_sc_tips, mock_axe_scan):
-    """POST /analyze without auth → 200 (anonymous access allowed)."""
-    mock_fetch.return_value = _VALID_HTML
+def test_analyze_unauthenticated_blocked():
+    """POST /analyze without auth → 401. Anonymous scanning is disabled."""
     app.dependency_overrides[get_db] = lambda: _mock_db()
-    app.dependency_overrides[get_current_user_optional] = lambda: None
-
+    # No get_current_user_required override — let the real dependency run and
+    # raise 401 (no Authorization header is sent by TestClient).
     client = TestClient(app)
     resp = client.post("/analyze", json={"url": "http://example.com/product"})
-    assert resp.status_code == 200
+    assert resp.status_code == 401
 
     app.dependency_overrides.clear()
 
@@ -148,18 +139,19 @@ def test_analyze_returns_403_when_credits_exhausted():
     app.dependency_overrides.clear()
 
 
-def test_analyze_returns_403_at_exact_limit():
-    """Credits exactly at limit → 403 (boundary condition)."""
-    user = _make_user(plan_tier="starter", credits_used=10)  # starter limit = 10
+def test_analyze_starter_never_hits_credit_limit():
+    """Starter is unlimited — high credits_used never triggers 403."""
+    user = _make_user(plan_tier="starter", credits_used=9999)
     client = _get_client(user_override=user)
 
-    resp = client.post("/analyze", json={"url": "http://example.com"})
-    assert resp.status_code == 403
-    data = resp.json()
-    assert data["error"] == "Credit limit reached"
-    assert data["plan"] == "starter"
-    assert data["creditsUsed"] == 10
-    assert data["creditsLimit"] == 10
+    # Not mocking the pipeline; we only want to assert we pass the credit gate.
+    # URL validation passes; render_page will then fail (400), but NOT 403.
+    with patch("app.routers.analyze.render_page", new_callable=AsyncMock) as mock_fetch, \
+         patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock):
+        mock_fetch.side_effect = Exception("connection refused")
+        resp = client.post("/analyze", json={"url": "http://example.com"})
+
+    assert resp.status_code != 403
 
     app.dependency_overrides.clear()
 
@@ -234,6 +226,77 @@ def test_analyze_returns_credits_remaining(mock_fetch, mock_ai, mock_detect, moc
     assert "creditsRemaining" in data
     # After increment: credits_used=2, limit=3, remaining=1
     assert data["creditsRemaining"] == 1
+
+    app.dependency_overrides.clear()
+
+
+@patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock)
+@patch("app.routers.analyze.get_social_commerce_tips", return_value=["sc tip"])
+@patch("app.routers.analyze.score_social_commerce", return_value=50)
+@patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
+@patch("app.routers.analyze.get_checkout_tips", return_value=["co tip"])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
+@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
+@patch("app.routers.analyze.score_structured_data", return_value=50)
+@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
+@patch("app.routers.analyze.get_social_proof_tips", return_value=["sp tip"])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_free_tier_recommendations_stripped(mock_fetch, mock_detect, *_):
+    """Free tier: tips are empty, dimensionTips is empty, recommendationsLocked=true."""
+    mock_fetch.return_value = _VALID_HTML
+
+    user = _make_user(plan_tier="free", credits_used=0)
+    client = _get_client(user_override=user)
+
+    resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["planTier"] == "free"
+    assert data["recommendationsLocked"] is True
+    assert data["tips"] == []
+    assert data["dimensionTips"] == {}
+    # Scoring is still present — free tier keeps the scores, only fixes are gated.
+    assert "categories" in data
+    assert "score" in data
+
+    app.dependency_overrides.clear()
+
+
+@patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock)
+@patch("app.routers.analyze.get_social_commerce_tips", return_value=["sc tip"])
+@patch("app.routers.analyze.score_social_commerce", return_value=50)
+@patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
+@patch("app.routers.analyze.get_checkout_tips", return_value=["co tip"])
+@patch("app.routers.analyze.score_checkout", return_value=50)
+@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
+@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
+@patch("app.routers.analyze.score_structured_data", return_value=50)
+@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
+@patch("app.routers.analyze.get_social_proof_tips", return_value=["sp tip"])
+@patch("app.routers.analyze.score_social_proof", return_value=0)
+@patch("app.routers.analyze.detect_social_proof")
+@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
+def test_analyze_starter_tier_sees_full_recommendations(mock_fetch, mock_detect, *_):
+    """Starter tier: tips populated, recommendationsLocked=false, creditsRemaining=None (unlimited)."""
+    mock_fetch.return_value = _VALID_HTML
+
+    user = _make_user(plan_tier="starter", credits_used=0)
+    client = _get_client(user_override=user)
+
+    resp = client.post("/analyze", json={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["planTier"] == "starter"
+    assert data["recommendationsLocked"] is False
+    assert "sp tip" in data["tips"]
+    assert data["dimensionTips"]["socialProof"] == ["sp tip"]
+    # Unlimited tier: creditsRemaining is null
+    assert data["creditsRemaining"] is None
 
     app.dependency_overrides.clear()
 
@@ -987,56 +1050,14 @@ def test_get_cached_analysis_401_unauthenticated():
     """GET /analysis without auth returns 401."""
     mock_session = MagicMock()
     app.dependency_overrides[get_db] = lambda: mock_session
-    # Do NOT override get_current_user_required — let it raise 401
-    # But we need get_current_user_optional to return None so the chain works
-    app.dependency_overrides[get_current_user_optional] = lambda: None
+    # Intentionally do NOT override get_current_user_required — the real dep
+    # reads the Authorization header (absent in TestClient by default) and
+    # raises 401.
 
     client = TestClient(app)
     resp = client.get("/analysis", params={"url": "http://example.com/product"})
 
     assert resp.status_code == 401
-
-    app.dependency_overrides.clear()
-
-
-# --- POST /analyze anonymous upsert skip test (R013) ---
-
-
-@patch("app.routers.analyze.run_axe_scan", new_callable=AsyncMock)
-@patch("app.routers.analyze.get_social_commerce_tips", return_value=[])
-@patch("app.routers.analyze.score_social_commerce", return_value=50)
-@patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
-@patch("app.routers.analyze.get_checkout_tips", return_value=[])
-@patch("app.routers.analyze.score_checkout", return_value=50)
-@patch("app.routers.analyze.detect_checkout", return_value=CheckoutSignals())
-@patch("app.routers.analyze.get_structured_data_tips", return_value=[])
-@patch("app.routers.analyze.score_structured_data", return_value=50)
-@patch("app.routers.analyze.detect_structured_data", return_value=StructuredDataSignals())
-@patch("app.routers.analyze.get_social_proof_tips", return_value=["tip1"])
-@patch("app.routers.analyze.score_social_proof", return_value=50)
-@patch("app.routers.analyze.detect_social_proof")
-@patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_anonymous_skips_upsert(
-    mock_fetch, mock_detect, mock_sp_score, mock_sp_tips,
-    mock_sd_detect, mock_sd_score, mock_sd_tips,
-    mock_co_detect, mock_co_score, mock_co_tips,
-    mock_sc_detect, mock_sc_score, mock_sc_tips, mock_axe_scan,
-):
-    """POST /analyze as anonymous user returns 200 but does NOT attempt DB upsert."""
-    mock_fetch.return_value = _VALID_HTML
-
-    mock_session = _mock_db()
-    app.dependency_overrides[get_db] = lambda: mock_session
-    app.dependency_overrides[get_current_user_optional] = lambda: None
-
-    client = TestClient(app)
-    resp = client.post("/analyze", json={"url": "http://example.com/product"})
-
-    assert resp.status_code == 200
-
-    # The upsert uses db.execute(stmt) — for anonymous users this should NOT be called.
-    # db.add is still called for the Scan row, but db.execute should be skipped.
-    mock_session.execute.assert_not_called()
 
     app.dependency_overrides.clear()
 
@@ -1285,45 +1306,6 @@ def test_analyze_stale_cache_runs_all_detectors(*mocks):
 
 test_analyze_stale_cache_runs_all_detectors = _apply_analyze_patches(
     test_analyze_stale_cache_runs_all_detectors
-)
-
-
-def test_analyze_anonymous_no_cache_lookup(*mocks):
-    """Anonymous user → db.query(StoreAnalysis) never called, all 18 detectors run."""
-    mock_session = _mock_db()
-    # DO NOT configure cache — we want to verify query is never called for cache
-    # Reset query mock so we can track calls
-    mock_session.query.reset_mock()
-
-    app.dependency_overrides[get_db] = lambda: mock_session
-    app.dependency_overrides[get_current_user_optional] = lambda: None
-
-    client = TestClient(app)
-    resp = client.post("/analyze", json={"url": "http://example.com/product"})
-
-    assert resp.status_code == 200
-    data = resp.json()
-
-    # All 18 keys present
-    assert set(data["categories"].keys()) == set(CATEGORY_KEYS)
-
-    # Store-wide keys from fresh detectors (50), product-level from fresh (60)
-    for key in STORE_WIDE_KEYS:
-        assert data["categories"][key] == 50
-
-    # Verify: db.query was NOT called with StoreAnalysis
-    # (it may be called for Scan insert via db.add, but query() should not include StoreAnalysis)
-    from app.models import StoreAnalysis
-    for call in mock_session.query.call_args_list:
-        assert call.args[0] is not StoreAnalysis, (
-            "db.query(StoreAnalysis) should not be called for anonymous users"
-        )
-
-    app.dependency_overrides.clear()
-
-
-test_analyze_anonymous_no_cache_lookup = _apply_analyze_patches(
-    test_analyze_anonymous_no_cache_lookup
 )
 
 

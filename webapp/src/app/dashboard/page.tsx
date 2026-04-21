@@ -23,7 +23,8 @@ interface Scan {
 interface PlanInfo {
   plan: string;
   creditsUsed: number;
-  creditsLimit: number;
+  /** null = unlimited (Starter / Pro) */
+  creditsLimit: number | null;
   creditsResetAt: string | null;
   currentPeriodEnd: string | null;
   hasCreditsRemaining: boolean;
@@ -103,26 +104,34 @@ export default function DashboardPage() {
                       {planInfo.plan === "free" ? "Free" : "Active"}
                     </span>
                   </div>
-                  {/* Credits progress */}
-                  <div className="mb-2">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-sm text-[var(--on-surface-variant)]">
-                        {planInfo.creditsUsed} of {planInfo.creditsLimit} scans used this month
-                      </span>
-                      <span className="text-sm font-semibold text-[var(--on-surface)]">
-                        {planInfo.creditsLimit - planInfo.creditsUsed} remaining
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={planInfo.creditsUsed}
-                      max={planInfo.creditsLimit}
-                      color={planInfo.creditsUsed >= planInfo.creditsLimit ? "var(--error)" : "var(--brand)"}
-                    />
-                  </div>
-                  {planInfo.creditsResetAt && (
-                    <p className="text-xs text-[var(--on-surface-variant)]">
-                      Resets {formatDate(planInfo.creditsResetAt)}
+                  {/* Credits — unlimited plans show a label; metered plans show a progress bar */}
+                  {planInfo.creditsLimit === null ? (
+                    <p className="text-sm font-semibold text-[var(--success-text)]">
+                      Unlimited scans
                     </p>
+                  ) : (
+                    <>
+                      <div className="mb-2">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-sm text-[var(--on-surface-variant)]">
+                            {planInfo.creditsUsed} of {planInfo.creditsLimit} scans used this month
+                          </span>
+                          <span className="text-sm font-semibold text-[var(--on-surface)]">
+                            {planInfo.creditsLimit - planInfo.creditsUsed} remaining
+                          </span>
+                        </div>
+                        <ProgressBar
+                          value={planInfo.creditsUsed}
+                          max={planInfo.creditsLimit}
+                          color={planInfo.creditsUsed >= planInfo.creditsLimit ? "var(--error)" : "var(--brand)"}
+                        />
+                      </div>
+                      {planInfo.creditsResetAt && (
+                        <p className="text-xs text-[var(--on-surface-variant)]">
+                          Resets {formatDate(planInfo.creditsResetAt)}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="shrink-0">

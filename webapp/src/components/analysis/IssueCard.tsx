@@ -1455,7 +1455,7 @@ const IssueCard = memo(function IssueCard({
         type="button"
         onClick={handleClick}
         aria-expanded={expandable ? expanded : undefined}
-        aria-label={locked ? `${leak.category} \u2014 locked. Sign up to see fixes.` : undefined}
+        aria-label={locked ? `${leak.category} \u2014 locked. Upgrade to Starter to see fixes.` : undefined}
         className="block w-full text-left bg-transparent p-0 m-0 border-0 cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
       >
         {locked ? (
@@ -1488,7 +1488,7 @@ const IssueCard = memo(function IssueCard({
 
             {/* Row 4: Lock footer with divider */}
             <div className={`${full ? "mt-4 pt-4" : "mt-3 pt-3"} border-t border-[var(--surface-container)] flex justify-between items-center`}>
-              <span className="text-sm text-[var(--on-surface-variant)]">Sign up to see fixes</span>
+              <span className="text-sm text-[var(--on-surface-variant)]">Upgrade to see fixes</span>
               <LockKeyIcon
                 className="w-5 h-5 text-[var(--on-surface-variant)] group-hover:text-[var(--brand)] transition-all duration-200"
                 weight="regular"

@@ -13,19 +13,30 @@ const AuthModal = dynamic(() => import("@/components/AuthModal"), {
   ssr: false,
 });
 
+/* ══════════════════════════════════════════════════════════════
+   LemonSqueezy checkout URL builder
+   ══════════════════════════════════════════════════════════════ */
+
+const LS_STORE_URL = process.env.NEXT_PUBLIC_LS_STORE_URL ?? "";
+const LS_VARIANT_STARTER_MONTHLY = process.env.NEXT_PUBLIC_LS_VARIANT_STARTER ?? "";
+const LS_VARIANT_STARTER_ANNUAL = process.env.NEXT_PUBLIC_LS_VARIANT_STARTER_ANNUAL ?? "";
+
+function buildCheckoutUrl(variantId: string, userId: string): string | null {
+  if (!LS_STORE_URL || !variantId) return null;
+  const base = LS_STORE_URL.replace(/\/$/, "");
+  const custom = encodeURIComponent(userId);
+  return `${base}/checkout/buy/${variantId}?checkout[custom][user_id]=${custom}`;
+}
+
 /* -- Props -- */
 interface PricingActionsProps {
   tier: {
-    key: string;
+    key: "free" | "starter" | "pro-waitlist";
     ctaLabel: string;
+    billing: "monthly" | "annual";
   };
 }
 
-/**
- * Client island for a single pricing tier CTA.
- * Free tier: static link to homepage.
- * Pro waitlist: auth-gated confirmation wired to backend POST /user/waitlist.
- */
 export default function PricingActions({ tier }: PricingActionsProps) {
   const { data: session } = useSession();
   const isSignedIn = !!session?.user;
@@ -49,7 +60,7 @@ export default function PricingActions({ tier }: PricingActionsProps) {
       .catch(() => {});
   }, [tier.key, isSignedIn]);
 
-  // On mount: auto-enroll when redirected back with ?waitlist=1 after signup (D-09)
+  // Auto-enroll when redirected back with ?waitlist=1 after signup
   useEffect(() => {
     if (tier.key !== "pro-waitlist" || !isSignedIn) return;
     if (searchParams.get("waitlist") !== "1") return;
@@ -63,64 +74,122 @@ export default function PricingActions({ tier }: PricingActionsProps) {
       .catch(() => {});
   }, [isSignedIn, searchParams, pathname, router, tier.key]);
 
-  return (
-    <>
-      {tier.key === "free" ? (
-        /* Free tier -- link to homepage (per D-03) */
+  // ── Free tier: link to scan ──
+  if (tier.key === "free") {
+    return (
+      <Button
+        asChild
+        variant="secondary"
+        size="md"
+        shape="pill"
+        className="w-full text-center"
+      >
+        <Link href="/">{tier.ctaLabel}</Link>
+      </Button>
+    );
+  }
+
+  // ── Starter: LemonSqueezy checkout ──
+  if (tier.key === "starter") {
+    const alreadyStarter = session?.user?.plan_tier === "starter";
+    if (alreadyStarter) {
+      return (
+        <div className="w-full text-center py-3 text-sm font-semibold text-[var(--success-text)]">
+          You&apos;re on Starter
+        </div>
+      );
+    }
+
+    const variantId =
+      tier.billing === "annual" ? LS_VARIANT_STARTER_ANNUAL : LS_VARIANT_STARTER_MONTHLY;
+
+    const onClick = () => {
+      if (!isSignedIn) {
+        setAuthModalOpen(true);
+        return;
+      }
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const url = buildCheckoutUrl(variantId, userId);
+      if (!url) {
+        // Env vars missing — surface a benign fallback by staying on the page
+        console.error("LemonSqueezy store URL or variant ID not configured");
+        return;
+      }
+      window.location.href = url;
+    };
+
+    return (
+      <>
         <Button
-          asChild
-          variant="secondary"
+          type="button"
+          variant="primary"
           size="md"
           shape="pill"
-          className="w-full text-center"
+          className="w-full"
+          onClick={onClick}
+          disabled={!variantId}
+          aria-disabled={!variantId}
         >
-          <Link href="/">{tier.ctaLabel}</Link>
+          {tier.ctaLabel}
         </Button>
-      ) : waitlistConfirmed ? (
-        /* Authenticated user confirmed waitlist -- show inline message */
-        <p
-          role="status"
-          className="text-sm text-center font-semibold py-3 text-[var(--success)] animate-[fade-in_300ms_ease-out]"
-        >
-          You&apos;re on the list! We&apos;ll let you know when Pro launches.
-        </p>
-      ) : (
-        /* Pro waitlist -- auth gate (per D-07) */
-        <>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            shape="pill"
-            disabled={joining}
-            aria-busy={joining}
-            onClick={() => {
-              if (!isSignedIn) {
-                setAuthModalOpen(true);
-                return;
-              }
-              setJoining(true);
-              setJoinError(false);
-              authFetch(`${API_URL}/user/waitlist`, { method: "POST" })
-                .then((r) => {
-                  if (r.ok) setWaitlistConfirmed(true);
-                  else setJoinError(true);
-                })
-                .catch(() => setJoinError(true))
-                .finally(() => setJoining(false));
-            }}
-            className={`w-full px-8 border border-[var(--outline-variant)] text-[var(--on-surface-variant)] ${joining ? "opacity-50" : ""}`}
-          >
-            {tier.ctaLabel}
-          </Button>
-          {joinError && (
-            <p className="text-xs text-center mt-2 text-[var(--error-base)]">
-              Something went wrong. Please try again.
-            </p>
-          )}
-        </>
-      )}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="signup"
+          heading="Create your account to upgrade"
+          subheading="You'll land on the Starter checkout right after signup."
+          callbackUrl="/pricing"
+        />
+      </>
+    );
+  }
 
+  // ── Pro waitlist ──
+  if (waitlistConfirmed) {
+    return (
+      <p
+        role="status"
+        className="text-sm text-center font-semibold py-3 text-[var(--success)] animate-[fade-in_300ms_ease-out]"
+      >
+        You&apos;re on the list! We&apos;ll let you know when Pro launches.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="secondary"
+        size="md"
+        shape="pill"
+        disabled={joining}
+        aria-busy={joining}
+        onClick={() => {
+          if (!isSignedIn) {
+            setAuthModalOpen(true);
+            return;
+          }
+          setJoining(true);
+          setJoinError(false);
+          authFetch(`${API_URL}/user/waitlist`, { method: "POST" })
+            .then((r) => {
+              if (r.ok) setWaitlistConfirmed(true);
+              else setJoinError(true);
+            })
+            .catch(() => setJoinError(true))
+            .finally(() => setJoining(false));
+        }}
+        className={`w-full px-8 border border-[var(--outline-variant)] text-[var(--on-surface-variant)] ${joining ? "opacity-50" : ""}`}
+      >
+        {tier.ctaLabel}
+      </Button>
+      {joinError && (
+        <p className="text-xs text-center mt-2 text-[var(--error-base)]">
+          Something went wrong. Please try again.
+        </p>
+      )}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

@@ -156,6 +156,7 @@ def login(request: Request, req: LoginRequest, db: Session = Depends(get_db)):
         "picture": user.picture,
         "email_verified": user.email_verified,
         "role": user.role,
+        "plan_tier": user.plan_tier,
     }
 
 
@@ -280,6 +281,7 @@ def _google_user_response(user: User) -> dict:
         "google_sub": user.google_sub,
         "email_verified": user.email_verified,
         "role": user.role,
+        "plan_tier": user.plan_tier,
     }
 
 

@@ -11,7 +11,7 @@ double-reset, but that's harmless (resetting 0 to 0).  Paid-tier resets
 are handled atomically by webhooks in S02.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -19,11 +19,12 @@ from app.models import User
 from app.plans import PLAN_TIERS
 
 
-def get_credits_limit(plan_tier: str) -> int:
+def get_credits_limit(plan_tier: str) -> int | None:
     """Return the credit limit for *plan_tier*.
 
-    Falls back to the free-tier limit when the tier key is not recognised,
-    so callers never crash on stale or invalid tier strings.
+    Returns None when the tier is unlimited (Starter, Pro).  Falls back
+    to the free-tier limit when the tier key is not recognised, so
+    callers never crash on stale or invalid tier strings.
     """
     tier = PLAN_TIERS.get(plan_tier)
     if tier is None:
@@ -32,21 +33,35 @@ def get_credits_limit(plan_tier: str) -> int:
 
 
 def has_credits_remaining(user: User) -> bool:
-    """Return True when the user still has credits left in this period."""
-    return user.credits_used < get_credits_limit(user.plan_tier)
+    """Return True when the user still has credits left in this period.
+
+    Users on unlimited tiers (credits_limit is None) always have credits.
+    """
+    limit = get_credits_limit(user.plan_tier)
+    if limit is None:
+        return True
+    return user.credits_used < limit
 
 
 def increment_credits(user: User, db: Session) -> None:
-    """Consume one credit for *user* and persist the change."""
+    """Consume one credit for *user* and persist the change.
+
+    No-op for unlimited tiers — tracking usage on Starter/Pro is pointless
+    because it never bounds access.
+    """
+    if get_credits_limit(user.plan_tier) is None:
+        return
     user.credits_used += 1
     db.commit()
 
 
 def maybe_reset_free_credits(user: User, db: Session) -> None:
-    """Reset credits for a *free*-tier user whose 30-day window has elapsed.
+    """Reset credits for a *free*-tier user when the calendar month rolls over.
 
-    Paid tiers are skipped entirely — their reset is driven by webhook
-    events from the billing provider (S02).
+    Compares the (year, month) of credits_reset_at to now.  If they differ,
+    credits_used is zeroed and credits_reset_at is stamped with the current
+    time.  Paid tiers are skipped entirely — their reset is driven by
+    webhook events from the billing provider (S02).
     """
     if user.plan_tier != "free":
         return
@@ -54,17 +69,14 @@ def maybe_reset_free_credits(user: User, db: Session) -> None:
     if user.credits_reset_at is None:
         return
 
-    threshold = datetime.now(timezone.utc) - timedelta(days=30)
-
-    # Handle timezone-naive datetimes by treating them as UTC.
     reset_at = user.credits_reset_at
     if reset_at.tzinfo is None:
         reset_at = reset_at.replace(tzinfo=timezone.utc)
 
-    if reset_at > threshold:
-        # Recent reset — nothing to do.
+    now = datetime.now(timezone.utc)
+    if (reset_at.year, reset_at.month) == (now.year, now.month):
         return
 
     user.credits_used = 0
-    user.credits_reset_at = datetime.now(timezone.utc)
+    user.credits_reset_at = now
     db.commit()

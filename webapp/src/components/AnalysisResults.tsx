@@ -238,16 +238,20 @@ const AnalysisResults = memo(function AnalysisResults({
                       lg:col-span-2 so details render inline without stretching siblings. */}
                   <CollapsibleRegion isOpen={!isCollapsed} id={groupBodyId}>
                     <div className="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {g.leaks.map((leak, i) => (
-                        <IssueCard
-                          key={leak.key}
-                          leak={leak}
-                          index={i}
-                          onClick={() => onIssueClick(leak.key)}
-                          expandable
-                          signals={result.signals}
-                        />
-                      ))}
+                      {g.leaks.map((leak, i) => {
+                        const locked = result.recommendationsLocked ?? !isPaid;
+                        return (
+                          <IssueCard
+                            key={leak.key}
+                            leak={leak}
+                            index={i}
+                            onClick={() => onIssueClick(leak.key)}
+                            expandable={!locked}
+                            locked={locked}
+                            signals={locked ? undefined : result.signals}
+                          />
+                        );
+                      })}
                     </div>
                   </CollapsibleRegion>
                 </section>

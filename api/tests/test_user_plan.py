@@ -82,13 +82,12 @@ class TestGetUserPlan:
         "tier,expected_limit",
         [
             ("free", 3),
-            ("starter", 10),
-            ("growth", 30),
-            ("pro", 100),
+            ("starter", None),  # unlimited
+            ("pro", None),      # unlimited
         ],
     )
-    def test_correct_credits_limit_per_tier(self, tier: str, expected_limit: int):
-        """Each tier returns its defined credits limit."""
+    def test_correct_credits_limit_per_tier(self, tier: str, expected_limit):
+        """Each tier returns its defined credits limit (None = unlimited)."""
         user = _make_user(plan_tier=tier)
 
         app.dependency_overrides[get_db] = lambda: MagicMock()

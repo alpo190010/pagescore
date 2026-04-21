@@ -13,11 +13,16 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-from app.auth import get_current_user_optional, get_current_user_required
+from app.auth import get_current_user_required
 from app.config import settings
 from app.database import get_db
 from app.models import ProductAnalysis, Scan, StoreAnalysis, User
-from app.services.entitlement import get_credits_limit, has_credits_remaining, increment_credits
+from app.services.entitlement import (
+    get_credits_limit,
+    has_credits_remaining,
+    increment_credits,
+    maybe_reset_free_credits,
+)
 from app.services.page_renderer import render_page, measure_mobile_cta
 # AI call removed — all scoring is deterministic
 # from app.services.openrouter import call_openrouter
@@ -66,7 +71,7 @@ from app.services.social_commerce_rubric import score_social_commerce, get_socia
 from app.services.url_validator import validate_url
 from app.services.scan_dedup import try_acquire_scan, release_scan
 
-from app.rate_limit import limiter, get_client_ip
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -123,26 +128,13 @@ def get_cached_analysis(
     }
 
 
-def _anon_rate_limit_key(request: Request) -> str:
-    """Return real IP for anonymous requests; fixed high-ceiling bucket for authenticated.
-
-    Authenticated users send an Authorization header via authFetch. They share a
-    single bucket keyed "authenticated:bypass" which will never hit the daily
-    ceiling. Anonymous users get a per-IP bucket like "anon:203.0.113.42".
-    """
-    if request.headers.get("authorization"):
-        return "authenticated:bypass"
-    return f"anon:{get_client_ip(request)}"
-
-
 @router.post("/analyze")
 @limiter.limit("5/minute")
-@limiter.limit(f"{settings.anon_daily_limit}/day", key_func=_anon_rate_limit_key)
 async def analyze(
     request: Request,
     body: AnalyzeRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(get_current_user_required),
 ):
     # --- URL validation via shared SSRF-safe validator ---
     url, error = validate_url(body.url)
@@ -151,8 +143,11 @@ async def analyze(
 
     parsed_url = urllib.parse.urlparse(url)
 
-    # --- Credit check (only for authenticated users) ---
-    if current_user and not has_credits_remaining(current_user):
+    # --- Calendar-month credit reset (free tier only) ---
+    maybe_reset_free_credits(current_user, db)
+
+    # --- Credit check ---
+    if not has_credits_remaining(current_user):
         return JSONResponse(
             status_code=403,
             content={
@@ -719,35 +714,45 @@ async def _do_analyze(
             },
         }
 
+    # --- Free-tier gating: hide fix recommendations on the server (defense in depth) ---
+    plan_tier = current_user.plan_tier if current_user else "free"
+    recs_locked = plan_tier == "free"
+
     response_data: dict = {
         "score": overall_score,
         "summary": "Analysis complete.",
-        "tips": all_tips or ["No issues detected."],
-        "dimensionTips": {
-            "socialProof": sp_tips,
-            "structuredData": sd_tips,
-            "checkout": co_tips,
-            "pricing": pr_tips,
-            "images": im_tips,
-            "title": ti_tips,
-            "shipping": sh_tips,
-            "description": de_tips,
-            "trust": tr_tips,
-            "pageSpeed": ps_tips,
-            "mobileCta": mc_tips,
-            "crossSell": cs_tips,
-            "variantUx": vu_tips,
-            "sizeGuide": sg_tips,
-            "aiDiscoverability": ad_tips,
-            "contentFreshness": cf_tips,
-            "accessibility": ac_tips,
-            "socialCommerce": sc_tips,
-        },
+        "tips": [] if recs_locked else (all_tips or ["No issues detected."]),
+        "dimensionTips": (
+            {}
+            if recs_locked
+            else {
+                "socialProof": sp_tips,
+                "structuredData": sd_tips,
+                "checkout": co_tips,
+                "pricing": pr_tips,
+                "images": im_tips,
+                "title": ti_tips,
+                "shipping": sh_tips,
+                "description": de_tips,
+                "trust": tr_tips,
+                "pageSpeed": ps_tips,
+                "mobileCta": mc_tips,
+                "crossSell": cs_tips,
+                "variantUx": vu_tips,
+                "sizeGuide": sg_tips,
+                "aiDiscoverability": ad_tips,
+                "contentFreshness": cf_tips,
+                "accessibility": ac_tips,
+                "socialCommerce": sc_tips,
+            }
+        ),
         "categories": categories,
         "productPrice": extract_price(html, sd_price=sd_signals.price_amount) or 0,
         "productCategory": "other",
         "timings": timings,
         "signals": {**_product_signals, **_store_signals},
+        "planTier": plan_tier,
+        "recommendationsLocked": recs_locked,
     }
 
     # --- Consume credit (best-effort — analysis already succeeded) ---
@@ -757,12 +762,12 @@ async def _do_analyze(
         except Exception:
             logger.exception("Credit increment failed for user %s — analysis delivered anyway", current_user.id)
 
-    credits_remaining = (
-        get_credits_limit(current_user.plan_tier) - current_user.credits_used
-        if current_user else None
-    )
-    if credits_remaining is not None:
-        response_data["creditsRemaining"] = credits_remaining
+    if current_user:
+        limit = get_credits_limit(current_user.plan_tier)
+        if limit is None:
+            response_data["creditsRemaining"] = None  # unlimited
+        else:
+            response_data["creditsRemaining"] = max(0, limit - current_user.credits_used)
 
     logger.info("analyze timings %s — %s", url, timings)
 

@@ -1,7 +1,4 @@
-"""Tests for the credit entitlement service (app.services.entitlement).
-
-Uses the same MagicMock-for-db pattern established in test_user_scans.py.
-"""
+"""Tests for the credit entitlement service (app.services.entitlement)."""
 
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -38,7 +35,6 @@ def _make_user(
     user.credits_reset_at = credits_reset_at or datetime.now(timezone.utc)
     user.created_at = datetime.now(timezone.utc)
     user.updated_at = datetime.now(timezone.utc)
-    # Nullable LemonSqueezy fields
     user.lemon_subscription_id = None
     user.lemon_customer_id = None
     user.current_period_end = None
@@ -50,12 +46,14 @@ def _make_user(
 
 
 class TestGetCreditsLimit:
-    def test_all_tiers(self):
-        """Each defined tier returns its configured credit limit."""
+    def test_free_tier_is_three(self):
         assert get_credits_limit("free") == 3
-        assert get_credits_limit("starter") == 10
-        assert get_credits_limit("growth") == 30
-        assert get_credits_limit("pro") == 100
+
+    def test_starter_tier_is_unlimited(self):
+        assert get_credits_limit("starter") is None
+
+    def test_pro_tier_is_unlimited(self):
+        assert get_credits_limit("pro") is None
 
     def test_unknown_tier_defaults_to_free(self):
         """An unrecognised tier string falls back to the free-tier limit."""
@@ -67,29 +65,35 @@ class TestGetCreditsLimit:
 
 
 class TestHasCreditsRemaining:
-    def test_under_limit(self):
-        """A user well below their limit has credits remaining."""
+    def test_free_under_limit(self):
         user = _make_user(plan_tier="free", credits_used=0)
         assert has_credits_remaining(user) is True
 
-    def test_at_limit(self):
-        """A user exactly at the limit has NO credits remaining."""
+    def test_free_at_limit(self):
         user = _make_user(plan_tier="free", credits_used=3)
         assert has_credits_remaining(user) is False
 
-    def test_over_limit(self):
-        """A user past the limit (edge case) has NO credits remaining."""
+    def test_free_over_limit(self):
         user = _make_user(plan_tier="free", credits_used=5)
         assert has_credits_remaining(user) is False
+
+    def test_starter_always_has_credits(self):
+        """Unlimited tiers short-circuit to True regardless of credits_used."""
+        user = _make_user(plan_tier="starter", credits_used=999)
+        assert has_credits_remaining(user) is True
+
+    def test_pro_always_has_credits(self):
+        user = _make_user(plan_tier="pro", credits_used=9999)
+        assert has_credits_remaining(user) is True
 
 
 # -- increment_credits -------------------------------------------------------
 
 
 class TestIncrementCredits:
-    def test_increments_and_commits(self):
-        """credits_used increases by 1 and db.commit() is called."""
-        user = _make_user(credits_used=0)
+    def test_increments_for_metered_tier(self):
+        """Free tier: credits_used increases by 1 and db.commit() is called."""
+        user = _make_user(plan_tier="free", credits_used=0)
         db = MagicMock()
 
         increment_credits(user, db)
@@ -97,42 +101,66 @@ class TestIncrementCredits:
         assert user.credits_used == 1
         db.commit.assert_called_once()
 
+    def test_noop_for_unlimited_tier(self):
+        """Starter/Pro: no increment, no commit (usage metering is pointless)."""
+        user = _make_user(plan_tier="starter", credits_used=0)
+        db = MagicMock()
 
-# -- maybe_reset_free_credits -----------------------------------------------
+        increment_credits(user, db)
+
+        assert user.credits_used == 0
+        db.commit.assert_not_called()
+
+
+# -- maybe_reset_free_credits (calendar-month semantics) ---------------------
 
 
 class TestMaybeResetFreeCredits:
-    def test_stale_free_credits_reset(self):
-        """Free user with reset_at >30 days ago → credits zeroed, reset_at updated."""
-        stale_date = datetime.now(timezone.utc) - timedelta(days=31)
+    def test_reset_when_month_differs(self):
+        """Free user with reset_at in a previous calendar month → credits zeroed."""
+        # 45 days ago is safely in a previous calendar month regardless of today's date
+        stale_date = datetime.now(timezone.utc) - timedelta(days=45)
         user = _make_user(plan_tier="free", credits_used=3, credits_reset_at=stale_date)
         db = MagicMock()
 
         maybe_reset_free_credits(user, db)
 
         assert user.credits_used == 0
-        # credits_reset_at should be freshly set (within the last few seconds)
         assert user.credits_reset_at > datetime.now(timezone.utc) - timedelta(seconds=5)
         db.commit.assert_called_once()
 
-    def test_recent_free_credits_not_reset(self):
-        """Free user whose reset_at is only 5 days ago → no change."""
-        recent_date = datetime.now(timezone.utc) - timedelta(days=5)
-        user = _make_user(plan_tier="free", credits_used=2, credits_reset_at=recent_date)
+    def test_no_reset_same_calendar_month(self):
+        """Free user whose reset_at is earlier in the same month → no change."""
+        now = datetime.now(timezone.utc)
+        same_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        user = _make_user(plan_tier="free", credits_used=2, credits_reset_at=same_month)
         db = MagicMock()
 
         maybe_reset_free_credits(user, db)
 
-        assert user.credits_used == 2  # unchanged
+        assert user.credits_used == 2
         db.commit.assert_not_called()
 
     def test_paid_tier_skipped(self):
         """Starter-tier user with stale date → no reset (paid tiers use webhooks)."""
-        stale_date = datetime.now(timezone.utc) - timedelta(days=31)
+        stale_date = datetime.now(timezone.utc) - timedelta(days=45)
         user = _make_user(plan_tier="starter", credits_used=10, credits_reset_at=stale_date)
         db = MagicMock()
 
         maybe_reset_free_credits(user, db)
 
-        assert user.credits_used == 10  # unchanged
+        assert user.credits_used == 10
         db.commit.assert_not_called()
+
+    def test_resets_across_year_boundary(self):
+        """(year, month) comparison catches year rollover, not just month number."""
+        # One year ago to the day — same month number, different year
+        now = datetime.now(timezone.utc)
+        one_year_ago = now.replace(year=now.year - 1)
+        user = _make_user(plan_tier="free", credits_used=3, credits_reset_at=one_year_ago)
+        db = MagicMock()
+
+        maybe_reset_free_credits(user, db)
+
+        assert user.credits_used == 0
+        db.commit.assert_called_once()
