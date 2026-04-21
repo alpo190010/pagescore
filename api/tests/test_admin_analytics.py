@@ -59,60 +59,44 @@ def _mock_db_analytics(
     total_credits: int = 0,
     waitlist_count: int = 0,
 ):
-    """Build a mock DB session that supports the chained query patterns
-    used by the analytics endpoint.
+    """Build a mock DB session that mimics the consolidated CTE query.
 
-    The endpoint issues five distinct db.query() calls (the user
-    single-row metrics are consolidated into one query with
-    conditional aggregation).  We use ``side_effect`` on ``db.query()``
-    to return a different mock chain for each call.
+    The endpoint now issues exactly one ``db.execute(sql, params).one()``
+    call and reads 5 JSON-shaped attributes off the result row. We mock
+    that single call here. Helper accepts the test's existing
+    ``_make_row(date=..., count=...)`` inputs and converts them to the
+    dict shape Postgres's ``json_agg`` actually returns.
     """
-    if signups_rows is None:
-        signups_rows = []
-    if scans_rows is None:
-        scans_rows = []
-    if plan_rows is None:
-        plan_rows = []
+    def _to_date_dict(r):
+        if isinstance(r, dict):
+            return r
+        d = getattr(r, "date", None)
+        return {
+            "date": d.isoformat() if hasattr(d, "isoformat") else d,
+            "count": getattr(r, "count", 0),
+        }
+
+    def _to_plan_dict(r):
+        if isinstance(r, dict):
+            return r
+        return {
+            "plan_tier": getattr(r, "plan_tier", None),
+            "count": getattr(r, "count", 0),
+        }
 
     mock_db = MagicMock()
-
-    # Each db.query() call returns a fresh chain mock.
-    # Order of calls in the endpoint:
-    #   1. user_agg     → one()   — total_users + total_credits + waitlist
-    #   2. signups      → filter().group_by().order_by().all()
-    #   3. total_scans  → scalar()
-    #   4. scans        → filter().group_by().order_by().all()
-    #   5. plan_dist    → group_by().all()
-
-    def _chain():
-        """Return a mock that supports arbitrary chaining and terminals."""
-        m = MagicMock()
-        m.filter.return_value = m
-        m.group_by.return_value = m
-        m.order_by.return_value = m
-        return m
-
-    chain1 = _chain()
-    chain1.one.return_value = _make_row(
-        total_users=total_users,
-        total_credits=total_credits,
-        waitlist_count=waitlist_count,
+    exec_row = _make_row(
+        user_agg={
+            "total_users": total_users,
+            "total_credits": total_credits,
+            "waitlist_count": waitlist_count,
+        },
+        signups=[_to_date_dict(r) for r in (signups_rows or [])],
+        total_scans=total_scans,
+        scans_series=[_to_date_dict(r) for r in (scans_rows or [])],
+        plans=[_to_plan_dict(r) for r in (plan_rows or [])],
     )
-
-    chain2 = _chain()
-    chain2.all.return_value = signups_rows
-
-    chain3 = _chain()
-    chain3.scalar.return_value = total_scans
-
-    chain4 = _chain()
-    chain4.all.return_value = scans_rows
-
-    chain5 = _chain()
-    chain5.all.return_value = plan_rows
-
-    mock_db.query.side_effect = [chain1, chain2, chain3, chain4, chain5]
-
+    mock_db.execute.return_value.one.return_value = exec_row
     return mock_db
 
 
