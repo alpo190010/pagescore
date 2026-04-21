@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 import time
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 import httpx
@@ -418,17 +419,78 @@ def _serialize_store_signals(
     }
 
 
+# Store-wide analysis cache TTL. Store-level signals (shipping policy, trust
+# badges, checkout flow) rarely change — 7 days balances freshness vs compute cost.
+_STORE_CACHE_TTL_DAYS = 7
+
+
+def _is_store_cache_fresh(updated_at) -> bool:
+    """True when the cached StoreAnalysis row is younger than _STORE_CACHE_TTL_DAYS.
+
+    Handles tz-naive Postgres timestamps by assuming UTC.
+    """
+    if updated_at is None:
+        return False
+    ts = updated_at if updated_at.tzinfo is not None else updated_at.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - ts) < timedelta(days=_STORE_CACHE_TTL_DAYS)
+
+
+def _store_analysis_dict(row: StoreAnalysis) -> dict:
+    """Serialize a StoreAnalysis row into the StoreAnalysisData response shape."""
+    return {
+        "score": row.score,
+        "categories": row.categories or {},
+        "tips": row.tips or [],
+        "signals": row.signals or {},
+        "analyzedUrl": row.analyzed_url,
+        "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
 async def _run_store_wide_analysis(
     domain: str,
     product_url: str,
     user_id,
     db: Session,
+    *,
+    force: bool = False,
 ) -> dict | None:
     """Run 7 store-wide detectors on one product page and persist a StoreAnalysis row.
 
-    Returns a dict with score/categories/tips/signals/analyzedUrl, or None on failure.
-    Product discovery never fails due to store analysis errors — all exceptions are caught.
+    When ``force`` is False (default), reuses a cached StoreAnalysis row if one exists
+    for (domain, user_id) and is fresher than _STORE_CACHE_TTL_DAYS — skipping all
+    detectors and external API calls (axe, PSI, AI discoverability).
+
+    Returns a dict with score/categories/tips/signals/analyzedUrl/updatedAt, or None
+    on failure. Product discovery never fails due to store analysis errors — all
+    exceptions are caught.
     """
+    # --- Cache lookup (skipped when caller forces a refresh) ---
+    if not force:
+        try:
+            cache_row = (
+                db.query(StoreAnalysis)
+                .filter(StoreAnalysis.store_domain == domain)
+                .filter(StoreAnalysis.user_id == user_id)
+                .first()
+            )
+            if cache_row is not None and _is_store_cache_fresh(cache_row.updated_at):
+                logger.info(
+                    "Store-wide analysis cache HIT for domain=%s user_id=%s — skipping detectors",
+                    domain, user_id,
+                )
+                return _store_analysis_dict(cache_row)
+            if cache_row is not None:
+                logger.info(
+                    "Store-wide analysis cache STALE for domain=%s user_id=%s — re-running",
+                    domain, user_id,
+                )
+        except Exception:
+            logger.exception(
+                "Store-wide cache lookup failed for domain=%s — running fresh analysis",
+                domain,
+            )
+
     try:
         # --- Gather HTML + external API data in parallel ---
         coros: list = [
@@ -530,6 +592,7 @@ async def _run_store_wide_analysis(
         )
 
         # --- Upsert StoreAnalysis row ---
+        updated_at_iso: str | None = None
         try:
             stmt = (
                 pg_insert(StoreAnalysis)
@@ -553,9 +616,15 @@ async def _run_store_wide_analysis(
                         "updated_at": func.now(),
                     },
                 )
+                .returning(StoreAnalysis.updated_at)
             )
-            db.execute(stmt)
+            row = db.execute(stmt).fetchone()
             db.commit()
+            if row and row[0]:
+                ts = row[0]
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                updated_at_iso = ts.isoformat()
         except Exception:
             logger.exception(
                 "StoreAnalysis DB upsert error for domain=%s user_id=%s", domain, user_id
@@ -571,6 +640,7 @@ async def _run_store_wide_analysis(
             "tips": all_tips or ["No issues detected."],
             "signals": signals,
             "analyzedUrl": product_url,
+            "updatedAt": updated_at_iso,
         }
 
     except Exception:

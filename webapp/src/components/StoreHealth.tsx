@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CaretDownIcon, CaretUpIcon, CheckCircleIcon, XCircleIcon, StorefrontIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, CaretUpIcon, CheckCircleIcon, XCircleIcon, StorefrontIcon, ArrowsClockwiseIcon } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import {
   type StoreAnalysisData,
@@ -19,6 +19,29 @@ import {
 
 interface StoreHealthProps {
   storeAnalysis: StoreAnalysisData;
+  /** Handler to force a fresh store-wide scan (bypasses 7-day cache). */
+  onRefresh?: () => void | Promise<void>;
+  /** Whether a refresh is currently in flight. */
+  refreshing?: boolean;
+}
+
+/** Relative-time formatter. Returns strings like "just now", "3h ago", "2w ago". */
+function formatRelative(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const ts = Date.parse(iso);
+  if (Number.isNaN(ts)) return null;
+  const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  const diffWk = Math.floor(diffDay / 7);
+  if (diffWk < 5) return `${diffWk}w ago`;
+  const diffMo = Math.floor(diffDay / 30);
+  return `${diffMo}mo ago`;
 }
 
 /** Format signal key → human label: "hasShopPay" → "Has Shop Pay" */
@@ -31,9 +54,10 @@ function formatSignalKey(key: string): string {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
-export default function StoreHealth({ storeAnalysis }: StoreHealthProps) {
+export default function StoreHealth({ storeAnalysis, onRefresh, refreshing = false }: StoreHealthProps) {
   const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
-  const { score, categories, tips, signals } = storeAnalysis;
+  const { score, categories, tips, signals, updatedAt } = storeAnalysis;
+  const relative = formatRelative(updatedAt);
 
   const storeKeys = Array.from(STORE_WIDE_DIMENSIONS).filter(
     (k) => categories[k as keyof typeof categories] !== undefined,
@@ -67,8 +91,30 @@ export default function StoreHealth({ storeAnalysis }: StoreHealthProps) {
           >
             Store Health
           </h3>
-          <p className="text-[11px] mt-0.5" style={{ color: "var(--on-surface-variant)" }}>
-            Store-wide scores · applies to all products
+          <p className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: "var(--on-surface-variant)" }}>
+            <span>Store-wide scores · applies to all products</span>
+            {relative && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>Last scanned {relative}</span>
+              </>
+            )}
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={() => { if (!refreshing) onRefresh(); }}
+                disabled={refreshing}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--brand)] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Re-run store-wide scan"
+              >
+                <ArrowsClockwiseIcon
+                  size={11}
+                  weight="bold"
+                  className={refreshing ? "animate-spin" : ""}
+                />
+                {refreshing ? "Refreshing…" : "Refresh"}
+              </button>
+            )}
           </p>
         </div>
         <div

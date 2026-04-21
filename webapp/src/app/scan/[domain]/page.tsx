@@ -53,7 +53,29 @@ function ScanPageContent() {
     Map<string, FreeResult> | undefined
   >(undefined);
   const [storeAnalysis, setStoreAnalysis] = useState<StoreAnalysisData | null>(null);
+  const [refreshingStore, setRefreshingStore] = useState(false);
   const [takingLong, setTakingLong] = useState(false);
+
+  const handleRefreshStoreAnalysis = useCallback(async () => {
+    if (refreshingStore) return;
+    setRefreshingStore(true);
+    try {
+      const res = await authFetch(
+        `${API_URL}/store/${encodeURIComponent(domain)}/refresh-analysis`,
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        console.warn("Store analysis refresh failed:", res.status);
+        return;
+      }
+      const data = (await res.json()) as StoreAnalysisData;
+      setStoreAnalysis(data);
+    } catch (err) {
+      console.warn("Store analysis refresh error:", err);
+    } finally {
+      setRefreshingStore(false);
+    }
+  }, [domain, refreshingStore]);
 
   // Show "taking longer" feedback after 10s in discovering phase
   useEffect(() => {
@@ -235,7 +257,7 @@ function ScanPageContent() {
       {/* ── Ready — ProductListings split-view ── */}
       {phase === "ready" && (
         <div className="h-full">
-          <ProductListings products={products} storeName={storeName} domain={domain} initialSku={initialSku} onSkuChange={handleSkuChange} initialAnalyses={initialAnalyses} storeAnalysis={storeAnalysis} />
+          <ProductListings products={products} storeName={storeName} domain={domain} initialSku={initialSku} onSkuChange={handleSkuChange} initialAnalyses={initialAnalyses} storeAnalysis={storeAnalysis} onRefreshStoreAnalysis={handleRefreshStoreAnalysis} refreshingStoreAnalysis={refreshingStore} />
         </div>
       )}
     </div>

@@ -56,7 +56,24 @@ import {
   LeafIcon,
 } from "@phosphor-icons/react";
 import CollapsibleRegion from "@/components/ui/CollapsibleRegion";
-import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type PageSpeedSignals, type MobileCtaSignals, type CrossSellSignals, type VariantUxSignals, type SizeGuideSignals, type AiDiscoverabilitySignals, type ContentFreshnessSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
+import { CATEGORY_SVG, STORE_WIDE_DIMENSIONS, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type PageSpeedSignals, type MobileCtaSignals, type CrossSellSignals, type VariantUxSignals, type SizeGuideSignals, type AiDiscoverabilitySignals, type ContentFreshnessSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
+
+/** Small pill indicating a dimension is scored once per storefront, not per product. */
+function StoreWideBadge() {
+  return (
+    <span
+      className="inline-flex items-center shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded"
+      style={{
+        background: "var(--rule-2)",
+        color: "var(--ink-2)",
+        fontFamily: "var(--font-mono)",
+      }}
+      title="This dimension is evaluated at the storefront level and applies to every product."
+    >
+      Store-wide
+    </span>
+  );
+}
 
 interface IssueCardProps {
   leak: LeakCard;
@@ -1434,6 +1451,8 @@ const IssueCard = memo(function IssueCard({
     LOW: { textColor: "var(--success-text)" },
   }[leak.impact as "HIGH" | "MED" | "LOW"] || { textColor: "var(--on-surface)" };
 
+  const isStoreWide = STORE_WIDE_DIMENSIONS.has(leak.key);
+
   const handleClick = () => {
     if (expandable) {
       setExpanded((prev) => !prev);
@@ -1476,10 +1495,13 @@ const IssueCard = memo(function IssueCard({
               </div>
             </div>
 
-            {/* Row 2: Dimension name only (no problem text) */}
-            <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug font-display`}>
-              {leak.category}
-            </h3>
+            {/* Row 2: Dimension name + scope badge */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug font-display`}>
+                {leak.category}
+              </h3>
+              {isStoreWide && <StoreWideBadge />}
+            </div>
 
             {/* Row 3: Impact badge */}
             <div className="text-xs font-bold uppercase tracking-wider" style={{ color: impactStyle.textColor }}>
@@ -1517,9 +1539,12 @@ const IssueCard = memo(function IssueCard({
 
               {/* Category + Problem */}
               <div className="space-y-2">
-                <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug line-clamp-2 font-display`}>
-                  {leak.category}
-                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug line-clamp-2 font-display`}>
+                    {leak.category}
+                  </h3>
+                  {isStoreWide && <StoreWideBadge />}
+                </div>
                 <p className="text-sm text-[var(--on-surface-variant)] leading-relaxed line-clamp-3">
                   {leak.problem}
                 </p>

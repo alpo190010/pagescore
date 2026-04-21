@@ -2,7 +2,8 @@ import type { CategoryScores, FreeResult, LeakCard } from "./types";
 export type { StoreAnalysisData } from "./types";
 import {
   CATEGORY_LABELS, CATEGORY_PROBLEMS, CATEGORY_REVENUE_IMPACT,
-  DIMENSION_GROUPS, ACTIVE_DIMENSIONS, DIMENSION_IMPACT_WEIGHTS, type DimensionGroup,
+  DIMENSION_GROUPS, ACTIVE_DIMENSIONS, DIMENSION_IMPACT_WEIGHTS, STORE_WIDE_DIMENSIONS,
+  type DimensionGroup,
 } from "./constants";
 import { calculateConversionLoss } from "./conversion-model";
 
@@ -509,4 +510,20 @@ export function groupLeaks(leaks: LeakCard[]): GroupedLeaks[] {
     })
     .filter((g) => g.leaks.length > 0)
     .sort((a, b) => a.avgScore - b.avgScore); // worst group first
+}
+
+/** Split leaks by dimension scope. Store-wide leaks describe the storefront
+ *  and apply to every product; product leaks are specific to the analyzed page. */
+export function splitLeaksByScope(leaks: LeakCard[]): {
+  productLeaks: LeakCard[];
+  storeLeaks: LeakCard[];
+} {
+  const productLeaks: LeakCard[] = [];
+  const storeLeaks: LeakCard[] = [];
+  for (const leak of leaks) {
+    if (STORE_WIDE_DIMENSIONS.has(leak.key)) storeLeaks.push(leak);
+    else productLeaks.push(leak);
+  }
+  // Within each bucket, keep the worst-first ordering that buildLeaks produced.
+  return { productLeaks, storeLeaks };
 }

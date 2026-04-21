@@ -31,6 +31,8 @@ interface ProductListingsProps {
   initialAnalyses?: Map<string, FreeResult>;
   storeAnalysis?: StoreAnalysisData | null;
   onSkuChange?: (sku: string | null) => void;
+  onRefreshStoreAnalysis?: () => void | Promise<void>;
+  refreshingStoreAnalysis?: boolean;
 }
 
 export default function ProductListings({
@@ -41,6 +43,8 @@ export default function ProductListings({
   initialAnalyses,
   storeAnalysis,
   onSkuChange,
+  onRefreshStoreAnalysis,
+  refreshingStoreAnalysis,
 }: ProductListingsProps) {
   /* ── Refs ── */
   const rightPaneRef = useRef<HTMLDivElement>(null);
@@ -146,7 +150,13 @@ export default function ProductListings({
   return (
     <div className="flex flex-col md:flex-row w-full min-h-[calc(100dvh-80px)] md:min-h-0 md:h-[calc(100dvh-1rem)] md:overflow-hidden">
       {/* ═══ LEFT PANE — Store Health + Product Grid ═══ */}
-      {storeAnalysis && <StoreHealth storeAnalysis={storeAnalysis} />}
+      {storeAnalysis && (
+        <StoreHealth
+          storeAnalysis={storeAnalysis}
+          onRefresh={onRefreshStoreAnalysis}
+          refreshing={refreshingStoreAnalysis}
+        />
+      )}
       <ProductGrid
         products={products}
         sortedIndices={sortedIndices}
