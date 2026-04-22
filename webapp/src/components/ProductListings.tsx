@@ -3,13 +3,22 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { type FreeResult, type StoreAnalysisData } from "@/lib/analysis";
+import {
+  type FreeResult,
+  type StoreAnalysisData,
+  PRODUCT_LEVEL_DIMENSIONS,
+  calculateConversionLoss,
+  calculateDollarLossPerThousand,
+} from "@/lib/analysis";
 import { useProductAnalysis } from "@/hooks/useProductAnalysis";
 import AnalysisPane, { type AnalysisPaneProps } from "@/components/AnalysisPane";
 import AuthModal from "@/components/AuthModal";
 import ProductGrid from "@/components/ProductGrid";
 import StoreHealth from "@/components/StoreHealth";
+import StoreHealthTab from "@/components/StoreHealthTab";
 import BottomSheet from "@/components/BottomSheet";
+
+type SidebarTab = "health" | "products";
 
 /* ══════════════════════════════════════════════════════════════
    ProductListings — Split-view orchestrator
@@ -89,6 +98,44 @@ export default function ProductListings({
   /* ── Sidebar collapsed state ── */
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  /* ── Sidebar tab (default "products") ── */
+  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTab>("products");
+
+  /* ── Aggregated totals across analyzed products (for Hero revenue-loss column) ── */
+  const productTotals = useMemo(() => {
+    if (analyzedResults.size === 0) return null;
+    let totalScore = 0;
+    let totalConversionLoss = 0;
+    let totalDollarLoss = 0;
+    let dollarLossCount = 0;
+    let count = 0;
+    for (const result of analyzedResults.values()) {
+      totalScore += result.score;
+      let productLossSum = 0;
+      let dimCount = 0;
+      for (const key of PRODUCT_LEVEL_DIMENSIONS) {
+        const catScore = result.categories?.[key as keyof typeof result.categories];
+        if (catScore != null) {
+          productLossSum += calculateConversionLoss(catScore as number, key);
+          dimCount++;
+        }
+      }
+      if (dimCount > 0) totalConversionLoss += productLossSum / dimCount;
+      const dloss = calculateDollarLossPerThousand(result.categories, result.productPrice, result.productCategory);
+      if (dloss > 0) {
+        totalDollarLoss += dloss;
+        dollarLossCount++;
+      }
+      count++;
+    }
+    return {
+      avgScore: Math.round(totalScore / count),
+      avgConversionLoss: Math.round((totalConversionLoss / count) * 10) / 10,
+      avgDollarLoss: dollarLossCount > 0 ? Math.round((totalDollarLoss / dollarLossCount) * 100) / 100 : 0,
+      analyzed: count,
+    };
+  }, [analyzedResults]);
+
   /* ── Mobile viewport ── */
   const [isMobile, setIsMobile] = useState(false);
   const [bottomSheetDismissed, setBottomSheetDismissed] = useState(false);
@@ -163,39 +210,167 @@ export default function ProductListings({
           transition-[width] duration-300 ease-[var(--ease-out-quart)]
         `}
       >
-        {!sidebarCollapsed && storeAnalysis && (
-          <StoreHealth
-            storeAnalysis={storeAnalysis}
-            onRefresh={onRefreshStoreAnalysis}
-            refreshing={refreshingStoreAnalysis}
-          />
-        )}
-        {!sidebarCollapsed && !storeAnalysis && refreshingStoreAnalysis && (
-          <div
-            className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-3"
-          >
-            <span
-              className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent shrink-0"
-              style={{ animation: "spin 0.8s linear infinite" }}
-              aria-hidden="true"
-            />
-            <p className="text-xs font-medium" style={{ color: "var(--on-surface-variant)" }}>
-              Analyzing store health…
-            </p>
+        {!sidebarCollapsed && (
+          <div className="p-3 flex flex-col gap-3">
+            {/* ── Hero card (store identity + health score + revenue loss) ── */}
+            {storeAnalysis ? (
+              <StoreHealth
+                storeAnalysis={storeAnalysis}
+                storeName={storeName}
+                domain={domain}
+                productTotals={productTotals}
+                onRefresh={onRefreshStoreAnalysis}
+                refreshing={refreshingStoreAnalysis}
+              />
+            ) : refreshingStoreAnalysis ? (
+              <section
+                className="rounded-2xl border px-[18px] py-4 flex items-center gap-3"
+                style={{
+                  background: "var(--paper)",
+                  borderColor: "var(--rule-2)",
+                  boxShadow: "var(--shadow-subtle)",
+                }}
+              >
+                <span
+                  className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent shrink-0"
+                  style={{ animation: "spin 0.8s linear infinite" }}
+                  aria-hidden="true"
+                />
+                <p className="text-xs font-medium" style={{ color: "var(--ink-3)" }}>
+                  Analyzing store health…
+                </p>
+              </section>
+            ) : null}
+
+            {/* ── Pill tabs (sidebar-level) ── */}
+            <div
+              role="tablist"
+              className="relative flex p-[3px] rounded-full"
+              style={{ background: "var(--bg-elev)" }}
+            >
+              <span
+                aria-hidden="true"
+                className="absolute top-[3px] bottom-[3px] rounded-full transition-transform duration-[250ms] ease-[var(--ease-out-quart)]"
+                style={{
+                  background: "var(--ink)",
+                  boxShadow: "0 1px 3px rgba(22,19,14,.15)",
+                  width: "calc(50% - 3px)",
+                  transform: activeSidebarTab === "products" ? "translateX(100%)" : "translateX(0)",
+                }}
+              />
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeSidebarTab === "health"}
+                onClick={() => setActiveSidebarTab("health")}
+                className="relative z-10 flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
+                style={{
+                  color: activeSidebarTab === "health" ? "var(--paper)" : "var(--ink-3)",
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                Store Health
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeSidebarTab === "products"}
+                onClick={() => setActiveSidebarTab("products")}
+                className="relative z-10 flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
+                style={{
+                  color: activeSidebarTab === "products" ? "var(--paper)" : "var(--ink-3)",
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                Products
+                <span
+                  className="font-mono text-[10px] font-semibold tabular-nums"
+                  style={{ opacity: 0.7 }}
+                >
+                  {productTotals?.analyzed ?? 0}/{products.length}
+                </span>
+              </button>
+            </div>
+
+            {/* ── Tab content ── */}
+            {activeSidebarTab === "health" && storeAnalysis && (
+              <StoreHealthTab storeAnalysis={storeAnalysis} />
+            )}
+            {activeSidebarTab === "health" && !storeAnalysis && (
+              <p
+                className="text-xs text-center py-6"
+                style={{ color: "var(--ink-3)" }}
+              >
+                {refreshingStoreAnalysis
+                  ? "Running store-wide dimension scan…"
+                  : "Store-wide scan unavailable."}
+              </p>
+            )}
+
+            {activeSidebarTab === "products" && (
+              <div className="flex flex-col gap-3">
+                {/* Products header with integrated progress bar */}
+                <div className="flex flex-col gap-2 px-1">
+                  <div className="flex items-baseline justify-between gap-2.5">
+                    <h2
+                      className="font-display font-bold text-lg leading-tight"
+                      style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
+                    >
+                      Products
+                    </h2>
+                    {productTotals ? (
+                      <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                        {productTotals.analyzed}/{products.length} scanned
+                      </span>
+                    ) : (
+                      <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                        0/{products.length} scanned
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="h-[3px] rounded-full overflow-hidden"
+                    style={{ background: "color-mix(in oklch, var(--ink) 8%, transparent)" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${products.length > 0 ? ((productTotals?.analyzed ?? 0) / products.length) * 100 : 0}%`,
+                        background: "var(--ink)",
+                      }}
+                    />
+                  </div>
+                </div>
+                <ProductGrid
+                  products={products}
+                  sortedIndices={sortedIndices}
+                  selectedIndex={selectedIndex}
+                  analyzingHandle={analyzingHandle}
+                  analyzedResults={analyzedResults}
+                  storeName={storeName}
+                  domain={domain}
+                  onSelectProduct={handleSelectProduct}
+                  collapsed={sidebarCollapsed}
+                  onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+                />
+              </div>
+            )}
           </div>
         )}
-        <ProductGrid
-          products={products}
-          sortedIndices={sortedIndices}
-          selectedIndex={selectedIndex}
-          analyzingHandle={analyzingHandle}
-          analyzedResults={analyzedResults}
-          storeName={storeName}
-          domain={domain}
-          onSelectProduct={handleSelectProduct}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
-        />
+        {sidebarCollapsed && (
+          <ProductGrid
+            products={products}
+            sortedIndices={sortedIndices}
+            selectedIndex={selectedIndex}
+            analyzingHandle={analyzingHandle}
+            analyzedResults={analyzedResults}
+            storeName={storeName}
+            domain={domain}
+            onSelectProduct={handleSelectProduct}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          />
+        )}
       </div>
 
       {/* ═══ RIGHT PANE — Analysis lifecycle ═══ */}

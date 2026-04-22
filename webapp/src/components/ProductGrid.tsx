@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, memo } from "react";
+import { memo } from "react";
 import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import DollarLossAmount from "@/components/analysis/DollarLossAmount";
-import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
-import { type FreeResult, scoreColorTintBg, scoreColorText, calculateConversionLoss, calculateDollarLossPerThousand, PRODUCT_LEVEL_DIMENSIONS } from "@/lib/analysis";
+import { type FreeResult, scoreColorTintBg, scoreColorText } from "@/lib/analysis";
 
 /* ══════════════════════════════════════════════════════════════
    ProductGrid — Collapsible product sidebar
@@ -31,47 +29,6 @@ export interface ProductGridProps {
   onSelectProduct: (index: number) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-}
-
-/* ── Store-wide dollar loss stat with shared tooltip ── */
-function DollarLossStat({ avgDollarLoss, avgConversionLoss }: { avgDollarLoss: number; avgConversionLoss: number }) {
-  return (
-    <div
-      className="flex-1 rounded-xl px-3 py-2.5 text-center relative"
-      style={{ background: "var(--warning-light)" }}
-    >
-      {avgDollarLoss > 0 ? (
-        <>
-          <div className="flex items-center justify-center gap-1">
-            <div
-              className="text-xl font-extrabold leading-none font-display"
-            >
-              <DollarLossAmount value={avgDollarLoss} />
-            </div>
-            <DollarLossTooltip size={13} variant="muted" />
-          </div>
-          <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide" style={{ color: "var(--warning-text)", opacity: 0.7 }}>
-            Avg lost / 1k visitors
-          </div>
-          <div className="text-[9px] font-medium mt-0.5" style={{ color: "var(--warning-text)", opacity: 0.5 }}>
-            ~{avgConversionLoss}% avg loss
-          </div>
-        </>
-      ) : (
-        <>
-          <div
-            className="text-xl font-extrabold leading-none font-display"
-            style={{ color: "var(--warning-text)" }}
-          >
-            ~{avgConversionLoss}%
-          </div>
-          <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide" style={{ color: "var(--warning-text)", opacity: 0.7 }}>
-            Avg conversion loss
-          </div>
-        </>
-      )}
-    </div>
-  );
 }
 
 /* ── Memoized product card — only re-renders when its own props change ── */
@@ -252,76 +209,18 @@ export default function ProductGrid({
   selectedIndex,
   analyzingHandle,
   analyzedResults,
-  storeName,
-  domain,
   onSelectProduct,
   collapsed,
   onToggleCollapse,
 }: ProductGridProps) {
-  /* ── Store-wide totals from analyzed products ── */
-  const storeTotals = useMemo(() => {
-    if (analyzedResults.size === 0) return null;
-    let totalScore = 0;
-    let totalConversionLoss = 0;
-    let totalDollarLoss = 0;
-    let dollarLossCount = 0;
-    let count = 0;
-    for (const result of analyzedResults.values()) {
-      totalScore += result.score;
-      // Per-product avg conversion loss across active dimensions
-      let productLossSum = 0;
-      let dimCount = 0;
-      for (const key of PRODUCT_LEVEL_DIMENSIONS) {
-        const catScore = result.categories?.[key as keyof typeof result.categories];
-        if (catScore != null) {
-          productLossSum += calculateConversionLoss(catScore as number, key);
-          dimCount++;
-        }
-      }
-      if (dimCount > 0) totalConversionLoss += productLossSum / dimCount;
-      // Dollar loss per 1k visitors (only products with a valid price)
-      const dloss = calculateDollarLossPerThousand(result.categories, result.productPrice, result.productCategory);
-      if (dloss > 0) {
-        totalDollarLoss += dloss;
-        dollarLossCount++;
-      }
-      count++;
-    }
-    return {
-      avgScore: Math.round(totalScore / count),
-      avgConversionLoss: Math.round((totalConversionLoss / count) * 10) / 10,
-      avgDollarLoss: dollarLossCount > 0 ? Math.round((totalDollarLoss / dollarLossCount) * 100) / 100 : 0,
-      analyzed: count,
-    };
-  }, [analyzedResults]);
   return (
     <aside
-      className="flex-1 min-h-0 bg-[var(--surface)] flex flex-col border-b md:border-b-0"
+      className="flex-1 min-h-0 flex flex-col"
       aria-label="Product list"
     >
-      {/* ── Header ── */}
-      <div className="sticky top-0 z-10 bg-[var(--surface)] border-b border-[var(--border)]">
-        <div className={`flex items-center ${collapsed ? "justify-center px-2 py-4" : "justify-between px-5 py-4"}`}>
-          {/* Store info — hidden when collapsed */}
-          {!collapsed && (
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="w-8 h-8 rounded-xl bg-[var(--brand-light)] border border-[var(--brand-border)] flex items-center justify-center shrink-0">
-                <PackageIcon size={16} weight="regular" color="var(--brand)" />
-              </div>
-              <div className="min-w-0">
-                <h2
-                  className="text-base font-bold text-[var(--on-surface)] truncate leading-tight font-display"
-                >
-                  {storeName || domain}
-                </h2>
-                <p className="text-xs text-[var(--on-surface-variant)]">
-                  {products.length} product{products.length !== 1 ? "s" : ""} found
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Collapse toggle — always visible on desktop */}
+      {/* Collapse toggle — only visible when the sidebar is collapsed to the 88px rail */}
+      {collapsed && (
+        <div className="flex items-center justify-center py-3 border-b border-[var(--border)]">
           <Button
             type="button"
             variant="ghost"
@@ -329,75 +228,25 @@ export default function ProductGrid({
             onClick={onToggleCollapse}
             aria-expanded={!collapsed}
             className="hidden md:flex w-8 h-8 rounded-xl shrink-0"
-            aria-label={collapsed ? "Expand product list" : "Collapse product list"}
-            title={collapsed ? "Expand product list" : "Collapse product list"}
+            aria-label="Expand product list"
+            title="Expand product list"
           >
             <SidebarSimpleIcon
               size={18}
               weight="regular"
               color="var(--on-surface-variant)"
               style={{
-                transform: collapsed ? "scaleX(-1)" : "none",
+                transform: "scaleX(-1)",
                 transition: "transform 300ms var(--ease-out-quart)",
               }}
             />
           </Button>
         </div>
-
-        {/* Store-wide totals — shown when at least 1 product analyzed */}
-        {!collapsed && storeTotals && (
-          <div className="px-5 pb-4">
-            <div className="flex gap-3">
-              <div
-                className="flex-1 rounded-xl px-3 py-2.5 text-center"
-                style={{ background: scoreColorTintBg(storeTotals.avgScore) }}
-              >
-                <div
-                  className="text-xl font-extrabold leading-none font-display"
-                  style={{ color: scoreColorText(storeTotals.avgScore) }}
-                >
-                  {storeTotals.avgScore}<span className="text-xs font-bold opacity-60">/100</span>
-                </div>
-                <div className="text-[10px] font-semibold mt-1 uppercase tracking-wide" style={{ color: scoreColorText(storeTotals.avgScore), opacity: 0.7 }}>
-                  Avg score
-                </div>
-              </div>
-
-              <DollarLossStat
-                avgDollarLoss={storeTotals.avgDollarLoss}
-                avgConversionLoss={storeTotals.avgConversionLoss}
-              />
-
-            </div>
-            {storeTotals.analyzed < products.length && (
-              <div className="mt-2.5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-semibold text-[var(--on-surface-variant)] uppercase tracking-wide">
-                    {storeTotals.analyzed} of {products.length} scanned
-                  </span>
-                  <span className="text-[10px] font-bold text-[var(--on-surface-variant)]">
-                    {Math.round((storeTotals.analyzed / products.length) * 100)}%
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-[var(--surface-container-high)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${(storeTotals.analyzed / products.length) * 100}%`,
-                      background: "var(--gradient-error)",
-                    }}
-                  />
-                </div>
-
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* ── Product list ── */}
       <div
-        className={`flex-1 overflow-y-auto ${collapsed ? "p-2 space-y-2" : "p-3 space-y-2"}`}
+        className={`flex-1 ${collapsed ? "p-2 space-y-2" : "space-y-2"}`}
         role="list"
         aria-label="Products"
       >

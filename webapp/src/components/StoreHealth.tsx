@@ -1,31 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import { CaretDownIcon, CaretUpIcon, CheckCircleIcon, XCircleIcon, StorefrontIcon, ArrowsClockwiseIcon } from "@phosphor-icons/react";
-import Button from "@/components/ui/Button";
+import { ArrowsClockwiseIcon, ArrowUpRightIcon, ClockIcon } from "@phosphor-icons/react";
 import {
   type StoreAnalysisData,
-  scoreColorTintBg,
+  scoreColor,
   scoreColorText,
-  CATEGORY_LABELS,
-  CATEGORY_SVG,
-  STORE_WIDE_DIMENSIONS,
+  scoreColorTintBg,
 } from "@/lib/analysis";
 
+/** Minimal store-health score ring — inline SVG, no deps. */
+function HeroRing({ score, size = 88, stroke = 7 }: { score: number; size?: number; stroke?: number }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, score));
+  const dashoffset = circumference * (1 - clamped / 100);
+  return (
+    <div
+      className="relative inline-flex items-center justify-center shrink-0"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ transform: "rotate(-90deg)" }}
+        aria-hidden="true"
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="var(--surface-container)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke={scoreColor(score)}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashoffset}
+          style={{ transition: "stroke-dashoffset 1.2s var(--ease-out-quart)" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span
+          className="font-display font-extrabold tabular-nums leading-none"
+          style={{ fontSize: size * 0.36, letterSpacing: "-0.02em", color: "var(--ink)" }}
+        >
+          {clamped}
+        </span>
+        <span
+          className="text-[8px] font-bold uppercase tracking-[0.15em] mt-0.5"
+          style={{ color: "var(--ink-3)", opacity: 0.6 }}
+        >
+          Score
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════
-   StoreHealth — Store-wide dimension scores (7 dimensions)
-   Renders above the ProductGrid on /scan/[domain] pages.
+   StoreHealth — Hero card at top of the left sidebar
+   Renders store identity + health ring + revenue-loss column,
+   matching the claude.ai/design sidebar-polish-A.jsx direction.
    ══════════════════════════════════════════════════════════════ */
 
 interface StoreHealthProps {
   storeAnalysis: StoreAnalysisData;
+  /** Display name for the store (e.g. "Gymshark"). */
+  storeName: string;
+  /** Canonical domain (e.g. "gymshark.com"). */
+  domain: string;
+  /** Aggregated product-level totals for the revenue-loss column. */
+  productTotals?: {
+    avgDollarLoss: number;
+    avgConversionLoss: number;
+  } | null;
   /** Handler to force a fresh store-wide scan (bypasses 7-day cache). */
   onRefresh?: () => void | Promise<void>;
   /** Whether a refresh is currently in flight. */
   refreshing?: boolean;
 }
 
-/** Relative-time formatter. Returns strings like "just now", "3h ago", "2w ago". */
 function formatRelative(iso: string | undefined): string | null {
   if (!iso) return null;
   const ts = Date.parse(iso);
@@ -44,208 +106,141 @@ function formatRelative(iso: string | undefined): string | null {
   return `${diffMo}mo ago`;
 }
 
-/** Format signal key → human label: "hasShopPay" → "Has Shop Pay" */
-function formatSignalKey(key: string): string {
-  return key
-    .replace(/^(has|is|uses)/, (m) => m + " ")
-    .replace(/([A-Z])/g, " $1")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/^./, (c) => c.toUpperCase());
+function tierLabel(score: number): string {
+  if (score >= 70) return "Healthy";
+  if (score >= 40) return "Needs work";
+  return "Critical";
 }
 
-export default function StoreHealth({ storeAnalysis, onRefresh, refreshing = false }: StoreHealthProps) {
-  const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
-  const [cardExpanded, setCardExpanded] = useState<boolean>(false);
-  const { score, categories, signals, updatedAt } = storeAnalysis;
+export default function StoreHealth({
+  storeAnalysis,
+  storeName,
+  domain,
+  productTotals,
+  onRefresh,
+  refreshing = false,
+}: StoreHealthProps) {
+  const { score, updatedAt } = storeAnalysis;
   const relative = formatRelative(updatedAt);
+  const tier = tierLabel(score);
 
-  const storeKeys = Array.from(STORE_WIDE_DIMENSIONS).filter(
-    (k) => categories[k as keyof typeof categories] !== undefined,
-  );
-
-  if (storeKeys.length === 0) return null;
+  const storeHref = domain.startsWith("http") ? domain : `https://${domain}`;
+  const displayName = storeName || domain;
 
   return (
-    <section className="bg-[var(--surface)] border-b border-[var(--border)]">
-      {/* ── Header row (single line; clickable to collapse/expand) ── */}
-      <button
-        type="button"
-        onClick={() => setCardExpanded((v) => !v)}
-        aria-expanded={cardExpanded}
-        aria-controls="store-health-body"
-        className="w-full flex items-center gap-3 text-left px-4 py-3 hover:bg-[var(--surface-container-low)] transition-colors"
-      >
-        <div
-          className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "var(--brand)", color: "var(--on-primary)" }}
-        >
-          <StorefrontIcon size={16} weight="fill" />
-        </div>
-        <h3
-          className="flex-1 min-w-0 text-sm font-bold leading-tight font-display truncate"
-          style={{ color: "var(--on-surface)" }}
-        >
-          Store Health
-        </h3>
-        <div
-          className="rounded-xl px-2.5 py-1 text-sm font-extrabold tabular-nums font-display shrink-0"
-          style={{
-            background: scoreColorTintBg(score),
-            color: scoreColorText(score),
-          }}
-          aria-label={`Store health score ${score} out of 100`}
-        >
-          {score}
-        </div>
-        {onRefresh && (
+    <section
+      className="rounded-2xl border overflow-hidden"
+      style={{
+        background: "var(--paper)",
+        borderColor: "var(--rule-2)",
+        boxShadow: "var(--shadow-subtle)",
+      }}
+    >
+      <div className="relative px-[18px] pt-4 pb-[14px] flex flex-col gap-3">
+        {/* ── Status tier pill (top-right) ── */}
+        <div className="absolute top-4 right-[18px]">
           <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!refreshing) onRefresh();
+            className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full"
+            style={{
+              background: scoreColorTintBg(score),
+              color: scoreColorText(score),
             }}
-            onKeyDown={(e) => {
-              if ((e.key === "Enter" || e.key === " ") && !refreshing) {
-                e.stopPropagation();
-                e.preventDefault();
-                onRefresh();
-              }
-            }}
-            aria-disabled={refreshing}
-            aria-label="Re-run store-wide scan"
-            title="Re-run store-wide scan"
-            className={`w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 transition-colors ${refreshing ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-[var(--surface-container-high)]"}`}
-            style={{ color: "var(--on-surface-variant)" }}
           >
-            <ArrowsClockwiseIcon
-              size={14}
-              weight="bold"
-              className={refreshing ? "animate-spin" : ""}
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: scoreColorText(score) }}
+              aria-hidden="true"
             />
+            {tier}
           </span>
-        )}
-        <span
-          className="shrink-0"
-          style={{ color: "var(--on-surface-variant)" }}
-          aria-hidden="true"
+        </div>
+
+        {/* ── Store name (big serif link) ── */}
+        <a
+          href={storeHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="self-start inline-flex items-center gap-2 font-display font-bold text-[32px] leading-none tracking-tight text-[var(--ink)] hover:text-[var(--accent)] transition-colors capitalize"
+          style={{ letterSpacing: "-0.025em" }}
+          title={`Open ${domain} in a new tab`}
         >
-          {cardExpanded ? (
-            <CaretUpIcon size={14} weight="bold" />
-          ) : (
-            <CaretDownIcon size={14} weight="bold" />
-          )}
-        </span>
-      </button>
+          <span className="truncate max-w-[260px]">{displayName}</span>
+          <span className="text-[var(--ink-3)] inline-flex items-center mt-1 shrink-0 transition-colors" style={{ alignSelf: "flex-start" }}>
+            <ArrowUpRightIcon size={16} weight="regular" />
+          </span>
+        </a>
 
-      {cardExpanded && (
-      <div id="store-health-body" className="px-4 pb-4">
-      {/* ── Meta line (revealed when expanded) ── */}
-      <p
-        className="text-[11px] pb-2"
-        style={{ color: "var(--on-surface-variant)" }}
-      >
-        Store-wide scores · applies to all products
-        {relative && (
-          <>
-            <span className="mx-1" aria-hidden="true">·</span>
-            <span>Last scanned {relative}</span>
-          </>
-        )}
-      </p>
-      {/* ── Dimension grid ── */}
-      <div className="grid grid-cols-1 gap-1.5">
-        {storeKeys.map((key) => {
-          const dimScore = (categories as Record<string, number>)[key] ?? 0;
-          const label = CATEGORY_LABELS[key] || key;
-          const icon = CATEGORY_SVG[key];
-          const dimSignals = signals?.[key as keyof typeof signals] as
-            | Record<string, boolean>
-            | undefined;
-          const isExpanded = expandedDimension === key;
-          const hasSignals = dimSignals && Object.keys(dimSignals).length > 0;
+        {/* ── Score ring + revenue loss column ── */}
+        <div className="flex items-center gap-[18px] pt-1">
+          <HeroRing score={score} size={88} stroke={7} />
 
-          return (
-            <div key={key}>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpandedDimension(isExpanded ? null : key)}
-                aria-expanded={isExpanded}
-                className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 h-auto"
-                style={{ cursor: hasSignals ? "pointer" : "default" }}
-              >
-                <span
-                  className="w-6 h-6 rounded-xl flex items-center justify-center shrink-0"
-                  style={{
-                    background: scoreColorTintBg(dimScore),
-                    color: scoreColorText(dimScore),
-                  }}
-                >
-                  {icon}
-                </span>
-                <span
-                  className="flex-1 text-left text-xs font-medium truncate"
-                  style={{ color: "var(--on-surface)" }}
-                >
-                  {label}
-                </span>
-                <span
-                  className="text-xs font-bold tabular-nums rounded px-1.5 py-0.5 font-display"
-                  style={{
-                    background: scoreColorTintBg(dimScore),
-                    color: scoreColorText(dimScore),
-                  }}
-                >
-                  {dimScore}
-                </span>
-                {hasSignals && (
-                  <span style={{ color: "var(--on-surface-variant)" }}>
-                    {isExpanded ? (
-                      <CaretUpIcon size={12} weight="bold" />
-                    ) : (
-                      <CaretDownIcon size={12} weight="bold" />
-                    )}
-                  </span>
-                )}
-              </Button>
+          <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
+            <span
+              className="text-[9px] font-bold uppercase tracking-[0.12em]"
+              style={{ color: "var(--ink-3)" }}
+            >
+              Revenue loss
+            </span>
+            <span
+              className="font-display font-extrabold italic leading-none"
+              style={{
+                color: "var(--error-text)",
+                fontSize: "30px",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {productTotals && productTotals.avgDollarLoss > 0
+                ? `−$${productTotals.avgDollarLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                : "—"}
+            </span>
+            <span
+              className="text-[10.5px] flex items-center gap-1.5 mt-0.5"
+              style={{ color: "var(--ink-3)" }}
+            >
+              <span>per 1k visitors</span>
+              {productTotals && productTotals.avgConversionLoss > 0 && (
+                <>
+                  <span
+                    className="w-[3px] h-[3px] rounded-full"
+                    style={{ background: "currentColor", opacity: 0.5 }}
+                    aria-hidden="true"
+                  />
+                  <span>~{productTotals.avgConversionLoss.toFixed(1)}%</span>
+                </>
+              )}
+            </span>
 
-              {/* ── Signal checklist (expanded) ── */}
-              {isExpanded && hasSignals && (
-                <div className="pl-11 pr-2 pb-2 space-y-1">
-                  {Object.entries(dimSignals!).map(([sigKey, sigVal]) => (
-                    <div
-                      key={sigKey}
-                      className="flex items-center gap-1.5 text-[11px]"
-                      style={{ color: "var(--on-surface-variant)" }}
-                    >
-                      {sigVal ? (
-                        <CheckCircleIcon
-                          size={13}
-                          weight="fill"
-                          style={{ color: "var(--success-text)" }}
-                        />
-                      ) : (
-                        <XCircleIcon
-                          size={13}
-                          weight="fill"
-                          style={{ color: "var(--error-text)" }}
-                        />
-                      )}
-                      <span className="truncate">{formatSignalKey(sigKey)}</span>
-                    </div>
-                  ))}
-                </div>
+            {/* ── Meta strip: scanned time + refresh ── */}
+            <div
+              className="flex items-center justify-between mt-2 pt-2 text-[11px]"
+              style={{ color: "var(--ink-3)", borderTop: "1px solid var(--rule-2)" }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <ClockIcon size={11} weight="regular" />
+                {relative ? `Scanned ${relative}` : "Not yet scanned"}
+              </span>
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={() => { if (!refreshing) onRefresh(); }}
+                  disabled={refreshing}
+                  aria-label="Re-run store-wide scan"
+                  title="Re-run store-wide scan"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ color: "var(--accent)" }}
+                >
+                  <ArrowsClockwiseIcon
+                    size={11}
+                    weight="bold"
+                    className={refreshing ? "animate-spin" : ""}
+                  />
+                  {refreshing ? "Refreshing…" : "Refresh"}
+                </button>
               )}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
-
-      </div>
-      )}
     </section>
   );
 }
