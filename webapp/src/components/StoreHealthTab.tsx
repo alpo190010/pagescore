@@ -20,11 +20,17 @@ import {
 
 interface StoreHealthTabProps {
   storeAnalysis: StoreAnalysisData;
-  /** Optional handler fired when "View fix" is clicked on a dimension. */
-  onViewFix?: (dimensionKey: string) => void;
+  /** Currently highlighted dimension (mirrors the right-pane detail). */
+  selectedKey?: string | null;
+  /** Called when a dimension card is clicked. */
+  onSelect?: (dimensionKey: string) => void;
 }
 
-export default function StoreHealthTab({ storeAnalysis, onViewFix }: StoreHealthTabProps) {
+export default function StoreHealthTab({
+  storeAnalysis,
+  selectedKey,
+  onSelect,
+}: StoreHealthTabProps) {
   const cards = useMemo(() => {
     const categories = storeAnalysis.categories ?? {};
     return Array.from(STORE_WIDE_DIMENSIONS)
@@ -52,68 +58,78 @@ export default function StoreHealthTab({ storeAnalysis, onViewFix }: StoreHealth
 
   return (
     <div className="flex flex-col gap-2">
-      {cards.map((card) => (
-        <article
-          key={card.key}
-          className="rounded-[14px] border p-[12px_14px] flex flex-col gap-2"
-          style={{
-            background: "var(--paper)",
-            borderColor: "var(--rule-2)",
-            boxShadow: "var(--shadow-subtle)",
-          }}
-        >
-          {/* Head: icon + label + score */}
-          <header className="flex items-center gap-2.5">
-            <span
-              className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0"
-              style={{
-                background: scoreColorTintBg(card.score),
-                color: scoreColorText(card.score),
-              }}
-            >
-              {card.icon}
-            </span>
-            <span
-              className="flex-1 min-w-0 text-[13px] font-semibold leading-tight truncate"
-              style={{ color: "var(--ink)" }}
-            >
-              {card.label}
-            </span>
-            <span
-              className="font-display font-extrabold text-[14px] px-2 py-0.5 rounded tabular-nums shrink-0"
-              style={{
-                background: scoreColorTintBg(card.score),
-                color: scoreColorText(card.score),
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {card.score}
-            </span>
-          </header>
-
-          {/* Tip */}
-          <p
-            className="text-[11.5px] leading-[1.45] pl-[38px]"
-            style={{ color: "var(--ink-2)" }}
+      {cards.map((card) => {
+        const isSelected = selectedKey === card.key;
+        return (
+          <button
+            type="button"
+            key={card.key}
+            onClick={() => onSelect?.(card.key)}
+            aria-pressed={isSelected}
+            aria-label={`View details for ${card.label}`}
+            className="text-left rounded-[14px] border p-[12px_14px] flex flex-col gap-2 transition-[background,border-color,box-shadow,transform] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
+            style={{
+              background: isSelected
+                ? "var(--bg-elev)"
+                : "var(--paper)",
+              borderColor: isSelected
+                ? "var(--ink)"
+                : "var(--rule-2)",
+              boxShadow: isSelected
+                ? "0 0 0 1px var(--ink), var(--shadow-subtle)"
+                : "var(--shadow-subtle)",
+            }}
           >
-            {card.tip}
-          </p>
+            {/* Head: icon + label + score */}
+            <header className="flex items-center gap-2.5">
+              <span
+                className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0"
+                style={{
+                  background: scoreColorTintBg(card.score),
+                  color: scoreColorText(card.score),
+                }}
+              >
+                {card.icon}
+              </span>
+              <span
+                className="flex-1 min-w-0 text-[13px] font-semibold leading-tight truncate"
+                style={{ color: "var(--ink)" }}
+              >
+                {card.label}
+              </span>
+              <span
+                className="font-display font-extrabold text-[14px] px-2 py-0.5 rounded tabular-nums shrink-0"
+                style={{
+                  background: scoreColorTintBg(card.score),
+                  color: scoreColorText(card.score),
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {card.score}
+              </span>
+            </header>
 
-          {/* Footer: View fix CTA */}
-          <div className="flex items-center justify-between pl-[38px] pt-0.5">
-            <button
-              type="button"
-              onClick={() => onViewFix?.(card.key)}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline"
-              style={{ color: "var(--accent)" }}
-              aria-label={`View fix for ${card.label}`}
+            {/* Tip */}
+            <p
+              className="text-[11.5px] leading-[1.45] pl-[38px]"
+              style={{ color: "var(--ink-2)" }}
             >
-              View fix
-              <ArrowRightIcon size={10} weight="bold" />
-            </button>
-          </div>
-        </article>
-      ))}
+              {card.tip}
+            </p>
+
+            {/* Footer: View details affordance */}
+            <div className="flex items-center justify-between pl-[38px] pt-0.5">
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-semibold"
+                style={{ color: "var(--accent)" }}
+              >
+                {isSelected ? "Viewing" : "View details"}
+                <ArrowRightIcon size={10} weight="bold" />
+              </span>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

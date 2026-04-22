@@ -69,7 +69,7 @@ export function useProductAnalysis({
     };
   }, []);
 
-  /* ── Pre-select product matching initialSku ── */
+  /* ── Pre-select product matching initialSku (if present in URL) ── */
   useEffect(() => {
     if (products.length === 0 || sortedIndices.length === 0) return;
     if (initialSku) {
@@ -82,11 +82,9 @@ export function useProductAnalysis({
         setAnalyzingHandle(null);
         setAnalysisError("");
       }
-    } else if (selectedIndex === null) {
-      const firstSortedIndex = sortedIndices[0];
-      setSelectedIndex(firstSortedIndex);
-      onSkuChange?.(products[firstSortedIndex].slug);
     }
+    // No URL sku: leave selectedIndex null so the right pane defaults
+    // to the store-health dimension detail instead of a product preview.
   }, [products, initialSku, sortedIndices]);
 
   /* ── Select product (preview, no analysis) ── */

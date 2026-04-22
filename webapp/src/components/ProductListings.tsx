@@ -7,6 +7,7 @@ import {
   type FreeResult,
   type StoreAnalysisData,
   PRODUCT_LEVEL_DIMENSIONS,
+  STORE_WIDE_DIMENSIONS,
   calculateConversionLoss,
   calculateDollarLossPerThousand,
 } from "@/lib/analysis";
@@ -16,6 +17,7 @@ import AuthModal from "@/components/AuthModal";
 import ProductGrid from "@/components/ProductGrid";
 import StoreHealth from "@/components/StoreHealth";
 import StoreHealthTab from "@/components/StoreHealthTab";
+import StoreHealthDetail from "@/components/StoreHealthDetail";
 import BottomSheet from "@/components/BottomSheet";
 
 type SidebarTab = "health" | "products";
@@ -100,6 +102,30 @@ export default function ProductListings({
 
   /* ── Sidebar tab (default "health" — store-wide dimensions open by default) ── */
   const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTab>("health");
+
+  /* ── Selected store-wide dimension for the right-pane detail view.
+     Defaults to the worst-scoring store dimension when storeAnalysis loads. ── */
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!storeAnalysis) return;
+    const cats = storeAnalysis.categories ?? {};
+    const ranked = Array.from(STORE_WIDE_DIMENSIONS)
+      .map((key) => ({
+        key,
+        score: (cats as Record<string, number>)[key],
+      }))
+      .filter((c) => Number.isFinite(c.score))
+      .sort((a, b) => (a.score as number) - (b.score as number));
+    if (ranked.length === 0) return;
+    // Only auto-select if nothing chosen, or previous choice no longer valid.
+    if (
+      selectedDimension === null ||
+      !ranked.find((r) => r.key === selectedDimension)
+    ) {
+      setSelectedDimension(ranked[0].key);
+    }
+  }, [storeAnalysis, selectedDimension]);
 
   /* ── Aggregated totals across analyzed products (for Hero revenue-loss column) ── */
   const productTotals = useMemo(() => {
@@ -294,7 +320,11 @@ export default function ProductListings({
 
             {/* ── Tab content ── */}
             {activeSidebarTab === "health" && storeAnalysis && (
-              <StoreHealthTab storeAnalysis={storeAnalysis} />
+              <StoreHealthTab
+                storeAnalysis={storeAnalysis}
+                selectedKey={selectedDimension}
+                onSelect={(key) => setSelectedDimension(key)}
+              />
             )}
             {activeSidebarTab === "health" && !storeAnalysis && (
               <p
@@ -380,29 +410,38 @@ export default function ProductListings({
         aria-label="Analysis results"
       >
         {!isMobile && selectedIndex === null && !analyzingHandle && !analysisResult && !analysisError && (
-          <div className="flex flex-col items-center justify-center h-full min-h-[400px] px-6 py-16 text-center">
-            <div
-              className="w-16 h-16 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-5"
-              style={{ animation: "fade-in-up 500ms var(--ease-out-quart) both" }}
-            >
-              <MagnifyingGlassIcon size={28} weight="regular" color="var(--on-surface-variant)" />
+          activeSidebarTab === "health" && storeAnalysis && selectedDimension ? (
+            <StoreHealthDetail
+              key={selectedDimension}
+              dimensionKey={selectedDimension}
+              storeAnalysis={storeAnalysis}
+              storeName={storeName}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] px-6 py-16 text-center">
+              <div
+                className="w-16 h-16 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-5"
+                style={{ animation: "fade-in-up 500ms var(--ease-out-quart) both" }}
+              >
+                <MagnifyingGlassIcon size={28} weight="regular" color="var(--on-surface-variant)" />
+              </div>
+              <h2
+                className="text-xl font-bold text-[var(--on-surface)] mb-2 font-display"
+                style={{
+                  animation: "fade-in-up 500ms var(--ease-out-quart) 80ms both",
+                }}
+              >
+                Select a product to analyze
+              </h2>
+              <p
+                className="text-sm text-[var(--on-surface-variant)] max-w-xs leading-relaxed"
+                style={{ animation: "fade-in-up 500ms var(--ease-out-quart) 160ms both" }}
+              >
+                Pick any product from the list to get a deep conversion score,
+                actionable analysis, and prioritized fixes.
+              </p>
             </div>
-            <h2
-              className="text-xl font-bold text-[var(--on-surface)] mb-2 font-display"
-              style={{
-                animation: "fade-in-up 500ms var(--ease-out-quart) 80ms both",
-              }}
-            >
-              Select a product to analyze
-            </h2>
-            <p
-              className="text-sm text-[var(--on-surface-variant)] max-w-xs leading-relaxed"
-              style={{ animation: "fade-in-up 500ms var(--ease-out-quart) 160ms both" }}
-            >
-              Pick any product from the list to get a deep conversion score,
-              actionable analysis, and prioritized fixes.
-            </p>
-          </div>
+          )
         )}
 
         {!isMobile && <AnalysisPane {...analysisPaneProps} />}

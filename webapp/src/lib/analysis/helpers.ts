@@ -102,6 +102,25 @@ export function extractDomain(url: string): string {
   try { return new URL(url).hostname; } catch { return ""; }
 }
 
+/** Convert a raw domain/hostname to a brand-like display name.
+ *  "allbirds.com" → "allbirds"
+ *  "www.allbirds.com" → "allbirds"
+ *  "shop.allbirds.co.uk" → "allbirds"
+ *  Names that don't look like a hostname (contain whitespace, no dot) are
+ *  returned untouched so real brand names like "Dr. Martens" pass through. */
+export function domainToBrand(input: string): string {
+  if (!input) return input;
+  if (/\s/.test(input)) return input;
+  if (!input.includes(".")) return input;
+  let host = input.replace(/^https?:\/\//, "").split("/")[0] ?? input;
+  host = host.replace(/^(www|shop|store|m)\./i, "");
+  host = host.replace(/\.co\.(uk|jp|in|kr|nz|za)$/i, "");
+  host = host.replace(/\.com\.(au|br|mx|cn)$/i, "");
+  const lastDot = host.lastIndexOf(".");
+  if (lastDot > 0) host = host.slice(0, lastDot);
+  return host;
+}
+
 export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult {
   const cats = data.categories as Record<string, unknown> | undefined;
   const safeCategories: CategoryScores = {

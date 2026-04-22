@@ -3,6 +3,7 @@
 import { ArrowsClockwiseIcon, ArrowUpRightIcon, ClockIcon } from "@phosphor-icons/react";
 import {
   type StoreAnalysisData,
+  domainToBrand,
   scoreColor,
   scoreColorText,
   scoreColorTintBg,
@@ -125,7 +126,7 @@ export default function StoreHealth({
   const tier = tierLabel(score);
 
   const storeHref = domain.startsWith("http") ? domain : `https://${domain}`;
-  const displayName = storeName || domain;
+  const displayName = domainToBrand(storeName) || domainToBrand(domain);
 
   return (
     <section
@@ -181,34 +182,55 @@ export default function StoreHealth({
             >
               Revenue loss
             </span>
-            <span
-              className="font-display font-extrabold italic leading-none"
-              style={{
-                color: "var(--error-text)",
-                fontSize: "30px",
-                letterSpacing: "-0.03em",
-              }}
-            >
-              {productTotals && productTotals.avgDollarLoss > 0
-                ? `−$${productTotals.avgDollarLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                : "—"}
-            </span>
-            <span
-              className="text-[10.5px] flex items-center gap-1.5 mt-0.5"
-              style={{ color: "var(--ink-3)" }}
-            >
-              <span>per 1k visitors</span>
-              {productTotals && productTotals.avgConversionLoss > 0 && (
-                <>
-                  <span
-                    className="w-[3px] h-[3px] rounded-full"
-                    style={{ background: "currentColor", opacity: 0.5 }}
-                    aria-hidden="true"
-                  />
-                  <span>~{productTotals.avgConversionLoss.toFixed(1)}%</span>
-                </>
-              )}
-            </span>
+            {productTotals && productTotals.avgDollarLoss > 0 ? (
+              <>
+                <span
+                  className="font-display font-extrabold italic leading-none"
+                  style={{
+                    color: "var(--error-text)",
+                    fontSize: "30px",
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {`−$${productTotals.avgDollarLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                </span>
+                <span
+                  className="text-[10.5px] flex items-center gap-1.5 mt-0.5"
+                  style={{ color: "var(--ink-3)" }}
+                >
+                  <span>per 1k visitors</span>
+                  {productTotals.avgConversionLoss > 0 && (
+                    <>
+                      <span
+                        className="w-[3px] h-[3px] rounded-full"
+                        style={{ background: "currentColor", opacity: 0.5 }}
+                        aria-hidden="true"
+                      />
+                      <span>~{productTotals.avgConversionLoss.toFixed(1)}%</span>
+                    </>
+                  )}
+                </span>
+              </>
+            ) : (
+              <>
+                <span
+                  className="font-display italic leading-none"
+                  style={{
+                    color: "var(--ink-2)",
+                    fontSize: "22px",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  No scans yet
+                </span>
+                <span
+                  className="text-[10.5px] mt-0.5"
+                  style={{ color: "var(--ink-3)" }}
+                >
+                  Run a product scan to estimate
+                </span>
+              </>
+            )}
 
             {/* ── Meta strip: scanned time + refresh ── */}
             <div

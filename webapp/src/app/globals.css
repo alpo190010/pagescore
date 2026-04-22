@@ -275,6 +275,36 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ── Cursor — ensure interactive elements advertise themselves as clickable.
+   Browsers don't apply cursor:pointer to <button> by default; this fixes that
+   across the whole app plus role-based and form-control affordances. ── */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+summary,
+select:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="reset"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+[role="button"][aria-disabled="true"],
+[role="tab"][aria-disabled="true"],
+[role="option"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* ── Containment — isolate card paint/layout from siblings ── */
 .contain-card {
   contain: layout style paint;
