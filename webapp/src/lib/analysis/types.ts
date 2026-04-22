@@ -386,6 +386,23 @@ export interface StoreAnalysisData {
   updatedAt?: string;
 }
 
+/** Structured fix payload returned by `GET /fix/{dimensionKey}`. */
+export interface DimensionFix {
+  dimensionKey: string;
+  label: string;
+  problem: string;
+  revenueGain: string;
+  effort: string;
+  scope: string;
+  /** Empty array when `locked` is true. */
+  steps: string[];
+  /** Null when `locked` is true or the dimension has no snippet. */
+  code: string | null;
+  planTier: PlanTier;
+  /** True when the caller is on the free tier — frontend should hide steps/code. */
+  locked: boolean;
+}
+
 /** Shape of each entry returned by `buildLeaks` */
 export interface LeakCard {
   key: string;

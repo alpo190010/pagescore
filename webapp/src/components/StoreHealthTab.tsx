@@ -66,7 +66,7 @@ export default function StoreHealthTab({
             key={card.key}
             onClick={() => onSelect?.(card.key)}
             aria-pressed={isSelected}
-            aria-label={`View details for ${card.label}`}
+            aria-label={`View fix for ${card.label}`}
             className="text-left rounded-[14px] border p-[12px_14px] flex flex-col gap-2 transition-[background,border-color,box-shadow,transform] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
             style={{
               background: isSelected
@@ -117,13 +117,13 @@ export default function StoreHealthTab({
               {card.tip}
             </p>
 
-            {/* Footer: View details affordance */}
+            {/* Footer: View fix affordance */}
             <div className="flex items-center justify-between pl-[38px] pt-0.5">
               <span
                 className="inline-flex items-center gap-1 text-[11px] font-semibold"
                 style={{ color: "var(--accent)" }}
               >
-                {isSelected ? "Viewing" : "View details"}
+                {isSelected ? "Viewing" : "View fix"}
                 <ArrowRightIcon size={10} weight="bold" />
               </span>
             </div>

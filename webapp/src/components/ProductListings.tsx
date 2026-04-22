@@ -409,15 +409,16 @@ export default function ProductListings({
         className="flex-1 overflow-y-auto md:h-full"
         aria-label="Analysis results"
       >
-        {!isMobile && selectedIndex === null && !analyzingHandle && !analysisResult && !analysisError && (
-          activeSidebarTab === "health" && storeAnalysis && selectedDimension ? (
+        {!isMobile &&
+          (activeSidebarTab === "health" && storeAnalysis && selectedDimension ? (
             <StoreHealthDetail
               key={selectedDimension}
               dimensionKey={selectedDimension}
               storeAnalysis={storeAnalysis}
               storeName={storeName}
+              onBack={() => setSelectedDimension(null)}
             />
-          ) : (
+          ) : selectedIndex === null && !analyzingHandle && !analysisResult && !analysisError ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] px-6 py-16 text-center">
               <div
                 className="w-16 h-16 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-5"
@@ -441,10 +442,9 @@ export default function ProductListings({
                 actionable analysis, and prioritized fixes.
               </p>
             </div>
-          )
-        )}
-
-        {!isMobile && <AnalysisPane {...analysisPaneProps} />}
+          ) : (
+            <AnalysisPane {...analysisPaneProps} />
+          ))}
       </main>
 
       {/* ═══ MOBILE BOTTOM SHEET ═══ */}
