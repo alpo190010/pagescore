@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { API_URL } from "@/lib/api";
-import { Badge, Skeleton } from "@/components/ui";
+import { Skeleton, PlanBadge } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import ErrorState from "@/components/ErrorState";
 
@@ -136,9 +136,7 @@ export default function AdminDashboardPage() {
                   const pct = maxCount > 0 ? (p.count / maxCount) * 100 : 0;
                   return (
                     <div key={p.plan_tier} className="flex items-center gap-3">
-                      <Badge plan={p.plan_tier} className="min-w-[64px] text-center">
-                        {p.plan_tier}
-                      </Badge>
+                      <PlanBadge tier={p.plan_tier} className="min-w-[64px] justify-center" />
                       <div className="flex-1 h-6 rounded-full overflow-hidden bg-[var(--surface-container-low)]">
                         <div
                           className="h-full rounded-full transition-all"

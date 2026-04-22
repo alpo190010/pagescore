@@ -56,24 +56,7 @@ import {
   LeafIcon,
 } from "@phosphor-icons/react";
 import CollapsibleRegion from "@/components/ui/CollapsibleRegion";
-import { CATEGORY_SVG, STORE_WIDE_DIMENSIONS, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type PageSpeedSignals, type MobileCtaSignals, type CrossSellSignals, type VariantUxSignals, type SizeGuideSignals, type AiDiscoverabilitySignals, type ContentFreshnessSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
-
-/** Small pill indicating a dimension is scored once per storefront, not per product. */
-function StoreWideBadge() {
-  return (
-    <span
-      className="inline-flex items-center shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded"
-      style={{
-        background: "var(--rule-2)",
-        color: "var(--ink-2)",
-        fontFamily: "var(--font-mono)",
-      }}
-      title="This dimension is evaluated at the storefront level and applies to every product."
-    >
-      Store-wide
-    </span>
-  );
-}
+import { CATEGORY_SVG, type LeakCard, type DimensionSignals, type StructuredDataSignals, type CheckoutSignals, type PricingSignals, type ImageSignals, type TitleSignals, type ShippingSignals, type DescriptionSignals, type TrustSignals, type PageSpeedSignals, type MobileCtaSignals, type CrossSellSignals, type VariantUxSignals, type SizeGuideSignals, type AiDiscoverabilitySignals, type ContentFreshnessSignals, type AccessibilitySignals, type SocialCommerceSignals } from "@/lib/analysis";
 
 interface IssueCardProps {
   leak: LeakCard;
@@ -1451,8 +1434,6 @@ const IssueCard = memo(function IssueCard({
     LOW: { textColor: "var(--success-text)" },
   }[leak.impact as "HIGH" | "MED" | "LOW"] || { textColor: "var(--on-surface)" };
 
-  const isStoreWide = STORE_WIDE_DIMENSIONS.has(leak.key);
-
   const handleClick = () => {
     if (expandable) {
       setExpanded((prev) => !prev);
@@ -1463,7 +1444,7 @@ const IssueCard = memo(function IssueCard({
 
   return (
     <div
-      className={`contain-card group text-left bg-[var(--surface)] rounded-2xl ${full ? "p-6 sm:p-7" : "p-5 sm:p-6"} flex flex-col border border-[var(--outline-variant)]/20 ${expanded ? "border-[var(--brand)]/40 lg:col-span-2" : "hover:border-[var(--brand)]/40"} transition-all duration-300 ${expanded ? "" : "hover:-translate-y-1"} hover:shadow-[var(--shadow-card-hover)]`}
+      className={`contain-card group text-left bg-[var(--paper)] rounded-[18px] ${full ? "p-6 sm:p-7" : "p-5 sm:p-6"} flex flex-col border border-[color:color-mix(in_oklch,var(--rule-2)_50%,transparent)] ${expanded ? "border-[color:color-mix(in_oklch,var(--ink)_40%,transparent)] lg:col-span-2" : "hover:border-[color:color-mix(in_oklch,var(--ink)_35%,transparent)]"} transition-all duration-300 ${expanded ? "" : "hover:-translate-y-0.5"} hover:shadow-[var(--shadow-card-hover)]`}
       style={{
         boxShadow: "var(--shadow-subtle)",
         animation: `fade-in-up 400ms var(--ease-out-quart) ${index * 80}ms both`,
@@ -1495,13 +1476,10 @@ const IssueCard = memo(function IssueCard({
               </div>
             </div>
 
-            {/* Row 2: Dimension name + scope badge */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug font-display`}>
-                {leak.category}
-              </h3>
-              {isStoreWide && <StoreWideBadge />}
-            </div>
+            {/* Row 2: Dimension name only (no problem text) */}
+            <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug font-display`}>
+              {leak.category}
+            </h3>
 
             {/* Row 3: Impact badge */}
             <div className="text-xs font-bold uppercase tracking-wider" style={{ color: impactStyle.textColor }}>
@@ -1539,12 +1517,9 @@ const IssueCard = memo(function IssueCard({
 
               {/* Category + Problem */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug line-clamp-2 font-display`}>
-                    {leak.category}
-                  </h3>
-                  {isStoreWide && <StoreWideBadge />}
-                </div>
+                <h3 className={`${full ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold"} text-[var(--on-surface)] tracking-tight leading-snug line-clamp-2 font-display`}>
+                  {leak.category}
+                </h3>
                 <p className="text-sm text-[var(--on-surface-variant)] leading-relaxed line-clamp-3">
                   {leak.problem}
                 </p>

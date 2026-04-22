@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { WarningCircleIcon, PackageIcon } from "@phosphor-icons/react";
+import { WarningCircleIcon, PackageIcon, StorefrontIcon } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import ProductListings from "@/components/ProductListings";
+import StoreHealthResults from "@/components/StoreHealthResults";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { type FreeResult, type StoreAnalysisData, parseAnalysisResponse } from "@/lib/analysis";
+
+type ScanTab = "products" | "health";
 
 /* ═══════════════════════════════════════════════════════════════
    /scan/[domain] — Product discovery + split-view analysis
@@ -39,10 +42,35 @@ function ScanPageContent() {
 
   const handleSkuChange = useCallback(
     (sku: string | null) => {
-      const newUrl = sku ? `${pathname}?sku=${encodeURIComponent(sku)}` : pathname;
-      router.replace(newUrl, { scroll: false });
+      const params = new URLSearchParams(searchParams.toString());
+      if (sku) params.set("sku", sku);
+      else params.delete("sku");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [pathname, router],
+    [pathname, router, searchParams],
+  );
+
+  /* ── Active tab (URL-synced via ?view=health|products) ── */
+  const initialTab: ScanTab = searchParams.get("view") === "health" ? "health" : "products";
+  const [activeTab, setActiveTab] = useState<ScanTab>(initialTab);
+
+  // Keep activeTab in sync with URL changes (back/forward button, external nav).
+  useEffect(() => {
+    const view = searchParams.get("view");
+    setActiveTab(view === "health" ? "health" : "products");
+  }, [searchParams]);
+
+  const handleTabChange = useCallback(
+    (tab: ScanTab) => {
+      setActiveTab(tab);
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "health") params.set("view", "health");
+      else params.delete("view");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
   );
 
   const [phase, setPhase] = useState<ScanPhase>("discovering");
@@ -55,6 +83,12 @@ function ScanPageContent() {
   const [storeAnalysis, setStoreAnalysis] = useState<StoreAnalysisData | null>(null);
   const [refreshingStore, setRefreshingStore] = useState(false);
   const [takingLong, setTakingLong] = useState(false);
+  const autoPopulatedStoreHealthRef = useRef(false);
+
+  // Reset auto-populate guard on domain change so each new store gets a chance.
+  useEffect(() => {
+    autoPopulatedStoreHealthRef.current = false;
+  }, [domain]);
 
   const handleRefreshStoreAnalysis = useCallback(async () => {
     if (refreshingStore) return;
@@ -76,6 +110,18 @@ function ScanPageContent() {
       setRefreshingStore(false);
     }
   }, [domain, refreshingStore]);
+
+  // Auto-populate Store Health when an authenticated user lands on a scan page
+  // whose cache has products but no StoreAnalysis row yet (e.g., scanned
+  // anonymously before, or scanned before this feature existed).
+  useEffect(() => {
+    if (phase !== "ready") return;
+    if (storeAnalysis) return;
+    if (status !== "authenticated") return;
+    if (autoPopulatedStoreHealthRef.current) return;
+    autoPopulatedStoreHealthRef.current = true;
+    handleRefreshStoreAnalysis();
+  }, [phase, storeAnalysis, status, handleRefreshStoreAnalysis]);
 
   // Show "taking longer" feedback after 10s in discovering phase
   useEffect(() => {
@@ -204,7 +250,7 @@ function ScanPageContent() {
 
   /* ── All non-loading phases share a single return so the aria-live region persists across transitions ── */
   return (
-    <div className="h-full bg-[var(--bg)]">
+    <div className="h-full bg-[var(--bg)] flex flex-col">
       {/* Screen-reader announcements for phase transitions */}
       <div aria-live="polite" className="sr-only">
         {phase === "discovering" ? `Discovering products…${takingLong ? " This is taking longer than expected." : ""}` : phase === "error" ? "An error occurred." : phase === "empty" ? "No products found." : phase === "ready" ? "Products loaded." : ""}
@@ -254,11 +300,144 @@ function ScanPageContent() {
         </div>
       )}
 
-      {/* ── Ready — ProductListings split-view ── */}
+      {/* ── Ready — tab bar + split-view / store health ── */}
       {phase === "ready" && (
-        <div className="h-full">
-          <ProductListings products={products} storeName={storeName} domain={domain} initialSku={initialSku} onSkuChange={handleSkuChange} initialAnalyses={initialAnalyses} storeAnalysis={storeAnalysis} onRefreshStoreAnalysis={handleRefreshStoreAnalysis} refreshingStoreAnalysis={refreshingStore} />
-        </div>
+        <>
+          {/* Tab bar */}
+          <nav
+            className="shrink-0 border-b border-[var(--border)] bg-[var(--surface)]"
+            aria-label="Scan views"
+          >
+            <div className="flex items-center gap-1 px-3 py-2 max-w-[1400px] mx-auto">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "health"}
+                onClick={() => handleTabChange("health")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40 ${
+                  activeTab === "health"
+                    ? "bg-[var(--ink)] text-[var(--paper)]"
+                    : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)]"
+                }`}
+              >
+                <StorefrontIcon size={14} weight="fill" />
+                Store Health
+                {storeAnalysis && (
+                  <span
+                    className="tabular-nums text-xs font-bold"
+                    style={{ opacity: activeTab === "health" ? 0.7 : 0.5 }}
+                  >
+                    {storeAnalysis.score}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "products"}
+                onClick={() => handleTabChange("products")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40 ${
+                  activeTab === "products"
+                    ? "bg-[var(--ink)] text-[var(--paper)]"
+                    : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)]"
+                }`}
+              >
+                <PackageIcon size={14} weight="fill" />
+                Products
+                {products.length > 0 && (
+                  <span
+                    className="tabular-nums text-xs font-bold"
+                    style={{ opacity: activeTab === "products" ? 0.7 : 0.5 }}
+                  >
+                    {products.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </nav>
+
+          {/* Tab content */}
+          <div className="flex-1 min-h-0">
+            {activeTab === "products" && (
+              <ProductListings
+                products={products}
+                storeName={storeName}
+                domain={domain}
+                initialSku={initialSku}
+                onSkuChange={handleSkuChange}
+                initialAnalyses={initialAnalyses}
+                storeAnalysis={storeAnalysis}
+                onRefreshStoreAnalysis={handleRefreshStoreAnalysis}
+                refreshingStoreAnalysis={refreshingStore}
+              />
+            )}
+            {activeTab === "health" && storeAnalysis && (
+              <StoreHealthResults
+                storeAnalysis={storeAnalysis}
+                domain={domain}
+                storeName={storeName}
+                onRefresh={handleRefreshStoreAnalysis}
+                refreshing={refreshingStore}
+                onBackToProducts={() => handleTabChange("products")}
+              />
+            )}
+            {activeTab === "health" && !storeAnalysis && (
+              <div className="h-full flex flex-col items-center justify-center px-6 text-center">
+                {refreshingStore ? (
+                  <>
+                    <div
+                      className="w-10 h-10 rounded-full border-2 border-[var(--brand)] border-t-transparent mb-4"
+                      style={{ animation: "spin 0.8s linear infinite" }}
+                      aria-hidden="true"
+                    />
+                    <h2 className="font-display text-lg font-bold text-[var(--on-surface)] mb-1">
+                      Analyzing store health…
+                    </h2>
+                    <p className="text-sm text-[var(--on-surface-variant)] max-w-sm">
+                      Running 7 storefront-level checks. This usually takes 15–30 seconds.
+                    </p>
+                  </>
+                ) : status !== "authenticated" ? (
+                  <>
+                    <div
+                      className="w-14 h-14 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-4"
+                    >
+                      <StorefrontIcon size={24} weight="regular" color="var(--on-surface-variant)" />
+                    </div>
+                    <h2 className="font-display text-xl font-bold text-[var(--on-surface)] mb-2">
+                      Sign in to see Store Health
+                    </h2>
+                    <p className="text-sm text-[var(--on-surface-variant)] max-w-sm mb-5 leading-relaxed">
+                      Store-wide analysis is available to signed-in users. It runs once per store and covers checkout, shipping, trust, page speed, and more.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="w-14 h-14 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--border)] flex items-center justify-center mb-4"
+                    >
+                      <StorefrontIcon size={24} weight="regular" color="var(--on-surface-variant)" />
+                    </div>
+                    <h2 className="font-display text-xl font-bold text-[var(--on-surface)] mb-2">
+                      No store health data yet
+                    </h2>
+                    <p className="text-sm text-[var(--on-surface-variant)] max-w-sm mb-5 leading-relaxed">
+                      Run a scan to get storefront-level insights for this domain.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleRefreshStoreAnalysis}
+                    >
+                      Run store scan
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

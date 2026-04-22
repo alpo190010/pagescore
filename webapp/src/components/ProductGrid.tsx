@@ -3,6 +3,7 @@
 import { useMemo, memo } from "react";
 import { PackageIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 import DollarLossAmount from "@/components/analysis/DollarLossAmount";
 import DollarLossTooltip from "@/components/analysis/DollarLossTooltip";
 import { type FreeResult, scoreColorTintBg, scoreColorText, calculateConversionLoss, calculateDollarLossPerThousand, PRODUCT_LEVEL_DIMENSIONS } from "@/lib/analysis";
@@ -215,39 +216,29 @@ const ProductCard = memo(function ProductCard({
           </p>
 
           {isAnalyzing ? (
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
-              style={{
-                background: "var(--surface-brand-subtle)",
-                color: "var(--brand)",
-              }}
-            >
-              <span
-                className="w-3 h-3 rounded-full border-[1.5px] border-[var(--brand)] border-t-transparent inline-block"
-                style={{ animation: "spin 0.8s linear infinite" }}
-              />
-              Scanning
-            </span>
+            <Badge variant="scanning" className="w-fit" />
           ) : cachedResult ? (
-            <span
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase w-fit font-display"
-              style={{
-                background: scoreColorTintBg(cachedResult.score),
-                color: scoreColorText(cachedResult.score),
-              }}
+            <Badge
+              variant={
+                cachedResult.score >= 70
+                  ? "ok"
+                  : cachedResult.score >= 40
+                    ? "warn"
+                    : "err"
+              }
+              className="w-fit"
             >
-              {cachedResult.score >= 70 ? "Good" : cachedResult.score >= 40 ? "Needs work" : "Critical"} · {cachedResult.score}/100
-            </span>
+              {cachedResult.score >= 70
+                ? "Good"
+                : cachedResult.score >= 40
+                  ? "Needs work"
+                  : "Critical"}{" "}
+              · {cachedResult.score}/100
+            </Badge>
           ) : (
-            <span
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide w-fit font-display"
-              style={{
-                background: "var(--surface-muted)",
-                color: "var(--text-tertiary)",
-              }}
-            >
+            <Badge variant="muted" className="w-fit">
               Ready to scan
-            </span>
+            </Badge>
           )}
         </div>
       </div>
@@ -305,16 +296,7 @@ export default function ProductGrid({
   }, [analyzedResults]);
   return (
     <aside
-      className={`
-        ${collapsed
-          ? "w-full md:w-[88px]"
-          : "w-full md:w-[35%] md:max-w-[420px] md:min-w-[260px]"
-        }
-        md:h-[calc(100dvh-1rem)] md:sticky md:top-0
-        border-b md:border-b-0 md:border-r border-[var(--border)]
-        bg-[var(--surface)] flex flex-col
-        transition-[width] duration-300 ease-[var(--ease-out-quart)]
-      `}
+      className="flex-1 min-h-0 bg-[var(--surface)] flex flex-col border-b md:border-b-0"
       aria-label="Product list"
     >
       {/* ── Header ── */}

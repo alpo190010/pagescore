@@ -12,34 +12,3 @@ export function formatDate(
     return "—";
   }
 }
-
-export function planBadgeStyle(tier: string): React.CSSProperties {
-  switch (tier) {
-    case "pro":
-      return { background: "var(--brand)", color: "var(--brand-light)" };
-    case "starter":
-      return { background: "var(--accent-soft)", color: "var(--accent-dim)" };
-    default:
-      return {
-        background: "var(--surface-container)",
-        color: "var(--text-secondary)",
-      };
-  }
-}
-
-export function roleBadgeStyle(role: string): React.CSSProperties {
-  if (role === "admin") {
-    return { background: "var(--brand)", color: "var(--brand-light)" };
-  }
-  return {
-    background: "var(--surface-container)",
-    color: "var(--text-secondary)",
-  };
-}
-
-export function waitlistBadgeStyle(): React.CSSProperties {
-  return {
-    background: "#84cc16",
-    color: "#3f6212",
-  };
-}

@@ -2,7 +2,8 @@
 
 import { memo } from "react";
 import Image from "next/image";
-import { scoreColor, scoreColorText, scoreColorTintBg, type CategoryScores, ACTIVE_DIMENSIONS } from "@/lib/analysis";
+import Badge from "@/components/ui/Badge";
+import { scoreColor, type CategoryScores, ACTIVE_DIMENSIONS } from "@/lib/analysis";
 
 interface ScoreRingProps {
   score: number;
@@ -72,12 +73,18 @@ const ScoreRing = memo(function ScoreRing({
             <p className="text-xs text-[var(--on-surface-variant)]">{leaksCount} issues found</p>
           )}
         </div>
-        <span
-          className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0"
-          style={{ backgroundColor: scoreColorTintBg(score), color: scoreColorText(score) }}
+        <Badge
+          variant={score >= 60 ? "ok" : score >= 40 ? "warn" : "err"}
+          className="shrink-0"
         >
-          {score >= 80 ? "Excellent" : score >= 60 ? "Above Avg" : score >= 40 ? "Needs Work" : "Critical"}
-        </span>
+          {score >= 80
+            ? "Excellent"
+            : score >= 60
+              ? "Above Avg"
+              : score >= 40
+                ? "Needs Work"
+                : "Critical"}
+        </Badge>
       </div>
 
       {/* ── Zone 2: Score ring + summary side by side ── */}

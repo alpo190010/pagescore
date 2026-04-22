@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import {
   ArrowsClockwiseIcon,
   CaretDownIcon,
-  StorefrontIcon,
 } from "@phosphor-icons/react";
 import {
   type FreeResult,
@@ -78,23 +77,11 @@ const AnalysisResults = memo(function AnalysisResults({
   const [showLeaks, setShowLeaks] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
 
-  /* ── Split leaks by scope: product-specific (11) vs store-wide (7) ── */
-  const { productLeaks, storeLeaks } = useMemo(() => splitLeaksByScope(leaks), [leaks]);
+  /* ── Product-specific leaks only (store-wide shown in the left-column StoreHealth card) ── */
+  const { productLeaks } = useMemo(() => splitLeaksByScope(leaks), [leaks]);
 
-  /* ── Grouped leaks (product-specific only — store-wide rendered separately) ── */
+  /* ── Grouped leaks (product-specific only) ── */
   const grouped = useMemo(() => groupLeaks(productLeaks), [productLeaks]);
-
-  /* ── Store-wide aggregate for header pill ── */
-  const STORE_GROUP_ID = "__store_wide__";
-  const storeSection = useMemo(() => {
-    if (storeLeaks.length === 0) return null;
-    const avg = Math.round(
-      storeLeaks.reduce((sum, l) => sum + l.catScore, 0) / storeLeaks.length,
-    );
-    const convLoss =
-      Math.round(storeLeaks.reduce((sum, l) => sum + l.conversionLoss, 0) * 10) / 10;
-    return { leaks: storeLeaks, avgScore: avg, conversionLoss: convLoss };
-  }, [storeLeaks]);
 
   /* ── Dollar loss for PluginCTACard ── */
   const dollarLoss = useMemo(
@@ -102,14 +89,13 @@ const AnalysisResults = memo(function AnalysisResults({
     [result.categories, result.productPrice, result.productCategory],
   );
 
-  /* ── Collapsed groups — worst group (index 0) expanded, rest + store-wide collapsed ── */
+  /* ── Collapsed groups — worst group (index 0) starts expanded, rest collapsed ── */
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   useEffect(() => {
-    const initial = new Set<string>();
-    if (grouped.length > 0) grouped.slice(1).forEach((g) => initial.add(g.group.id));
-    if (storeSection) initial.add(STORE_GROUP_ID);
-    setCollapsedGroups(initial);
-  }, [grouped, storeSection]);
+    if (grouped.length > 0) {
+      setCollapsedGroups(new Set(grouped.slice(1).map((g) => g.group.id)));
+    }
+  }, [grouped]);
 
   const toggleGroup = (id: string) => {
     setCollapsedGroups((prev) => {
@@ -120,16 +106,9 @@ const AnalysisResults = memo(function AnalysisResults({
     });
   };
 
-  const totalCollapsible = grouped.length + (storeSection ? 1 : 0);
-  const allCollapsed = totalCollapsible > 0 && collapsedGroups.size === totalCollapsible;
+  const allCollapsed = grouped.length > 0 && collapsedGroups.size === grouped.length;
   const toggleAllGroups = () => {
-    if (allCollapsed) {
-      setCollapsedGroups(new Set());
-    } else {
-      const all = new Set(grouped.map((g) => g.group.id));
-      if (storeSection) all.add(STORE_GROUP_ID);
-      setCollapsedGroups(all);
-    }
+    setCollapsedGroups(allCollapsed ? new Set() : new Set(grouped.map((g) => g.group.id)));
   };
 
   useEffect(() => {
@@ -181,12 +160,11 @@ const AnalysisResults = memo(function AnalysisResults({
                 Issues Found
               </h2>
               <p className="text-[var(--on-surface-variant)] text-sm mt-1">
-                {productLeaks.length} product leak{productLeaks.length !== 1 ? "s" : ""} across {grouped.length} area{grouped.length !== 1 ? "s" : ""}
-                {storeSection ? ` + ${storeSection.leaks.length} store-wide` : ""}.{" "}
+                {productLeaks.length} product leak{productLeaks.length !== 1 ? "s" : ""} across {grouped.length} area{grouped.length !== 1 ? "s" : ""}.{" "}
                 {isPaid ? "Click any to see the details." : "Click any to get the fix."}
               </p>
             </div>
-            {totalCollapsible > 1 && (
+            {grouped.length > 1 && (
               <button
                 type="button"
                 onClick={toggleAllGroups}
@@ -284,95 +262,11 @@ const AnalysisResults = memo(function AnalysisResults({
               );
             })}
 
-            {/* Store-wide section — applies to all products in this store */}
-            {storeSection && (
-              <section
-                key={STORE_GROUP_ID}
-                style={{
-                  animation: `fade-in-up 400ms var(--ease-out-quart) ${grouped.length * 100}ms both`,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(STORE_GROUP_ID)}
-                  aria-expanded={!collapsedGroups.has(STORE_GROUP_ID)}
-                  aria-controls={`group-body-${STORE_GROUP_ID}`}
-                  className="w-full flex items-center gap-4 px-3 py-3 -mx-3 rounded-xl text-left hover:bg-[var(--surface-container-low)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
-                >
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                    style={{
-                      background: scoreColorTintBg(storeSection.avgScore),
-                      color: scoreColor(storeSection.avgScore),
-                    }}
-                  >
-                    <StorefrontIcon size={20} weight="fill" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-semibold text-[var(--on-surface)] tracking-tight font-display">
-                        Store-wide
-                      </h3>
-                      <span
-                        className="eyebrow text-[10px] px-1.5 py-0.5 rounded font-semibold"
-                        style={{
-                          background: "var(--rule-2)",
-                          color: "var(--ink-2)",
-                        }}
-                      >
-                        Applies to all products
-                      </span>
-                      <span className="text-xs text-[var(--on-surface-variant)] font-medium">
-                        {storeSection.leaks.length} issue{storeSection.leaks.length !== 1 ? "s" : ""}
-                      </span>
-                      <span className="ml-auto text-xs font-bold text-[var(--warning-text)] font-display shrink-0">
-                        ~{storeSection.conversionLoss.toFixed(1)}% conversion loss
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
-                      Storefront-level dimensions — scored once per store, shared across every product.
-                    </p>
-                  </div>
-                  <CaretDownIcon
-                    size={16}
-                    weight="bold"
-                    className="text-[var(--on-surface-variant)] shrink-0 transition-transform duration-300"
-                    style={{
-                      transform: collapsedGroups.has(STORE_GROUP_ID) ? "rotate(-90deg)" : "rotate(0deg)",
-                    }}
-                    aria-hidden="true"
-                  />
-                </button>
-
-                <CollapsibleRegion
-                  isOpen={!collapsedGroups.has(STORE_GROUP_ID)}
-                  id={`group-body-${STORE_GROUP_ID}`}
-                >
-                  <div className="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {storeSection.leaks.map((leak, i) => {
-                      const locked = result.recommendationsLocked ?? !isPaid;
-                      return (
-                        <IssueCard
-                          key={leak.key}
-                          leak={leak}
-                          index={i}
-                          onClick={() => onIssueClick(leak.key)}
-                          expandable={!locked}
-                          locked={locked}
-                          signals={locked ? undefined : result.signals}
-                        />
-                      );
-                    })}
-                  </div>
-                </CollapsibleRegion>
-              </section>
-            )}
-
             {/* CTA Card — only for free users */}
             {!isPaid && (
               <CTACard
                 leaksCount={leaks.length}
-                animationDelay={(grouped.length + (storeSection ? 1 : 0)) * 100}
+                animationDelay={grouped.length * 100}
                 onClick={() => {
                   onIssueClick(leaks[0]?.key || "");
                   captureEvent("cta_card_clicked", { url });

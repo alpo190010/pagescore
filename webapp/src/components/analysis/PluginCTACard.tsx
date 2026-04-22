@@ -22,16 +22,17 @@ const PluginCTACard = memo(function PluginCTACard({
 
   return (
     <div
-      className={`${full ? "md:col-span-4 p-8" : "md:col-span-5 p-6 sm:p-8"} rounded-2xl flex flex-col justify-between relative`}
+      className={`${full ? "md:col-span-4 p-[22px] sm:p-8" : "md:col-span-5 p-[22px] sm:p-8"} rounded-[20px] flex flex-col justify-between relative`}
       style={{
-        background: "linear-gradient(145deg, var(--primary) 0%, var(--primary-light) 55%, var(--primary) 100%)",
+        background:
+          "linear-gradient(145deg, #1a1712 0%, #2a241c 55%, #16130e 100%)",
         boxShadow: "var(--shadow-brand-md)",
         animation: "fade-in-up 500ms var(--ease-out-quart) both",
       }}
     >
       {/* Subtle diagonal line texture */}
       <div
-        className="absolute inset-0 rounded-2xl opacity-[0.035] pointer-events-none overflow-hidden"
+        className="absolute inset-0 rounded-[20px] opacity-[0.035] pointer-events-none overflow-hidden"
         style={{
           backgroundImage:
             "repeating-linear-gradient(135deg, transparent, transparent 20px, rgba(255,255,255,0.5) 20px, rgba(255,255,255,0.5) 21px)",
@@ -77,10 +78,11 @@ const PluginCTACard = memo(function PluginCTACard({
 
       <Button
         type="button"
-        variant="secondary"
+        variant="on-dark"
         size="sm"
+        shape="card"
         onClick={onViewBreakdown}
-        className={`relative z-10 group w-full ${full ? "py-3" : "py-2.5"} rounded-xl font-bold text-sm bg-white text-[var(--primary)] hover:bg-white/90 active:scale-[0.98]`}
+        className={`relative z-10 group w-full ${full ? "py-3" : "py-2.5"}`}
       >
         Connect Your Store
         <ArrowRightIcon

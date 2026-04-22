@@ -148,32 +148,60 @@ export default function ProductListings({
      Render
      ══════════════════════════════════════════════════════════════ */
   return (
-    <div className="flex flex-col md:flex-row w-full min-h-[calc(100dvh-80px)] md:min-h-0 md:h-[calc(100dvh-1rem)] md:overflow-hidden">
-      {/* ═══ LEFT PANE — Store Health + Product Grid ═══ */}
-      {storeAnalysis && (
-        <StoreHealth
-          storeAnalysis={storeAnalysis}
-          onRefresh={onRefreshStoreAnalysis}
-          refreshing={refreshingStoreAnalysis}
+    <div className="flex flex-col md:flex-row w-full h-full md:min-h-0 md:overflow-hidden">
+      {/* ═══ LEFT COLUMN — Store Health (top) + Product Grid (below) ═══ */}
+      <div
+        className={`
+          ${sidebarCollapsed
+            ? "w-full md:w-[88px]"
+            : "w-full md:w-[35%] md:max-w-[420px] md:min-w-[260px]"
+          }
+          flex flex-col
+          md:h-full md:overflow-y-auto
+          md:border-r border-[var(--border)]
+          bg-[var(--surface)]
+          transition-[width] duration-300 ease-[var(--ease-out-quart)]
+        `}
+      >
+        {!sidebarCollapsed && storeAnalysis && (
+          <StoreHealth
+            storeAnalysis={storeAnalysis}
+            onRefresh={onRefreshStoreAnalysis}
+            refreshing={refreshingStoreAnalysis}
+          />
+        )}
+        {!sidebarCollapsed && !storeAnalysis && refreshingStoreAnalysis && (
+          <div
+            className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-3"
+          >
+            <span
+              className="w-4 h-4 rounded-full border-2 border-[var(--brand)] border-t-transparent shrink-0"
+              style={{ animation: "spin 0.8s linear infinite" }}
+              aria-hidden="true"
+            />
+            <p className="text-xs font-medium" style={{ color: "var(--on-surface-variant)" }}>
+              Analyzing store health…
+            </p>
+          </div>
+        )}
+        <ProductGrid
+          products={products}
+          sortedIndices={sortedIndices}
+          selectedIndex={selectedIndex}
+          analyzingHandle={analyzingHandle}
+          analyzedResults={analyzedResults}
+          storeName={storeName}
+          domain={domain}
+          onSelectProduct={handleSelectProduct}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
         />
-      )}
-      <ProductGrid
-        products={products}
-        sortedIndices={sortedIndices}
-        selectedIndex={selectedIndex}
-        analyzingHandle={analyzingHandle}
-        analyzedResults={analyzedResults}
-        storeName={storeName}
-        domain={domain}
-        onSelectProduct={handleSelectProduct}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
-      />
+      </div>
 
       {/* ═══ RIGHT PANE — Analysis lifecycle ═══ */}
       <main
         ref={rightPaneRef}
-        className="flex-1 overflow-y-auto md:h-[calc(100dvh-1rem)] md:sticky md:top-0"
+        className="flex-1 overflow-y-auto md:h-full"
         aria-label="Analysis results"
       >
         {!isMobile && selectedIndex === null && !analyzingHandle && !analysisResult && !analysisError && (

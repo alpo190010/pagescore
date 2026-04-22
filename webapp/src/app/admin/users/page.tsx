@@ -6,8 +6,8 @@ import { authFetch } from "@/lib/auth-fetch";
 import { API_URL } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Badge, Skeleton, Select } from "@/components/ui";
-import { formatDate, waitlistBadgeStyle } from "@/lib/format";
+import { Skeleton, Select, PlanBadge, RoleBadge, WaitlistBadge } from "@/components/ui";
+import { formatDate } from "@/lib/format";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 
@@ -234,21 +234,13 @@ export default function AdminUsersPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge role={user.role}>
-                        {user.role}
-                      </Badge>
+                      <RoleBadge role={user.role} />
                     </td>
                     <td className="px-4 py-3">
-                      <Badge plan={user.plan_tier}>
-                        {user.plan_tier}
-                      </Badge>
+                      <PlanBadge tier={user.plan_tier} />
                     </td>
                     <td className="px-4 py-3">
-                      {user.pro_waitlist && (
-                        <Badge style={waitlistBadgeStyle()}>
-                          Waitlisted
-                        </Badge>
-                      )}
+                      {user.pro_waitlist && <WaitlistBadge />}
                     </td>
                     <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatDate(user.created_at)}

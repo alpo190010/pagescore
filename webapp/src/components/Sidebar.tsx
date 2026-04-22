@@ -15,6 +15,7 @@ import {
   X,
   UserCircle,
   ShieldCheck,
+  Palette,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
@@ -31,6 +32,9 @@ const NAV_ITEMS = [
   { href: "/dashboard", icon: ChartBar, label: "Dashboard", auth: true },
   { href: "/pricing", icon: CurrencyDollar, label: "Pricing", auth: false },
   { href: "/admin", icon: ShieldCheck, label: "Admin", auth: true, adminOnly: true },
+  ...(process.env.NODE_ENV !== "production"
+    ? [{ href: "/design-system", icon: Palette, label: "Design System", auth: false, devOnly: true }]
+    : []),
 ];
 
 /* ══════════════════════════════════════════════════════════════

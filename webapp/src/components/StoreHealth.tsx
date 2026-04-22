@@ -56,7 +56,8 @@ function formatSignalKey(key: string): string {
 
 export default function StoreHealth({ storeAnalysis, onRefresh, refreshing = false }: StoreHealthProps) {
   const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
-  const { score, categories, tips, signals, updatedAt } = storeAnalysis;
+  const [cardExpanded, setCardExpanded] = useState<boolean>(false);
+  const { score, categories, signals, updatedAt } = storeAnalysis;
   const relative = formatRelative(updatedAt);
 
   const storeKeys = Array.from(STORE_WIDE_DIMENSIONS).filter(
@@ -66,68 +67,93 @@ export default function StoreHealth({ storeAnalysis, onRefresh, refreshing = fal
   if (storeKeys.length === 0) return null;
 
   return (
-    <section
-      className="rounded-2xl border p-4 mb-4"
-      style={{
-        background: "var(--surface)",
-        borderColor: "var(--border)",
-        boxShadow: "var(--shadow-subtle)",
-      }}
-    >
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 mb-3">
+    <section className="bg-[var(--surface)] border-b border-[var(--border)]">
+      {/* ── Header row (single line; clickable to collapse/expand) ── */}
+      <button
+        type="button"
+        onClick={() => setCardExpanded((v) => !v)}
+        aria-expanded={cardExpanded}
+        aria-controls="store-health-body"
+        className="w-full flex items-center gap-3 text-left px-4 py-3 hover:bg-[var(--surface-container-low)] transition-colors"
+      >
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "var(--brand)", color: "var(--on-primary)" }}
         >
-          <StorefrontIcon size={20} weight="fill" />
+          <StorefrontIcon size={16} weight="fill" />
         </div>
-        <div className="flex-1 min-w-0">
-          <h3
-            className="text-sm font-bold leading-tight font-display"
-            style={{
-              color: "var(--on-surface)",
-            }}
-          >
-            Store Health
-          </h3>
-          <p className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: "var(--on-surface-variant)" }}>
-            <span>Store-wide scores · applies to all products</span>
-            {relative && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>Last scanned {relative}</span>
-              </>
-            )}
-            {onRefresh && (
-              <button
-                type="button"
-                onClick={() => { if (!refreshing) onRefresh(); }}
-                disabled={refreshing}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--brand)] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Re-run store-wide scan"
-              >
-                <ArrowsClockwiseIcon
-                  size={11}
-                  weight="bold"
-                  className={refreshing ? "animate-spin" : ""}
-                />
-                {refreshing ? "Refreshing…" : "Refresh"}
-              </button>
-            )}
-          </p>
-        </div>
+        <h3
+          className="flex-1 min-w-0 text-sm font-bold leading-tight font-display truncate"
+          style={{ color: "var(--on-surface)" }}
+        >
+          Store Health
+        </h3>
         <div
-          className="rounded-xl px-2.5 py-1 text-sm font-extrabold tabular-nums font-display"
+          className="rounded-xl px-2.5 py-1 text-sm font-extrabold tabular-nums font-display shrink-0"
           style={{
             background: scoreColorTintBg(score),
             color: scoreColorText(score),
           }}
+          aria-label={`Store health score ${score} out of 100`}
         >
           {score}
         </div>
-      </div>
+        {onRefresh && (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!refreshing) onRefresh();
+            }}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === " ") && !refreshing) {
+                e.stopPropagation();
+                e.preventDefault();
+                onRefresh();
+              }
+            }}
+            aria-disabled={refreshing}
+            aria-label="Re-run store-wide scan"
+            title="Re-run store-wide scan"
+            className={`w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 transition-colors ${refreshing ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-[var(--surface-container-high)]"}`}
+            style={{ color: "var(--on-surface-variant)" }}
+          >
+            <ArrowsClockwiseIcon
+              size={14}
+              weight="bold"
+              className={refreshing ? "animate-spin" : ""}
+            />
+          </span>
+        )}
+        <span
+          className="shrink-0"
+          style={{ color: "var(--on-surface-variant)" }}
+          aria-hidden="true"
+        >
+          {cardExpanded ? (
+            <CaretUpIcon size={14} weight="bold" />
+          ) : (
+            <CaretDownIcon size={14} weight="bold" />
+          )}
+        </span>
+      </button>
 
+      {cardExpanded && (
+      <div id="store-health-body" className="px-4 pb-4">
+      {/* ── Meta line (revealed when expanded) ── */}
+      <p
+        className="text-[11px] pb-2"
+        style={{ color: "var(--on-surface-variant)" }}
+      >
+        Store-wide scores · applies to all products
+        {relative && (
+          <>
+            <span className="mx-1" aria-hidden="true">·</span>
+            <span>Last scanned {relative}</span>
+          </>
+        )}
+      </p>
       {/* ── Dimension grid ── */}
       <div className="grid grid-cols-1 gap-1.5">
         {storeKeys.map((key) => {
@@ -218,31 +244,7 @@ export default function StoreHealth({ storeAnalysis, onRefresh, refreshing = fal
         })}
       </div>
 
-      {/* ── Tips ── */}
-      {tips && tips.length > 0 && (
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-          <p
-            className="text-[10px] font-semibold uppercase tracking-wide mb-1.5"
-            style={{ color: "var(--on-surface-variant)" }}
-          >
-            Store-wide tips
-          </p>
-          <ul className="space-y-1">
-            {tips.slice(0, 5).map((tip, i) => (
-              <li
-                key={i}
-                className="text-[11px] leading-snug pl-3 relative break-words"
-                style={{ color: "var(--on-surface-variant)" }}
-              >
-                <span
-                  className="absolute left-0 top-[5px] w-1 h-1 rounded-full"
-                  style={{ background: "var(--brand)" }}
-                />
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </div>
+      </div>
       )}
     </section>
   );
