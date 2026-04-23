@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import {
@@ -18,7 +19,6 @@ import ProductGrid from "@/components/ProductGrid";
 import StoreHealth from "@/components/StoreHealth";
 import StoreHealthTab from "@/components/StoreHealthTab";
 import StoreHealthDetail from "@/components/StoreHealthDetail";
-import BottomSheet from "@/components/BottomSheet";
 
 type SidebarTab = "health" | "products";
 
@@ -164,7 +164,6 @@ export default function ProductListings({
 
   /* ── Mobile viewport ── */
   const [isMobile, setIsMobile] = useState(false);
-  const [bottomSheetDismissed, setBottomSheetDismissed] = useState(false);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
@@ -174,14 +173,23 @@ export default function ProductListings({
     return () => mql.removeEventListener("change", handler);
   }, []);
 
-  useEffect(() => {
-    if (selectedIndex !== null || analyzingHandle) setBottomSheetDismissed(false);
-  }, [selectedIndex, analyzingHandle]);
-
-  const sheetOpen =
-    isMobile &&
-    !bottomSheetDismissed &&
-    (!!selectedProduct || !!analyzingHandle || !!analysisResult || !!analysisError);
+  /* ── Mobile click → dedicated product page; desktop → in-page selection ── */
+  const router = useRouter();
+  const handleProductClick = useCallback(
+    (index: number) => {
+      if (isMobile) {
+        const target = products[index];
+        if (target) {
+          router.push(
+            `/scan/${encodeURIComponent(domain)}/product/${encodeURIComponent(target.slug)}`,
+          );
+        }
+        return;
+      }
+      handleSelectProduct(index);
+    },
+    [isMobile, products, domain, router, handleSelectProduct],
+  );
 
   /* ── Gate Run Deep Analysis behind free signup; sidebar collapse is user-controlled ── */
   const handleDeepAnalyzeGated = useCallback(() => {
@@ -378,7 +386,7 @@ export default function ProductListings({
                   analyzedResults={analyzedResults}
                   storeName={storeName}
                   domain={domain}
-                  onSelectProduct={handleSelectProduct}
+                  onSelectProduct={handleProductClick}
                   collapsed={sidebarCollapsed}
                   onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
                 />
@@ -395,7 +403,7 @@ export default function ProductListings({
             analyzedResults={analyzedResults}
             storeName={storeName}
             domain={domain}
-            onSelectProduct={handleSelectProduct}
+            onSelectProduct={handleProductClick}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
           />
@@ -443,15 +451,6 @@ export default function ProductListings({
             <AnalysisPane {...analysisPaneProps} />
           ))}
       </main>
-
-      {/* ═══ MOBILE BOTTOM SHEET ═══ */}
-      <BottomSheet
-        isOpen={sheetOpen}
-        onClose={() => setBottomSheetDismissed(true)}
-        title={analysisResult ? "Analysis Results" : selectedProduct ? selectedProduct.slug.replace(/-/g, " ") : "Product Details"}
-      >
-        <AnalysisPane {...analysisPaneProps} />
-      </BottomSheet>
 
       {/* ═══ AUTH GATE — Run Deep Analysis requires free signup ═══ */}
       <AuthModal

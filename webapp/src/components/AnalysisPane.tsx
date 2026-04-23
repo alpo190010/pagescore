@@ -17,7 +17,8 @@ import AnalysisLoader from "@/components/AnalysisLoader";
 
 /* ══════════════════════════════════════════════════════════════
    AnalysisPane — Product preview + analysis lifecycle states
-   Renders in both desktop right-pane and mobile BottomSheet.
+   Renders in the desktop split-view right pane and on the
+   /scan/[domain]/product/[slug] page (mobile + deep links).
    ══════════════════════════════════════════════════════════════ */
 
 interface Product {

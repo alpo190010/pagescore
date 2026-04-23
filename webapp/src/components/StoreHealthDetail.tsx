@@ -13,6 +13,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_SVG,
   calculateConversionLoss,
+  dimensionAvailability,
   scoreColorText,
   scoreColorTintBg,
 } from "@/lib/analysis";
@@ -55,6 +56,7 @@ export default function StoreHealthDetail({
     (storeAnalysis.categories as Record<string, number>)[dimensionKey] ?? 0;
   const localLabel = CATEGORY_LABELS[dimensionKey] ?? dimensionKey;
   const icon = CATEGORY_SVG[dimensionKey];
+  const availability = dimensionAvailability(dimensionKey, storeAnalysis.signals);
 
   const { fix, loading, error, retry } = useDimensionFix(dimensionKey);
 
@@ -96,18 +98,46 @@ export default function StoreHealthDetail({
             >
               {label}
             </h1>
-            <span
-              className="inline-flex items-center w-fit font-display font-bold text-[11px] px-2.5 py-1 rounded-full tabular-nums"
-              style={{
-                background: scoreColorTintBg(score),
-                color: scoreColorText(score),
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {tierName(score)} · {score}/100
-            </span>
+            {availability && dimensionKey === "accessibility" ? (
+              <span
+                className="inline-flex items-center w-fit font-mono font-bold text-[11px] uppercase px-2.5 py-1 rounded-full"
+                style={{
+                  background: "var(--bg-elev)",
+                  color: "var(--ink-3)",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {availability.label}
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center w-fit font-display font-bold text-[11px] px-2.5 py-1 rounded-full tabular-nums"
+                style={{
+                  background: scoreColorTintBg(score),
+                  color: scoreColorText(score),
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {tierName(score)} · {score}/100
+                {availability ? ` · ${availability.label}` : ""}
+              </span>
+            )}
           </div>
         </header>
+
+        {availability && (
+          <p
+            className="text-[13px] leading-[1.55] rounded-[14px] px-4 py-3"
+            style={{
+              background: "var(--bg-elev)",
+              color: "var(--ink-2)",
+              border: "1px solid var(--rule-2)",
+            }}
+            role="status"
+          >
+            {availability.detail}
+          </p>
+        )}
 
         {loading && !fix && <FixSkeleton />}
 

@@ -8,6 +8,7 @@ import {
   CATEGORY_PROBLEMS,
   CATEGORY_SVG,
   STORE_WIDE_DIMENSIONS,
+  dimensionAvailability,
   scoreColorText,
   scoreColorTintBg,
 } from "@/lib/analysis";
@@ -33,12 +34,14 @@ export default function StoreHealthTab({
 }: StoreHealthTabProps) {
   const cards = useMemo(() => {
     const categories = storeAnalysis.categories ?? {};
+    const signals = storeAnalysis.signals;
     return Array.from(STORE_WIDE_DIMENSIONS)
       .map((key) => ({
         key,
         label: CATEGORY_LABELS[key] || key,
         icon: CATEGORY_SVG[key],
         score: (categories as Record<string, number>)[key] ?? 0,
+        availability: dimensionAvailability(key, signals),
         tip:
           CATEGORY_PROBLEMS[key]?.mid ||
           CATEGORY_PROBLEMS[key]?.low ||
@@ -97,24 +100,37 @@ export default function StoreHealthTab({
               >
                 {card.label}
               </span>
-              <span
-                className="font-display font-extrabold text-[14px] px-2 py-0.5 rounded tabular-nums shrink-0"
-                style={{
-                  background: scoreColorTintBg(card.score),
-                  color: scoreColorText(card.score),
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {card.score}
-              </span>
+              {card.availability && card.key === "accessibility" ? (
+                <span
+                  className="font-mono text-[10px] font-bold uppercase px-2 py-1 rounded shrink-0"
+                  style={{
+                    background: "var(--bg-elev)",
+                    color: "var(--ink-3)",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  {card.availability.label}
+                </span>
+              ) : (
+                <span
+                  className="font-display font-extrabold text-[14px] px-2 py-0.5 rounded tabular-nums shrink-0"
+                  style={{
+                    background: scoreColorTintBg(card.score),
+                    color: scoreColorText(card.score),
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {card.score}
+                </span>
+              )}
             </header>
 
-            {/* Tip */}
+            {/* Tip (or availability note when dimension ran in a limited mode) */}
             <p
               className="text-[11.5px] leading-[1.45] pl-[38px]"
-              style={{ color: "var(--ink-2)" }}
+              style={{ color: card.availability ? "var(--ink-3)" : "var(--ink-2)" }}
             >
-              {card.tip}
+              {card.availability ? card.availability.detail : card.tip}
             </p>
 
             {/* Footer: View fix affordance */}

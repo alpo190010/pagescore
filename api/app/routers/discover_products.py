@@ -510,7 +510,15 @@ async def _run_store_wide_analysis(
         html_result = results[0]
         if isinstance(html_result, Exception):
             logger.warning(
-                "Store analysis: render_page failed for %s: %s", product_url, html_result
+                "Store analysis: render_page failed for %s: %s",
+                product_url,
+                html_result,
+                extra={
+                    "event": "external_api_failure",
+                    "api": "render",
+                    "domain": domain,
+                    "url": product_url,
+                },
             )
             return None
         html = html_result
@@ -519,7 +527,15 @@ async def _run_store_wide_analysis(
         axe_results = None
         if isinstance(results[1], Exception):
             logger.warning(
-                "Store analysis: axe scan failed for %s: %s", product_url, results[1]
+                "Store analysis: axe scan failed for %s: %s",
+                product_url,
+                results[1],
+                extra={
+                    "event": "external_api_failure",
+                    "api": "axe",
+                    "domain": domain,
+                    "url": product_url,
+                },
             )
         else:
             axe_results = results[1]
@@ -529,7 +545,14 @@ async def _run_store_wide_analysis(
         if isinstance(results[2], Exception):
             logger.warning(
                 "Store analysis: AI discoverability fetch failed for %s: %s",
-                product_url, results[2],
+                product_url,
+                results[2],
+                extra={
+                    "event": "external_api_failure",
+                    "api": "ai_discoverability",
+                    "domain": domain,
+                    "url": product_url,
+                },
             )
         else:
             ai_disc_data = results[2]
@@ -539,7 +562,15 @@ async def _run_store_wide_analysis(
         if has_psi and len(results) > 3:
             if isinstance(results[3], Exception):
                 logger.warning(
-                    "Store analysis: PSI API failed for %s: %s", product_url, results[3]
+                    "Store analysis: PSI API failed for %s: %s",
+                    product_url,
+                    results[3],
+                    extra={
+                        "event": "external_api_failure",
+                        "api": "psi",
+                        "domain": domain,
+                        "url": product_url,
+                    },
                 )
             else:
                 psi_data = results[3]

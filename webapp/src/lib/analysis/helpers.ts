@@ -1,4 +1,4 @@
-import type { CategoryScores, FreeResult, LeakCard } from "./types";
+import type { CategoryScores, DimensionSignals, FreeResult, LeakCard } from "./types";
 export type { StoreAnalysisData } from "./types";
 import {
   CATEGORY_LABELS, CATEGORY_PROBLEMS, CATEGORY_REVENUE_IMPACT,
@@ -34,6 +34,51 @@ export function scoreColorTintBg(score: number): string {
   if (score >= 70) return "var(--success-light)";
   if (score >= 40) return "var(--warning-light)";
   return "var(--error-light)";
+}
+
+/** Non-null availability payload describing why a dimension's score is limited or missing. */
+export interface DimensionAvailabilityInfo {
+  /** Short chip label for card UIs. */
+  label: string;
+  /** One-line explanation for detail panes. */
+  detail: string;
+}
+
+/**
+ * Three store-wide dimensions depend on external inputs (axe, Google PSI,
+ * robots.txt / llms.txt) that can fail silently and leave the score computed
+ * from a narrower signal set — or, for accessibility, not computed at all.
+ * Returns a payload when the UI should surface that to the user, null when the
+ * dimension is fully analyzed or not one of the gated three.
+ */
+export function dimensionAvailability(
+  key: string,
+  signals: Partial<DimensionSignals> | undefined | null,
+): DimensionAvailabilityInfo | null {
+  if (!signals) return null;
+  if (key === "accessibility" && signals.accessibility?.scanCompleted === false) {
+    return {
+      label: "Scan unavailable",
+      detail: "Accessibility scan didn't run — no score computed for this dimension.",
+    };
+  }
+  if (key === "pageSpeed" && signals.pageSpeed && signals.pageSpeed.performanceScore == null) {
+    return {
+      label: "Limited",
+      detail: "Google PageSpeed Insights didn't respond — score derived from HTML-only signals.",
+    };
+  }
+  if (
+    key === "aiDiscoverability" &&
+    signals.aiDiscoverability &&
+    signals.aiDiscoverability.robotsTxtExists == null
+  ) {
+    return {
+      label: "Limited",
+      detail: "Couldn't fetch robots.txt — score derived from HTML-only signals.",
+    };
+  }
+  return null;
 }
 
 /** Build leak cards from categories + tips, sorted worst-first.

@@ -49,6 +49,15 @@ function ScanPageContent() {
     [pathname, router, searchParams],
   );
 
+  /* ── Mobile deep-link: ?sku= → /scan/{domain}/product/{slug} (one-shot) ── */
+  useEffect(() => {
+    if (!initialSku) return;
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    router.replace(
+      `/scan/${encodeURIComponent(domain)}/product/${encodeURIComponent(initialSku)}`,
+    );
+  }, [initialSku, domain, router]);
 
   const [phase, setPhase] = useState<ScanPhase>("discovering");
   const [products, setProducts] = useState<Product[]>([]);
