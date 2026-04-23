@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeftIcon,
   ArrowRightIcon,
   CheckIcon,
   CopyIcon,
@@ -13,6 +12,7 @@ import {
   type StoreAnalysisData,
   CATEGORY_LABELS,
   CATEGORY_SVG,
+  calculateConversionLoss,
   scoreColorText,
   scoreColorTintBg,
 } from "@/lib/analysis";
@@ -39,8 +39,6 @@ import { useDimensionFix } from "@/hooks/useDimensionFix";
 interface StoreHealthDetailProps {
   dimensionKey: string;
   storeAnalysis: StoreAnalysisData;
-  storeName: string;
-  onBack?: () => void;
 }
 
 function tierName(score: number): string {
@@ -52,8 +50,6 @@ function tierName(score: number): string {
 export default function StoreHealthDetail({
   dimensionKey,
   storeAnalysis,
-  storeName,
-  onBack,
 }: StoreHealthDetailProps) {
   const score =
     (storeAnalysis.categories as Record<string, number>)[dimensionKey] ?? 0;
@@ -72,35 +68,6 @@ export default function StoreHealthDetail({
       }}
     >
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
-        {/* ── Back breadcrumb ── */}
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 font-semibold text-[12px] self-start px-2.5 py-1.5 rounded-lg transition-colors"
-            style={{ color: "var(--ink-3)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--ink)";
-              e.currentTarget.style.background = "var(--bg-elev)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--ink-3)";
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            <ArrowLeftIcon size={14} weight="bold" />
-            Back to results
-          </button>
-        )}
-
-        {/* ── Sub-breadcrumb text ── */}
-        <div
-          className="font-mono text-[10px] uppercase tracking-[0.14em]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          {storeName} · Store Health · {label}
-        </div>
-
         {/* ── Header: icon + title + score pill ── */}
         <header
           className="flex items-start gap-4 pb-5"
@@ -164,7 +131,7 @@ export default function StoreHealthDetail({
             <section className="grid grid-cols-3 gap-2.5">
               <MetaCard
                 label="Est. revenue gain"
-                value={fix.revenueGain}
+                value={`+${calculateConversionLoss(score, dimensionKey)}%`}
                 accent="gain"
               />
               <MetaCard label="Effort" value={fix.effort} />

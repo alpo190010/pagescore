@@ -77,6 +77,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+PRODUCT_ANALYSIS_TTL = timedelta(hours=24)
+
 
 def _run_chain(detect_fn, score_fn, tips_fn, *args):
     """Run a detect → score → tips chain, returning (signals, score, tips, timing_ms).
@@ -116,6 +118,13 @@ def get_cached_analysis(
     )
     if not row:
         return JSONResponse(status_code=404, content={"error": "No cached analysis"})
+
+    updated = row.updated_at
+    if updated is not None and updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    if updated is None or (datetime.now(timezone.utc) - updated) >= PRODUCT_ANALYSIS_TTL:
+        return JSONResponse(status_code=404, content={"error": "No cached analysis"})
+
     return {
         "score": row.score,
         "summary": row.summary,

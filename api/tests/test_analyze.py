@@ -1008,6 +1008,7 @@ def test_get_cached_analysis_returns_own():
     mock_row.product_category = "fashion"
     mock_row.signals = {"socialProof": {}}
     mock_row.id = uuid.uuid4()
+    mock_row.updated_at = datetime.now(timezone.utc) - timedelta(hours=1)
 
     mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = mock_row
 
@@ -1022,6 +1023,96 @@ def test_get_cached_analysis_returns_own():
     assert data["score"] == 75
     assert data["summary"] == "Good product page"
     assert data["analysisId"] == str(mock_row.id)
+
+    app.dependency_overrides.clear()
+
+
+def test_get_cached_analysis_stale_returns_404():
+    """GET /analysis returns 404 when the cached row is older than the TTL."""
+    user = _make_user()
+    mock_session = MagicMock()
+
+    mock_row = MagicMock()
+    mock_row.score = 75
+    mock_row.summary = "Stale"
+    mock_row.tips = []
+    mock_row.categories = {}
+    mock_row.product_price = None
+    mock_row.product_category = None
+    mock_row.signals = {}
+    mock_row.id = uuid.uuid4()
+    mock_row.updated_at = datetime.now(timezone.utc) - timedelta(hours=25)
+
+    mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = mock_row
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_required] = lambda: user
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "No cached analysis"
+
+    app.dependency_overrides.clear()
+
+
+def test_get_cached_analysis_fresh_returns_200():
+    """GET /analysis returns the cached row when updated_at is within the TTL."""
+    user = _make_user()
+    mock_session = MagicMock()
+
+    mock_row = MagicMock()
+    mock_row.score = 88
+    mock_row.summary = "Fresh"
+    mock_row.tips = []
+    mock_row.categories = {}
+    mock_row.product_price = None
+    mock_row.product_category = None
+    mock_row.signals = {}
+    mock_row.id = uuid.uuid4()
+    mock_row.updated_at = datetime.now(timezone.utc) - timedelta(hours=1)
+
+    mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = mock_row
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_required] = lambda: user
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 200
+    assert resp.json()["score"] == 88
+
+    app.dependency_overrides.clear()
+
+
+def test_get_cached_analysis_tz_naive_treated_as_utc():
+    """GET /analysis normalizes tz-naive timestamps to UTC before the TTL check."""
+    user = _make_user()
+    mock_session = MagicMock()
+
+    mock_row = MagicMock()
+    mock_row.score = 50
+    mock_row.summary = "Legacy naive timestamp"
+    mock_row.tips = []
+    mock_row.categories = {}
+    mock_row.product_price = None
+    mock_row.product_category = None
+    mock_row.signals = {}
+    mock_row.id = uuid.uuid4()
+    # Naive datetime 25h ago — should be treated as UTC and flagged stale.
+    mock_row.updated_at = datetime.utcnow() - timedelta(hours=25)
+
+    mock_session.query.return_value.filter.return_value.filter.return_value.first.return_value = mock_row
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    app.dependency_overrides[get_current_user_required] = lambda: user
+
+    client = TestClient(app)
+    resp = client.get("/analysis", params={"url": "http://example.com/product"})
+
+    assert resp.status_code == 404
 
     app.dependency_overrides.clear()
 

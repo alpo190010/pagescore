@@ -5,6 +5,7 @@ store-wide dimension scan, bypassing the 7-day cache.
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -20,6 +21,17 @@ from app.routers.discover_products import _run_store_wide_analysis
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+PRODUCT_ANALYSIS_TTL = timedelta(hours=24)
+
+
+def _is_fresh(row, now: datetime) -> bool:
+    updated = row.updated_at
+    if updated is None:
+        return False
+    if updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    return (now - updated) < PRODUCT_ANALYSIS_TTL
 
 
 @router.get("/store/{domain}")
@@ -64,9 +76,12 @@ def get_store(
             analysis_rows = []
             store_analysis_row = None
 
-        # Build analyses dict keyed by productUrl
+        # Build analyses dict keyed by productUrl (fresh rows only)
+        now = datetime.now(timezone.utc)
         analyses: dict = {}
         for row in analysis_rows:
+            if not _is_fresh(row, now):
+                continue
             analyses[row.product_url] = {
                 "id": str(row.id),
                 "score": row.score,

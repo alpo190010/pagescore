@@ -414,8 +414,6 @@ export default function ProductListings({
               key={selectedDimension}
               dimensionKey={selectedDimension}
               storeAnalysis={storeAnalysis}
-              storeName={storeName}
-              onBack={() => setSelectedDimension(null)}
             />
           ) : selectedIndex === null && !analyzingHandle && !analysisResult && !analysisError ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] px-6 py-16 text-center">

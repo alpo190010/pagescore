@@ -1,7 +1,7 @@
 """Tests for GET /store/{domain} endpoint."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, PropertyMock
 
@@ -67,7 +67,7 @@ def _make_analysis(
     a.product_price = product_price
     a.product_category = product_category
     a.estimated_monthly_visitors = estimated_monthly_visitors
-    a.updated_at = updated_at or datetime(2025, 6, 16, 10, 0, 0)
+    a.updated_at = updated_at or (datetime.now(timezone.utc) - timedelta(hours=1))
     return a
 
 
@@ -465,5 +465,38 @@ def test_store_no_store_analysis():
     assert resp.status_code == 200
     data = resp.json()
     assert data["storeAnalysis"] is None
+
+    app.dependency_overrides.clear()
+
+
+def test_get_store_excludes_stale_product_analyses():
+    """ProductAnalysis rows older than the TTL are filtered out of the bundle."""
+    store = _make_store(domain="ttl.com", name="TTL Shop")
+
+    fresh = _make_analysis(
+        product_url="https://ttl.com/products/fresh",
+        store_domain="ttl.com",
+        score=90,
+        updated_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    )
+    stale = _make_analysis(
+        product_url="https://ttl.com/products/stale",
+        store_domain="ttl.com",
+        score=20,
+        updated_at=datetime.now(timezone.utc) - timedelta(hours=25),
+    )
+
+    session = _mock_db_with_data(
+        store=store,
+        products=[],
+        analyses=[fresh, stale],
+    )
+    client = _get_client(session)
+    resp = client.get("/store/ttl.com")
+
+    assert resp.status_code == 200
+    analyses = resp.json()["analyses"]
+    assert "https://ttl.com/products/fresh" in analyses
+    assert "https://ttl.com/products/stale" not in analyses
 
     app.dependency_overrides.clear()
