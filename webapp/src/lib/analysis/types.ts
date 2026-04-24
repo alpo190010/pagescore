@@ -74,7 +74,28 @@ export interface StructuredDataSignals {
   duplicateProductCount: number;
 }
 
+export interface CheckoutWalletFlags {
+  shopPay: boolean;
+  applePay: boolean;
+  googlePay: boolean;
+  paypal: boolean;
+  amazonPay: boolean;
+  metaPay: boolean;
+  stripeLink: boolean;
+}
+
+export interface CheckoutBnplFlags {
+  klarna: boolean;
+  afterpay: boolean;
+  clearpay: boolean;
+  affirm: boolean;
+  sezzle: boolean;
+  shopPayInstallments: boolean;
+  zip: boolean;
+}
+
 export interface CheckoutSignals {
+  // Legacy PDP-derived fields (always present for back-compat)
   hasAcceleratedCheckout: boolean;
   hasDynamicCheckoutButton: boolean;
   hasPaypal: boolean;
@@ -86,6 +107,24 @@ export interface CheckoutSignals {
   hasDrawerCart: boolean;
   hasAjaxCart: boolean;
   hasStickyCheckout: boolean;
+  // Ground-truth fields from the real checkout page (optional —
+  // absent on legacy cached rows and when the flow failed)
+  reachedCheckout?: boolean;
+  failureReason?: string | null;
+  checkoutFlavor?: "onepage" | "classic" | "unknown";
+  wallets?: CheckoutWalletFlags;
+  bnpl?: CheckoutBnplFlags;
+  cardBrands?: string[];
+  guestCheckoutAvailable?: boolean;
+  forcedAccountCreation?: boolean;
+  checkoutStepCount?: number;
+  totalFormFieldsStepOne?: number;
+  hasDiscountCodeField?: boolean;
+  hasGiftCardField?: boolean;
+  hasShippingCalculator?: boolean;
+  hasAddressAutocomplete?: boolean;
+  trustBadgeCount?: number;
+  currencyCode?: string | null;
 }
 
 export interface PricingSignals {
@@ -384,6 +423,14 @@ export interface DimensionCheck {
   passed: boolean;
   weight: number;
   detail?: string;
+  /**
+   * Per-check fix text. When present on a failing row, the UI renders
+   * it as an expand/collapse disclosure. Stripped from the response
+   * for free-tier users — absent here means "no inline fix" (either
+   * free tier, or a dimension not yet migrated from the separate
+   * FixSteps panel).
+   */
+  remediation?: string;
 }
 
 export interface StoreAnalysisData {
@@ -412,6 +459,12 @@ export interface DimensionFix {
   planTier: PlanTier;
   /** True when the caller is on the free tier — frontend should hide steps/code. */
   locked: boolean;
+  /**
+   * True when the backend filtered ``steps`` against the store's latest scan
+   * signals (caller passed ``?domain=`` + was authenticated). False/absent
+   * means the steps are the generic worst-case list.
+   */
+  stepsTailored?: boolean;
 }
 
 /** Shape of each entry returned by `buildLeaks` */

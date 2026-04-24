@@ -23,7 +23,9 @@ from app.services.page_renderer import render_page
 from app.services.accessibility_scanner import run_axe_scan
 from app.services.page_speed_api import fetch_pagespeed_insights
 from app.services.ai_discoverability_api import fetch_ai_discoverability_data
-from app.services.checkout_detector import detect_checkout
+from app.services.checkout_detector import detect_checkout, combine_signals
+from app.services.checkout_flow_simulator import simulate_checkout_flow
+from app.services.checkout_page_parser import unreached
 from app.services.shipping_detector import detect_shipping
 from app.services.trust_detector import detect_trust
 from app.services.social_commerce_detector import detect_social_commerce
@@ -34,6 +36,9 @@ from app.services.checkout_rubric import (
     score_checkout,
     get_checkout_tips,
     list_checkout_checks,
+    score_merged_checkout,
+    get_merged_checkout_tips,
+    list_merged_checkout_checks,
 )
 from app.services.shipping_rubric import (
     score_shipping,
@@ -341,6 +346,66 @@ def _compute_store_wide_score(categories: dict) -> int:
 
 
 def _serialize_checkout_signals(s) -> dict:
+    """Serialize checkout signals to camelCase dicts.
+
+    Accepts either a bare :class:`CheckoutSignals` (PDP-only, legacy
+    callers) or a :class:`MergedCheckoutSignals` which adds the
+    ground-truth wallet / BNPL / UX fields captured from the real
+    checkout page.
+    """
+    # Duck-type: merged signals have a ``pdp`` attribute
+    if hasattr(s, "pdp") and hasattr(s, "checkout_page"):
+        pdp = s.pdp
+        cp = s.checkout_page
+        return {
+            # Legacy PDP-derived fields (kept for backward compat)
+            "hasAcceleratedCheckout": pdp.has_accelerated_checkout,
+            "hasDynamicCheckoutButton": pdp.has_dynamic_checkout_button,
+            "hasPaypal": pdp.has_paypal,
+            "hasKlarna": pdp.has_klarna,
+            "hasAfterpay": pdp.has_afterpay,
+            "hasAffirm": pdp.has_affirm,
+            "hasSezzle": pdp.has_sezzle,
+            "paymentMethodCount": pdp.payment_method_count,
+            "hasDrawerCart": pdp.has_drawer_cart,
+            "hasAjaxCart": pdp.has_ajax_cart,
+            "hasStickyCheckout": pdp.has_sticky_checkout,
+            # Ground-truth fields from the live checkout page
+            "reachedCheckout": s.reached_checkout,
+            "failureReason": s.failure_reason,
+            "checkoutFlavor": cp.checkout_flavor,
+            "wallets": {
+                "shopPay": cp.has_shop_pay,
+                "applePay": cp.has_apple_pay,
+                "googlePay": cp.has_google_pay,
+                "paypal": cp.has_paypal,
+                "amazonPay": cp.has_amazon_pay,
+                "metaPay": cp.has_meta_pay,
+                "stripeLink": cp.has_stripe_link,
+            },
+            "bnpl": {
+                "klarna": cp.has_klarna,
+                "afterpay": cp.has_afterpay,
+                "clearpay": cp.has_clearpay,
+                "affirm": cp.has_affirm,
+                "sezzle": cp.has_sezzle,
+                "shopPayInstallments": cp.has_shop_pay_installments,
+                "zip": cp.has_zip,
+            },
+            "cardBrands": list(cp.card_brands),
+            "guestCheckoutAvailable": cp.guest_checkout_available,
+            "forcedAccountCreation": cp.forced_account_creation,
+            "checkoutStepCount": cp.checkout_step_count,
+            "totalFormFieldsStepOne": cp.total_form_fields_step_one,
+            "hasDiscountCodeField": cp.has_discount_code_field,
+            "hasGiftCardField": cp.has_gift_card_field,
+            "hasShippingCalculator": cp.has_shipping_calculator,
+            "hasAddressAutocomplete": cp.has_address_autocomplete,
+            "trustBadgeCount": cp.trust_badge_count,
+            "currencyCode": cp.currency_code,
+        }
+
+    # Raw CheckoutSignals (PDP-only)
     return {
         "hasAcceleratedCheckout": s.has_accelerated_checkout,
         "hasDynamicCheckoutButton": s.has_dynamic_checkout_button,
@@ -738,11 +803,24 @@ async def _run_store_wide_analysis(
         checks_patch: dict[str, list[dict]] = {}
 
         if "checkout" in needs:
-            s = detect_checkout(html)
-            categories_patch["checkout"] = score_checkout(s)
-            tips_patch["checkout"] = get_checkout_tips(s)
-            signals_patch["checkout"] = _serialize_checkout_signals(s)
-            checks_patch["checkout"] = list_checkout_checks(s)
+            pdp = detect_checkout(html)
+            try:
+                flow_result = await simulate_checkout_flow(
+                    product_url, timeout_s=45.0
+                )
+                cp = flow_result.signals
+            except Exception as exc:
+                logger.warning(
+                    "Checkout flow simulator crashed for %s: %s",
+                    product_url,
+                    exc,
+                )
+                cp = unreached("simulator_error")
+            merged = combine_signals(pdp=pdp, checkout_page=cp)
+            categories_patch["checkout"] = score_merged_checkout(merged)
+            tips_patch["checkout"] = get_merged_checkout_tips(merged)
+            signals_patch["checkout"] = _serialize_checkout_signals(merged)
+            checks_patch["checkout"] = list_merged_checkout_checks(merged)
 
         if "shipping" in needs:
             s = detect_shipping(html)

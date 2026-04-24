@@ -27,9 +27,14 @@ interface UseDimensionFixResult {
 
 export function useDimensionFix(
   dimensionKey: string | null,
+  domain?: string | null,
 ): UseDimensionFixResult {
+  const cacheKey = dimensionKey
+    ? `${dimensionKey}::${domain ?? ""}`
+    : null;
+
   const [fix, setFix] = useState<DimensionFix | null>(() =>
-    dimensionKey ? fixCache.get(dimensionKey) ?? null : null,
+    cacheKey ? fixCache.get(cacheKey) ?? null : null,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +42,14 @@ export function useDimensionFix(
   const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!dimensionKey) {
+    if (!dimensionKey || !cacheKey) {
       setFix(null);
       setLoading(false);
       setError(null);
       return;
     }
 
-    const cached = fixCache.get(dimensionKey);
+    const cached = fixCache.get(cacheKey);
     if (cached) {
       setFix(cached);
       setLoading(false);
@@ -61,10 +66,15 @@ export function useDimensionFix(
 
     (async () => {
       try {
-        const res = await authFetch(
+        const url = new URL(
           `${API_URL}/fix/${encodeURIComponent(dimensionKey)}`,
-          { signal: controller.signal },
         );
+        if (domain) {
+          url.searchParams.set("domain", domain);
+        }
+        const res = await authFetch(url.toString(), {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
             detail?: string;
@@ -75,7 +85,7 @@ export function useDimensionFix(
           );
         }
         const data = (await res.json()) as DimensionFix;
-        fixCache.set(dimensionKey, data);
+        fixCache.set(cacheKey, data);
         if (!controller.signal.aborted) {
           setFix(data);
           setLoading(false);
@@ -88,7 +98,7 @@ export function useDimensionFix(
     })();
 
     return () => controller.abort();
-  }, [dimensionKey, attempt]);
+  }, [dimensionKey, domain, cacheKey, attempt]);
 
   return {
     fix,

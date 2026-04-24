@@ -206,47 +206,89 @@ def list_shipping_checks(signals: ShippingSignals) -> list[dict]:
             "label": "Free shipping messaging",
             "passed": bool(signals.has_free_shipping),
             "weight": 25,
+            "remediation": (
+                "Add a \"Free shipping\" line to the announcement bar "
+                "or above Add to Cart. If you can't offer it globally, "
+                "offer it above a threshold (\"Free over $50\"). "
+                "Unexpected shipping is the #1 cause of cart abandonment."
+            ),
         },
         {
             "id": "specific_delivery_date",
             "label": "Specific delivery date shown (e.g. \"Arrives Thursday\")",
             "passed": bool(signals.has_delivery_date),
             "weight": 25,
+            "remediation": (
+                "Install Shopify's Delivery Dates app (or Deliverr, "
+                "Starshipit) and render \"Get it by [date]\" above Add "
+                "to Cart. Specific dates convert 24% better than vague "
+                "ranges and cut \"where is my order\" tickets by 31%."
+            ),
         },
         {
             "id": "free_shipping_threshold",
             "label": "Free shipping threshold (e.g. \"Free over $50\")",
             "passed": bool(signals.has_free_shipping_threshold),
             "weight": 15,
+            "remediation": (
+                "Set a free-shipping threshold in Settings → Shipping "
+                "and display a progress bar in the cart (\"$12 away "
+                "from free shipping\"). Lifts AOV 10–25%."
+            ),
         },
         {
             "id": "shipping_cost_shown",
             "label": "Shipping cost visible on product page",
             "passed": bool(signals.has_shipping_cost_shown),
             "weight": 10,
+            "remediation": (
+                "Show shipping cost (or \"Calculated at checkout\" "
+                "with a flat-rate hint) on the product page. Opaque "
+                "cost is the #1 abandonment driver (Baymard)."
+            ),
         },
         {
             "id": "shipping_structured_data",
             "label": "shippingDetails in Product schema",
             "passed": bool(signals.has_shipping_in_structured_data),
             "weight": 10,
+            "remediation": (
+                "Add shippingDetails (OfferShippingDetails) to your "
+                "Product JSON-LD. Required for Google's free-shipping "
+                "annotation in search results and AI shopping surfaces."
+            ),
         },
         {
             "id": "shipping_policy_link",
             "label": "Shipping policy link near buy button",
             "passed": bool(signals.has_shipping_policy_link),
             "weight": 5,
+            "remediation": (
+                "Link to your shipping policy from the product page "
+                "(not just the footer). Place it beneath Add to Cart "
+                "or inside the shipping-info accordion."
+            ),
         },
         {
             "id": "delivery_estimate_any",
             "label": "Any delivery estimate (specific or vague)",
             "passed": bool(signals.has_delivery_date) or has_vague_estimate,
             "weight": 5,
+            "remediation": (
+                "Even a vague estimate (\"Ships in 2–3 business days\") "
+                "beats silence. Add it above Add to Cart. Graduate to "
+                "specific dates once you integrate a fulfillment app."
+            ),
         },
         {
             "id": "returns_mentioned",
             "label": "Returns / refunds mentioned",
             "passed": bool(signals.has_returns_mentioned),
             "weight": 5,
+            "remediation": (
+                "Mention the return window on the product page (\"30-day "
+                "returns\" or \"Free returns within 30 days\"). Buyers "
+                "want to see this before committing, not in the footer."
+            ),
         },
     ]

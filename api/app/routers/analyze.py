@@ -32,8 +32,15 @@ from app.services.social_proof_rubric import score_social_proof, get_social_proo
 from app.services.structured_data_detector import detect_structured_data
 from app.services.price_extractor import extract_price
 from app.services.structured_data_rubric import score_structured_data, get_structured_data_tips
-from app.services.checkout_detector import detect_checkout
-from app.services.checkout_rubric import score_checkout, get_checkout_tips
+from app.services.checkout_detector import detect_checkout, combine_signals
+from app.services.checkout_flow_simulator import simulate_checkout_flow
+from app.services.checkout_page_parser import unreached
+from app.services.checkout_rubric import (
+    get_checkout_tips,
+    get_merged_checkout_tips,
+    score_checkout,
+    score_merged_checkout,
+)
 from app.services.pricing_detector import detect_pricing
 from app.services.pricing_rubric import score_pricing, get_pricing_tips
 from app.services.images_detector import detect_images
@@ -93,6 +100,32 @@ def _run_chain(detect_fn, score_fn, tips_fn, *args):
     tips = tips_fn(signals)
     elapsed = round((time.perf_counter() - t0) * 1000, 1)
     return signals, score, tips, elapsed
+
+
+async def _run_merged_checkout_chain(html: str, product_url: str):
+    """Run PDP detection + live checkout-flow simulation and score merged.
+
+    Mirrors :func:`_run_chain`'s return shape so it drops into the same
+    ``asyncio.gather`` call: ``(merged_signals, score, tips, elapsed_ms)``.
+
+    Never raises — simulator failures are swallowed into an
+    ``unreached()`` signal so the checkout dimension still scores
+    (capped at 70 by the rubric) and the rest of the analysis is
+    unaffected.
+    """
+    t0 = time.perf_counter()
+    pdp_signals = detect_checkout(html)
+    try:
+        flow_result = await simulate_checkout_flow(product_url, timeout_s=45.0)
+        cp_signals = flow_result.signals
+    except Exception as exc:
+        logger.warning("Checkout flow simulator crashed for %s: %s", product_url, exc)
+        cp_signals = unreached("simulator_error")
+    merged = combine_signals(pdp=pdp_signals, checkout_page=cp_signals)
+    score = score_merged_checkout(merged)
+    tips = get_merged_checkout_tips(merged)
+    elapsed = round((time.perf_counter() - t0) * 1000, 1)
+    return merged, score, tips, elapsed
 
 
 class AnalyzeRequest(BaseModel):
@@ -383,7 +416,7 @@ async def _do_analyze(
             timings[_sw_key] = 0
     else:
         (
-            (co_signals, co_score, co_tips, t_co),
+            (co_merged, co_score, co_tips, t_co),
             (sh_signals, sh_score, sh_tips, t_sh),
             (tr_signals, tr_score, tr_tips, t_tr),
             (ps_signals, ps_score, ps_tips, t_ps),
@@ -391,7 +424,7 @@ async def _do_analyze(
             (ac_signals, ac_score, ac_tips, t_ac),
             (sc_signals, sc_score, sc_tips, t_sc),
         ) = await asyncio.gather(
-            asyncio.to_thread(_run_chain, detect_checkout, score_checkout, get_checkout_tips, html),
+            _run_merged_checkout_chain(html, url),
             asyncio.to_thread(_run_chain, detect_shipping, score_shipping, get_shipping_tips, html),
             asyncio.to_thread(_run_chain, detect_trust, score_trust, get_trust_tips, html),
             asyncio.to_thread(_run_chain, detect_page_speed, score_page_speed, get_page_speed_tips, html, psi_data),
@@ -616,17 +649,51 @@ async def _do_analyze(
     else:
         _store_signals: dict = {
             "checkout": {
-                "hasAcceleratedCheckout": co_signals.has_accelerated_checkout,
-                "hasDynamicCheckoutButton": co_signals.has_dynamic_checkout_button,
-                "hasPaypal": co_signals.has_paypal,
-                "hasKlarna": co_signals.has_klarna,
-                "hasAfterpay": co_signals.has_afterpay,
-                "hasAffirm": co_signals.has_affirm,
-                "hasSezzle": co_signals.has_sezzle,
-                "paymentMethodCount": co_signals.payment_method_count,
-                "hasDrawerCart": co_signals.has_drawer_cart,
-                "hasAjaxCart": co_signals.has_ajax_cart,
-                "hasStickyCheckout": co_signals.has_sticky_checkout,
+                # Legacy PDP-derived fields (kept for backward compat)
+                "hasAcceleratedCheckout": co_merged.pdp.has_accelerated_checkout,
+                "hasDynamicCheckoutButton": co_merged.pdp.has_dynamic_checkout_button,
+                "hasPaypal": co_merged.pdp.has_paypal,
+                "hasKlarna": co_merged.pdp.has_klarna,
+                "hasAfterpay": co_merged.pdp.has_afterpay,
+                "hasAffirm": co_merged.pdp.has_affirm,
+                "hasSezzle": co_merged.pdp.has_sezzle,
+                "paymentMethodCount": co_merged.pdp.payment_method_count,
+                "hasDrawerCart": co_merged.pdp.has_drawer_cart,
+                "hasAjaxCart": co_merged.pdp.has_ajax_cart,
+                "hasStickyCheckout": co_merged.pdp.has_sticky_checkout,
+                # Ground-truth fields from live checkout page
+                "reachedCheckout": co_merged.reached_checkout,
+                "failureReason": co_merged.failure_reason,
+                "checkoutFlavor": co_merged.checkout_page.checkout_flavor,
+                "wallets": {
+                    "shopPay": co_merged.checkout_page.has_shop_pay,
+                    "applePay": co_merged.checkout_page.has_apple_pay,
+                    "googlePay": co_merged.checkout_page.has_google_pay,
+                    "paypal": co_merged.checkout_page.has_paypal,
+                    "amazonPay": co_merged.checkout_page.has_amazon_pay,
+                    "metaPay": co_merged.checkout_page.has_meta_pay,
+                    "stripeLink": co_merged.checkout_page.has_stripe_link,
+                },
+                "bnpl": {
+                    "klarna": co_merged.checkout_page.has_klarna,
+                    "afterpay": co_merged.checkout_page.has_afterpay,
+                    "clearpay": co_merged.checkout_page.has_clearpay,
+                    "affirm": co_merged.checkout_page.has_affirm,
+                    "sezzle": co_merged.checkout_page.has_sezzle,
+                    "shopPayInstallments": co_merged.checkout_page.has_shop_pay_installments,
+                    "zip": co_merged.checkout_page.has_zip,
+                },
+                "cardBrands": list(co_merged.checkout_page.card_brands),
+                "guestCheckoutAvailable": co_merged.checkout_page.guest_checkout_available,
+                "forcedAccountCreation": co_merged.checkout_page.forced_account_creation,
+                "checkoutStepCount": co_merged.checkout_page.checkout_step_count,
+                "totalFormFieldsStepOne": co_merged.checkout_page.total_form_fields_step_one,
+                "hasDiscountCodeField": co_merged.checkout_page.has_discount_code_field,
+                "hasGiftCardField": co_merged.checkout_page.has_gift_card_field,
+                "hasShippingCalculator": co_merged.checkout_page.has_shipping_calculator,
+                "hasAddressAutocomplete": co_merged.checkout_page.has_address_autocomplete,
+                "trustBadgeCount": co_merged.checkout_page.trust_badge_count,
+                "currencyCode": co_merged.checkout_page.currency_code,
             },
             "shipping": {
                 "hasFreeShipping": sh_signals.has_free_shipping,

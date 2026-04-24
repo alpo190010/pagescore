@@ -184,35 +184,70 @@ def list_accessibility_checks(signals: AccessibilitySignals) -> list[dict]:
             "label": "No color-contrast violations",
             "passed": signals.contrast_violations == 0,
             "weight": 15,
+            "remediation": (
+                "Audit text vs background colors against WCAG AA "
+                "(4.5:1 for body text, 3:1 for large). Common culprits: "
+                "light grey body text, gradient CTAs, pale placeholder "
+                "text. Use Chrome DevTools' contrast checker or Stark."
+            ),
         },
         {
             "id": "no_alt_text_violations",
             "label": "Alt text on all images",
             "passed": signals.alt_text_violations == 0,
             "weight": 15,
+            "remediation": (
+                "Add descriptive alt text to every content image. For "
+                "Shopify, go to Products → edit → click image → \"Add "
+                "alt text\". Decorative images get alt=\"\" (empty). "
+                "Required for WCAG + SEO + AI product indexing."
+            ),
         },
         {
             "id": "no_form_label_violations",
             "label": "All form inputs labeled",
             "passed": signals.form_label_violations == 0,
             "weight": 8,
+            "remediation": (
+                "Every <input>, <select>, and <textarea> needs an "
+                "associated <label for=\"\"> or aria-label. Screen "
+                "readers announce the label when the field is focused; "
+                "without it, forms are unusable."
+            ),
         },
         {
             "id": "no_empty_link_violations",
             "label": "No empty or unnamed links",
             "passed": signals.empty_link_violations == 0,
             "weight": 8,
+            "remediation": (
+                "Give every <a> link discernible text — either visible "
+                "text content or aria-label. Icon-only links (e.g. "
+                "social icons) must have aria-label=\"Instagram\" etc."
+            ),
         },
         {
             "id": "no_empty_button_violations",
             "label": "All buttons have accessible names",
             "passed": signals.empty_button_violations == 0,
             "weight": 8,
+            "remediation": (
+                "Every <button> needs text content or aria-label. "
+                "Common offenders: close X buttons, icon-only nav "
+                "toggles, carousel arrows. Add aria-label=\"Close\", "
+                "aria-label=\"Previous\", etc."
+            ),
         },
         {
             "id": "document_language_set",
             "label": "Document language (lang attribute) set",
             "passed": signals.document_language_violations == 0,
             "weight": 8,
+            "remediation": (
+                "Set <html lang=\"en\"> (or your primary language) in "
+                "your Shopify theme's theme.liquid. Helps screen "
+                "readers pick the right pronunciation and benefits "
+                "translation tools."
+            ),
         },
     ]

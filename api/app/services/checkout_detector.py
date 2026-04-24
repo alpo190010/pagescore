@@ -1,4 +1,4 @@
-"""Checkout experience signal detector for Shopify product pages.
+"""Checkout experience signal detector for Shopify product pages and checkout flow.
 
 Detects express checkout options (Shop Pay, dynamic checkout buttons),
 buy-now-pay-later providers (Klarna, Afterpay, Affirm, Sezzle), PayPal
@@ -301,3 +301,62 @@ def detect_checkout(html: str) -> CheckoutSignals:
     )
 
     return signals
+
+
+# ---------------------------------------------------------------------------
+# Merged signals — PDP-derived + rendered checkout page
+# ---------------------------------------------------------------------------
+#
+# The PDP signals (above) tell us what payment-related markup was shipped
+# in the product page HTML. The rendered checkout-page signals (from
+# :mod:`checkout_page_parser`) tell us the ground truth about wallets,
+# BNPL, cards, and guest-checkout on the actual form a buyer fills out.
+#
+# ``combine_signals`` glues them together so the rubric can score
+# whichever data is most authoritative per check. When the flow couldn't
+# reach checkout (``reached_checkout=False``), the PDP data is all we
+# have and the rubric is capped to avoid claiming a high score for
+# something we never verified.
+
+from app.services.checkout_page_parser import (  # noqa: E402 — avoid cycle
+    CheckoutPageSignals,
+    unreached,
+)
+
+
+@dataclass(frozen=True)
+class MergedCheckoutSignals:
+    """Ground-truth-preferred view of a store's checkout experience.
+
+    Combines the PDP-derived ``CheckoutSignals`` (what's in the product
+    page HTML) with ``CheckoutPageSignals`` (what's in the rendered
+    checkout). The rubric keys off ``checkout_page.reached_checkout`` to
+    decide whether to trust the checkout-page data or fall back to PDP
+    inference.
+    """
+
+    pdp: CheckoutSignals
+    checkout_page: CheckoutPageSignals
+
+    @property
+    def reached_checkout(self) -> bool:
+        return self.checkout_page.reached_checkout
+
+    @property
+    def failure_reason(self) -> str | None:
+        return self.checkout_page.failure_reason
+
+
+def combine_signals(
+    pdp: CheckoutSignals,
+    checkout_page: CheckoutPageSignals | None = None,
+) -> MergedCheckoutSignals:
+    """Combine PDP and checkout-page signals into a merged view.
+
+    If ``checkout_page`` is None (the simulator was not run, e.g. during
+    unit tests for discover_products), a synthetic ``unreached("not_run")``
+    stand-in is used so downstream code doesn't need null checks.
+    """
+    if checkout_page is None:
+        checkout_page = unreached("not_run")
+    return MergedCheckoutSignals(pdp=pdp, checkout_page=checkout_page)

@@ -2,6 +2,7 @@ import {
   ShieldCheckIcon,
   LightningIcon,
   ClockIcon,
+  DesktopIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { SAMPLE_SCAN } from "@/lib/sample-data";
 import HeroForm from "./_components/HeroForm";
@@ -34,6 +35,24 @@ export default function Home() {
                 {/* URL Input — client component with all hooks */}
                 <div className="max-w-2xl mx-auto lg:mx-0">
                   <HeroForm />
+
+                  {/* Mobile-only guidance — desktop gives a better report reading experience */}
+                  <div
+                    role="note"
+                    className="md:hidden mt-4 p-4 rounded-xl border-l-4 border-l-[var(--brand)] bg-[var(--surface-container-low)] flex items-start gap-3"
+                  >
+                    <DesktopIcon
+                      size={18}
+                      weight="regular"
+                      color="var(--brand)"
+                      className="shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <p className="text-sm leading-snug text-left text-[var(--on-surface-variant)]">
+                      <span className="font-medium text-[var(--on-surface)]">Best viewed on desktop.</span>{" "}
+                      Scans run fine here, but the full report is easier to review on a bigger screen.
+                    </p>
+                  </div>
 
                   {/* Trust badges — centered under the input */}
                   <div className="mt-8 flex flex-wrap justify-center gap-6 sm:gap-8 text-[var(--outline)] text-sm font-medium">

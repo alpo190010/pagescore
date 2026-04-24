@@ -774,7 +774,9 @@ def test_analyze_structured_data_signals_in_response(mock_fetch, mock_detect, mo
 @patch("app.routers.analyze.score_social_commerce", return_value=50)
 @patch("app.routers.analyze.detect_social_commerce", return_value=SocialCommerceSignals())
 @patch("app.routers.analyze.get_checkout_tips", return_value=[])
+@patch("app.routers.analyze.get_merged_checkout_tips", return_value=[])
 @patch("app.routers.analyze.score_checkout", return_value=65)
+@patch("app.routers.analyze.score_merged_checkout", return_value=65)
 @patch("app.routers.analyze.detect_checkout")
 @patch("app.routers.analyze.get_structured_data_tips", return_value=[])
 @patch("app.routers.analyze.score_structured_data", return_value=50)
@@ -783,7 +785,7 @@ def test_analyze_structured_data_signals_in_response(mock_fetch, mock_detect, mo
 @patch("app.routers.analyze.score_social_proof", return_value=50)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
-def test_analyze_checkout_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score, mock_co_tips, mock_sc_detect, mock_sc_score, mock_sc_tips, mock_axe_scan):
+def test_analyze_checkout_signals_in_response(mock_fetch, mock_detect, mock_sp_score, mock_sp_tips, mock_sd_detect, mock_sd_score, mock_sd_tips, mock_co_detect, mock_co_score_merged, mock_co_score, mock_co_tips_merged, mock_co_tips, mock_sc_detect, mock_sc_score, mock_sc_tips, mock_axe_scan):
     """Response includes signals.checkout with all 11 camelCase fields."""
     mock_co_detect.return_value = CheckoutSignals(
         has_accelerated_checkout=True,
@@ -1184,10 +1186,12 @@ _ANALYZE_PATCHES = [
     patch(f"{_AR}.get_shipping_tips", return_value=["sh tip"]),
     patch(f"{_AR}.score_shipping", return_value=50),
     patch(f"{_AR}.detect_shipping", return_value=ShippingSignals()),
-    # checkout
+    # checkout (legacy PDP-only + new merged rubric)
     patch(f"{_AR}.get_checkout_tips", return_value=["co tip"]),
     patch(f"{_AR}.score_checkout", return_value=50),
     patch(f"{_AR}.detect_checkout", return_value=CheckoutSignals()),
+    patch(f"{_AR}.get_merged_checkout_tips", return_value=["co tip"]),
+    patch(f"{_AR}.score_merged_checkout", return_value=50),
     # pageSpeed
     patch(f"{_AR}.get_page_speed_tips", return_value=["ps tip"]),
     patch(f"{_AR}.score_page_speed", return_value=50),

@@ -176,3 +176,162 @@ FIX_CONTENT: dict[str, dict] = {
         "code": None,
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# Dynamic fix-step resolution
+# ---------------------------------------------------------------------------
+#
+# When a caller passes the current scan signals for a dimension, we can
+# collapse the static step list down to only the actions that actually
+# apply. Without this the UI shows "Install Shop Pay" to stores that
+# already have Shop Pay, which is confusing.
+#
+# Today only ``checkout`` has dynamic steps. Other dimensions fall
+# through to the static list.
+
+
+def strip_check_remediation(checks: dict | None) -> dict | None:
+    """Strip the ``remediation`` field from every check row.
+
+    Free-tier callers shouldn't see the per-check fix text — it's the
+    premium content that replaces the legacy ``steps`` list. This
+    helper mirrors the ``steps: []`` gating in ``/fix/{key}``.
+
+    Returns a new dict-of-lists; the input is not mutated. Passes
+    ``None`` through unchanged.
+    """
+    if not isinstance(checks, dict):
+        return checks
+    out: dict[str, list[dict]] = {}
+    for dim, rows in checks.items():
+        if not isinstance(rows, list):
+            out[dim] = rows
+            continue
+        cleaned: list[dict] = []
+        for row in rows:
+            if isinstance(row, dict) and "remediation" in row:
+                cleaned.append({k: v for k, v in row.items() if k != "remediation"})
+            else:
+                cleaned.append(row)
+        out[dim] = cleaned
+    return out
+
+
+def get_fix_steps(dimension_key: str, signals: dict | None) -> list[str]:
+    """Return the fix-step list for a dimension, filtered by scan signals.
+
+    Args:
+        dimension_key: e.g. ``"checkout"``, ``"pageSpeed"``.
+        signals: The ``signals[dimension_key]`` slice from the store
+            analysis response, or ``None`` if no scan has run yet. When
+            ``None`` or empty, the full static list is returned.
+    """
+    fix = FIX_CONTENT.get(dimension_key)
+    if fix is None:
+        return []
+
+    if not signals:
+        return list(fix["steps"])
+
+    if dimension_key == "checkout":
+        return _checkout_fix_steps(signals)
+
+    return list(fix["steps"])
+
+
+def _checkout_fix_steps(co: dict) -> list[str]:
+    """Compute checkout fix steps from the merged checkout signals.
+
+    Prefers ground-truth checkout-page data (``wallets``, ``bnpl``) when
+    the live flow succeeded; falls back to PDP-derived flags when it
+    didn't. Keeps the step text close to the static list so the UI
+    doesn't suddenly change tone, but drops any step that's already
+    satisfied.
+    """
+    reached = bool(co.get("reachedCheckout"))
+    wallets: dict = co.get("wallets") or {}
+    bnpl: dict = co.get("bnpl") or {}
+
+    # Whether Shop Pay is already enabled (ground truth if reached,
+    # else PDP accelerated-checkout wrapper)
+    has_shop_pay = bool(
+        wallets.get("shopPay") if reached else co.get("hasAcceleratedCheckout")
+    )
+    has_apple_pay = bool(wallets.get("applePay")) if reached else None
+    has_google_pay = bool(wallets.get("googlePay")) if reached else None
+
+    has_klarna = bool(bnpl.get("klarna")) if reached else bool(co.get("hasKlarna"))
+    has_afterpay = bool(
+        bnpl.get("afterpay") or bnpl.get("clearpay")
+    ) if reached else bool(co.get("hasAfterpay"))
+    has_any_bnpl = (
+        any(bool(v) for v in bnpl.values())
+        if reached
+        else any(
+            co.get(k)
+            for k in ("hasKlarna", "hasAfterpay", "hasAffirm", "hasSezzle")
+        )
+    )
+
+    # PDP Shop Pay Express button — only reliably detectable from the
+    # PDP side (the ``<shopify-accelerated-checkout>`` element).
+    has_pdp_express = bool(co.get("hasAcceleratedCheckout"))
+
+    steps: list[str] = []
+
+    # Step 1: install any missing payment providers in Shopify admin.
+    missing_to_install: list[str] = []
+    if not has_shop_pay:
+        missing_to_install.append("Shop Pay")
+    if not has_klarna:
+        missing_to_install.append("Klarna")
+    if not has_afterpay:
+        missing_to_install.append("Afterpay")
+    if missing_to_install:
+        steps.append(
+            f"Install {', '.join(missing_to_install)} in Shopify Payments settings"
+        )
+
+    # Step 1b: enable Google Pay specifically (surfaced separately because
+    # it lives under the same Shopify Payments toggle but drives Android
+    # conversion independently).
+    if has_google_pay is False:
+        steps.append("Enable Google Pay in Shopify Payments settings")
+
+    # Step 2: PDP / cart Shop Pay Express button.
+    if not has_pdp_express:
+        steps.append(
+            "Enable Shop Pay Express button on product and cart templates"
+        )
+
+    # Step 3: installment callout on PDP — recommended when BNPL is
+    # offered but not surfaced on the product page, or when no BNPL at
+    # all exists.
+    if not has_any_bnpl:
+        steps.append(
+            'Add an installment callout ("4 payments of $X") under the price'
+        )
+    elif not has_pdp_express:
+        # BNPL exists at checkout but buyers don't see it until then —
+        # surface it on the PDP.
+        steps.append(
+            'Surface the BNPL option ("4 payments of $X") under the PDP price'
+        )
+
+    # Step 4: Apple Pay — verification if already on, remediation if off.
+    if has_apple_pay is False:
+        steps.append("Enable Apple Pay in Shopify Payments settings")
+    else:
+        # Always worth the final sanity check on real iOS Safari.
+        steps.append("Verify Apple Pay shows on iOS Safari sessions")
+
+    # If nothing else is missing, give the user something concrete to
+    # verify so the panel isn't empty.
+    if not steps:
+        steps.append(
+            "Checkout coverage looks solid — spot-check on iOS Safari and "
+            "an Android Chrome session to confirm wallets render for real buyers."
+        )
+
+    return steps

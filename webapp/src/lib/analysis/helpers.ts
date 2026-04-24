@@ -253,6 +253,72 @@ export function parseAnalysisResponse(data: Record<string, unknown>): FreeResult
             hasDrawerCart: Boolean(co.hasDrawerCart),
             hasAjaxCart: Boolean(co.hasAjaxCart),
             hasStickyCheckout: Boolean(co.hasStickyCheckout),
+            // Ground-truth checkout-page fields (optional; absent on
+            // older cached rows or when the flow couldn't run)
+            ...(co.reachedCheckout !== undefined && {
+              reachedCheckout: Boolean(co.reachedCheckout),
+            }),
+            ...(co.failureReason !== undefined && {
+              failureReason: co.failureReason == null ? null : String(co.failureReason),
+            }),
+            ...(co.checkoutFlavor !== undefined && {
+              checkoutFlavor: co.checkoutFlavor as "onepage" | "classic" | "unknown",
+            }),
+            ...(co.wallets !== undefined && {
+              wallets: ((w: Record<string, unknown>) => ({
+                shopPay: Boolean(w.shopPay),
+                applePay: Boolean(w.applePay),
+                googlePay: Boolean(w.googlePay),
+                paypal: Boolean(w.paypal),
+                amazonPay: Boolean(w.amazonPay),
+                metaPay: Boolean(w.metaPay),
+                stripeLink: Boolean(w.stripeLink),
+              }))(co.wallets as Record<string, unknown>),
+            }),
+            ...(co.bnpl !== undefined && {
+              bnpl: ((b: Record<string, unknown>) => ({
+                klarna: Boolean(b.klarna),
+                afterpay: Boolean(b.afterpay),
+                clearpay: Boolean(b.clearpay),
+                affirm: Boolean(b.affirm),
+                sezzle: Boolean(b.sezzle),
+                shopPayInstallments: Boolean(b.shopPayInstallments),
+                zip: Boolean(b.zip),
+              }))(co.bnpl as Record<string, unknown>),
+            }),
+            ...(Array.isArray(co.cardBrands) && {
+              cardBrands: (co.cardBrands as unknown[]).map(String),
+            }),
+            ...(co.guestCheckoutAvailable !== undefined && {
+              guestCheckoutAvailable: Boolean(co.guestCheckoutAvailable),
+            }),
+            ...(co.forcedAccountCreation !== undefined && {
+              forcedAccountCreation: Boolean(co.forcedAccountCreation),
+            }),
+            ...(co.checkoutStepCount !== undefined && {
+              checkoutStepCount: Number(co.checkoutStepCount) || 0,
+            }),
+            ...(co.totalFormFieldsStepOne !== undefined && {
+              totalFormFieldsStepOne: Number(co.totalFormFieldsStepOne) || 0,
+            }),
+            ...(co.hasDiscountCodeField !== undefined && {
+              hasDiscountCodeField: Boolean(co.hasDiscountCodeField),
+            }),
+            ...(co.hasGiftCardField !== undefined && {
+              hasGiftCardField: Boolean(co.hasGiftCardField),
+            }),
+            ...(co.hasShippingCalculator !== undefined && {
+              hasShippingCalculator: Boolean(co.hasShippingCalculator),
+            }),
+            ...(co.hasAddressAutocomplete !== undefined && {
+              hasAddressAutocomplete: Boolean(co.hasAddressAutocomplete),
+            }),
+            ...(co.trustBadgeCount !== undefined && {
+              trustBadgeCount: Number(co.trustBadgeCount) || 0,
+            }),
+            ...(co.currencyCode !== undefined && {
+              currencyCode: co.currencyCode == null ? null : String(co.currencyCode),
+            }),
           },
         } : {}),
         ...(pr ? {

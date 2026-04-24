@@ -207,30 +207,62 @@ def list_ai_discoverability_checks(
             "label": "robots.txt exists",
             "passed": bool(signals.robots_txt_exists),
             "weight": 5,
+            "remediation": (
+                "Create a /robots.txt file at the root of your store. "
+                "Shopify ships one by default — if yours is missing, "
+                "check Online Store → Themes → Actions → Edit code → "
+                "templates/robots.txt.liquid."
+            ),
         })
         checks.append({
             "id": "ai_search_bots_allowed",
             "label": "AI search bots allowed (OAI-SearchBot, PerplexityBot, Claude-SearchBot)",
             "passed": signals.ai_search_bots_allowed_count >= 3,
             "weight": 15,
+            "remediation": (
+                "In robots.txt, explicitly allow OAI-SearchBot, "
+                "PerplexityBot, and Claude-SearchBot (Anthropic's user "
+                "agent). These bots crawl for AI shopping answers — "
+                "blocking them means your store is invisible to ChatGPT "
+                "Shopping, Perplexity, and Claude search."
+            ),
         })
         checks.append({
             "id": "ai_training_bots_blocked",
             "label": "AI training bots blocked (GPTBot, Google-Extended, etc.)",
             "passed": signals.ai_training_bots_blocked_count >= 4,
             "weight": 10,
+            "remediation": (
+                "In robots.txt, add Disallow: / for GPTBot, "
+                "Google-Extended, CCBot, and Claude-Web. These are "
+                "training crawlers (not search) — blocking them "
+                "keeps your content out of model training data "
+                "without affecting AI shopping discoverability."
+            ),
         })
         checks.append({
             "id": "llms_txt_exists",
             "label": "llms.txt file published",
             "passed": bool(signals.llms_txt_exists),
             "weight": 10,
+            "remediation": (
+                "Publish /llms.txt — a structured markdown summary "
+                "of your site for AI crawlers. Include your store "
+                "name, primary categories, top products, and policies. "
+                "Spec at llmstxt.org."
+            ),
         })
         checks.append({
             "id": "no_wildcard_block",
             "label": "No wildcard robots.txt block",
             "passed": not signals.has_wildcard_block,
             "weight": 10,
+            "remediation": (
+                "Remove any User-agent: * + Disallow: / from robots.txt. "
+                "A wildcard block makes you invisible to every bot — "
+                "including Google and the AI shopping assistants you "
+                "want sending traffic."
+            ),
         })
 
     og_weight = 3 if has_path_a else 5
@@ -246,36 +278,68 @@ def list_ai_discoverability_checks(
             "label": "OpenGraph og:type meta tag",
             "passed": bool(signals.has_og_type),
             "weight": og_weight,
+            "remediation": (
+                "Add <meta property=\"og:type\" content=\"product\"> "
+                "(or \"website\") to <head> in theme.liquid. Modern "
+                "Shopify themes set this automatically; legacy ones "
+                "may not."
+            ),
         },
         {
             "id": "og_title",
             "label": "OpenGraph og:title meta tag",
             "passed": bool(signals.has_og_title),
             "weight": og_weight,
+            "remediation": (
+                "Add <meta property=\"og:title\" content=\"{{ page_title }}\"> "
+                "to your theme's <head>. Controls how product links "
+                "preview on social platforms and AI chatbots."
+            ),
         },
         {
             "id": "og_description",
             "label": "OpenGraph og:description meta tag",
             "passed": bool(signals.has_og_description),
             "weight": og_weight,
+            "remediation": (
+                "Add <meta property=\"og:description\" content=\""
+                "{{ page_description | escape }}\"> to your theme. "
+                "Keeps social previews and AI summaries rich."
+            ),
         },
         {
             "id": "og_image",
             "label": "OpenGraph og:image meta tag",
             "passed": bool(signals.has_og_image),
             "weight": og_weight,
+            "remediation": (
+                "Add <meta property=\"og:image\" content=\""
+                "{{ product.featured_image | image_url: width: 1200 }}\"> "
+                "to product pages. Required for rich link previews."
+            ),
         },
         {
             "id": "product_price_amount",
             "label": "product:price:amount meta tag",
             "passed": bool(signals.has_product_price_amount),
             "weight": price_amount_weight,
+            "remediation": (
+                "Add <meta property=\"product:price:amount\" content=\""
+                "{{ product.price | money_without_currency }}\"> on "
+                "product pages. Lets AI shopping agents quote your "
+                "price directly."
+            ),
         },
         {
             "id": "product_price_currency",
             "label": "product:price:currency meta tag",
             "passed": bool(signals.has_product_price_currency),
             "weight": price_currency_weight,
+            "remediation": (
+                "Add <meta property=\"product:price:currency\" content=\""
+                "{{ cart.currency.iso_code }}\"> alongside the price "
+                "amount tag. Required companion."
+            ),
         },
         {
             "id": "structured_specs",
@@ -284,18 +348,36 @@ def list_ai_discoverability_checks(
                 signals.has_structured_specs or signals.has_spec_table
             ),
             "weight": specs_weight,
+            "remediation": (
+                "Add a spec table (<table> or <dl>) on product pages "
+                "listing concrete attributes — dimensions, weight, "
+                "materials, compatibility. AI shopping agents parse "
+                "specs to match buyer queries."
+            ),
         },
         {
             "id": "faq_content",
             "label": "FAQ content on product page",
             "passed": bool(signals.has_faq_content),
             "weight": faq_weight,
+            "remediation": (
+                "Add a FAQ section to product pages covering sizing, "
+                "shipping, returns, materials, care. Structure with "
+                "FAQPage JSON-LD so AI agents can surface answers "
+                "directly in chat responses."
+            ),
         },
         {
             "id": "spec_density_high",
             "label": "5+ concrete product specifications",
             "passed": signals.spec_mention_count >= 5,
             "weight": spec_density_weight,
+            "remediation": (
+                "Surface at least 5 concrete specs on each product "
+                "page (dimensions, weight, material, color options, "
+                "SKU, country of origin). Higher spec density = more "
+                "AI query matches."
+            ),
         },
     ])
 
@@ -305,6 +387,12 @@ def list_ai_discoverability_checks(
             "label": "Measurement units present (weight, dimensions, etc.)",
             "passed": bool(signals.has_measurement_units),
             "weight": 10,
+            "remediation": (
+                "Include measurement units (oz, lb, kg, in, cm, mm) "
+                "in product copy — not just \"Medium size.\" AI agents "
+                "use these to answer \"fits under a 15-inch laptop\" "
+                "style queries."
+            ),
         })
 
     return checks

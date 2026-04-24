@@ -192,67 +192,182 @@ function StructuredDataChecklist({ sd }: { sd: StructuredDataSignals }) {
 
 /* ── Checkout signal checklist ── */
 function CheckoutChecklist({ co }: { co: CheckoutSignals }) {
+  // Ground-truth checkout-page signals are optional; older cached
+  // rows won't have them.
+  const liveChecked = co.reachedCheckout === true;
+  const liveFailed = co.reachedCheckout === false;
+  const wallets = co.wallets;
+  const bnpl = co.bnpl;
+
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--on-surface-variant)] mb-2">
         What We Found
       </p>
       <div className="rounded-xl bg-[var(--surface-container-low)] p-4 space-y-0.5">
-        {/* Express Checkout */}
-        <SignalRow
-          label="Shop Pay / accelerated checkout"
-          icon={<LightningIcon size={14} weight="fill" />}
-          present={co.hasAcceleratedCheckout}
-          detail={!co.hasAcceleratedCheckout ? "Accelerated checkout can boost conversion 1.7×" : undefined}
-        />
-        <SignalRow
-          label="Dynamic checkout button"
-          icon={<LightningIcon size={14} weight="fill" />}
-          present={co.hasDynamicCheckoutButton}
-          detail={!co.hasDynamicCheckoutButton ? "Shows the buyer's preferred payment at checkout" : undefined}
-        />
-        <SignalRow
-          label="PayPal"
-          icon={<CurrencyDollarIcon size={14} weight="fill" />}
-          present={co.hasPaypal}
-          detail={!co.hasPaypal ? "PayPal reaches 400M+ active buyers globally" : undefined}
-        />
+        {liveFailed && (
+          <div className="mb-3 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container)] px-3 py-2 text-xs leading-relaxed text-[var(--on-surface-variant)]">
+            We couldn't fully inspect your live checkout
+            {co.failureReason ? ` (${co.failureReason})` : ""}.
+            Payment-method signals below reflect your product page only; the
+            real checkout was not reached.
+          </div>
+        )}
 
-        {/* BNPL Providers */}
-        <SignalRow
-          label="Klarna"
-          icon={<CreditCardIcon size={14} weight="fill" />}
-          present={co.hasKlarna}
-          detail={!co.hasKlarna ? "BNPL options increase AOV by up to 45%" : undefined}
-        />
-        <SignalRow
-          label="Afterpay"
-          icon={<CreditCardIcon size={14} weight="fill" />}
-          present={co.hasAfterpay}
-          detail={!co.hasAfterpay ? "Afterpay drives repeat purchases at 2× the rate" : undefined}
-        />
-        <SignalRow
-          label="Affirm"
-          icon={<CreditCardIcon size={14} weight="fill" />}
-          present={co.hasAffirm}
-          detail={!co.hasAffirm ? "Affirm reduces cart abandonment on high-AOV items" : undefined}
-        />
-        <SignalRow
-          label="Sezzle"
-          icon={<CreditCardIcon size={14} weight="fill" />}
-          present={co.hasSezzle}
-          detail={!co.hasSezzle ? "Sezzle targets younger demographics effectively" : undefined}
-        />
+        {liveChecked && wallets ? (
+          <>
+            <SignalRow
+              label="Shop Pay on checkout"
+              icon={<LightningIcon size={14} weight="fill" />}
+              present={wallets.shopPay}
+              detail={!wallets.shopPay ? "Shop Pay drives a 50% checkout-to-order lift for returning buyers" : undefined}
+            />
+            <SignalRow
+              label="Apple Pay on checkout"
+              icon={<LightningIcon size={14} weight="fill" />}
+              present={wallets.applePay}
+              detail={!wallets.applePay ? "Apple Pay roughly doubles mobile checkout conversion" : undefined}
+            />
+            <SignalRow
+              label="Google Pay on checkout"
+              icon={<LightningIcon size={14} weight="fill" />}
+              present={wallets.googlePay}
+              detail={!wallets.googlePay ? "43% of Android shoppers abandon without Google Pay" : undefined}
+            />
+            <SignalRow
+              label="PayPal on checkout"
+              icon={<CurrencyDollarIcon size={14} weight="fill" />}
+              present={wallets.paypal}
+              detail={!wallets.paypal ? "PayPal reaches 400M+ active buyers globally" : undefined}
+            />
+            {(wallets.amazonPay || wallets.metaPay || wallets.stripeLink) && (
+              <SignalRow
+                label="Amazon / Meta / Stripe Link wallet"
+                icon={<CurrencyDollarIcon size={14} weight="fill" />}
+                present={wallets.amazonPay || wallets.metaPay || wallets.stripeLink}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {/* Legacy PDP-only signals (when live flow didn't run) */}
+            <SignalRow
+              label="Shop Pay / accelerated-checkout wrapper on product page"
+              icon={<LightningIcon size={14} weight="fill" />}
+              present={co.hasAcceleratedCheckout}
+              detail={!co.hasAcceleratedCheckout ? "Accelerated checkout can boost conversion 1.7×" : undefined}
+            />
+            <SignalRow
+              label="Dynamic checkout button on product page"
+              icon={<LightningIcon size={14} weight="fill" />}
+              present={co.hasDynamicCheckoutButton}
+              detail={!co.hasDynamicCheckoutButton ? "Shows the buyer's preferred payment at checkout" : undefined}
+            />
+            <SignalRow
+              label="PayPal (product page)"
+              icon={<CurrencyDollarIcon size={14} weight="fill" />}
+              present={co.hasPaypal}
+              detail={!co.hasPaypal ? "PayPal reaches 400M+ active buyers globally" : undefined}
+            />
+          </>
+        )}
 
-        {/* Payment Diversity */}
+        {/* BNPL Providers — prefer live checkout data when available */}
+        {liveChecked && bnpl ? (
+          <>
+            <SignalRow
+              label="Shop Pay Installments on checkout"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={bnpl.shopPayInstallments}
+              detail={!bnpl.shopPayInstallments ? "Shop Pay Installments lifts AOV for orders $50+" : undefined}
+            />
+            <SignalRow
+              label="Klarna on checkout"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={bnpl.klarna}
+              detail={!bnpl.klarna ? "BNPL options increase AOV by up to 45%" : undefined}
+            />
+            <SignalRow
+              label="Afterpay / Clearpay on checkout"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={bnpl.afterpay || bnpl.clearpay}
+              detail={!(bnpl.afterpay || bnpl.clearpay) ? "Afterpay drives repeat purchases at 2× the rate" : undefined}
+            />
+            <SignalRow
+              label="Affirm on checkout"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={bnpl.affirm}
+              detail={!bnpl.affirm ? "Affirm reduces cart abandonment on high-AOV items" : undefined}
+            />
+          </>
+        ) : (
+          <>
+            <SignalRow
+              label="Klarna (product page)"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={co.hasKlarna}
+              detail={!co.hasKlarna ? "BNPL options increase AOV by up to 45%" : undefined}
+            />
+            <SignalRow
+              label="Afterpay (product page)"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={co.hasAfterpay}
+              detail={!co.hasAfterpay ? "Afterpay drives repeat purchases at 2× the rate" : undefined}
+            />
+            <SignalRow
+              label="Affirm (product page)"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={co.hasAffirm}
+              detail={!co.hasAffirm ? "Affirm reduces cart abandonment on high-AOV items" : undefined}
+            />
+            <SignalRow
+              label="Sezzle (product page)"
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={co.hasSezzle}
+              detail={!co.hasSezzle ? "Sezzle targets younger demographics effectively" : undefined}
+            />
+          </>
+        )}
+
+        {/* Checkout UX (ground-truth only) */}
+        {liveChecked && (
+          <>
+            <SignalRow
+              label={co.forcedAccountCreation ? "Forced account creation" : "Guest checkout supported"}
+              icon={<CreditCardIcon size={14} weight="fill" />}
+              present={co.guestCheckoutAvailable === true && !co.forcedAccountCreation}
+              detail={!co.guestCheckoutAvailable ? "24% of shoppers abandon carts when forced to sign up" : undefined}
+            />
+            <SignalRow
+              label={co.checkoutStepCount === 1 ? "One-page checkout" : `${co.checkoutStepCount ?? "?"}-step checkout`}
+              icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+              present={co.checkoutStepCount === 1}
+              detail={(co.checkoutStepCount ?? 0) > 1 ? "One-page checkouts convert 13% better than multi-step" : undefined}
+            />
+            <SignalRow
+              label="Discount-code field on checkout"
+              icon={<CurrencyDollarIcon size={14} weight="fill" />}
+              present={co.hasDiscountCodeField === true}
+              detail={!co.hasDiscountCodeField ? "Expose a code field — buyers who leave to search for codes rarely return" : undefined}
+            />
+            <SignalRow
+              label="Address autocomplete on checkout"
+              icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}
+              present={co.hasAddressAutocomplete === true}
+              detail={!co.hasAddressAutocomplete ? "Autocomplete reduces address typing by 20%" : undefined}
+            />
+          </>
+        )}
+
+        {/* Payment Diversity — shown as secondary signal */}
         <SignalRow
-          label={`${co.paymentMethodCount} of 5 payment methods detected`}
+          label={`${co.paymentMethodCount} of 5 payment methods detected on product page`}
           icon={<CreditCardIcon size={14} weight="fill" />}
           present={co.paymentMethodCount >= 3}
           detail={co.paymentMethodCount < 3 ? "Offer 3+ payment methods to reduce checkout friction" : undefined}
         />
 
-        {/* Cart Experience */}
+        {/* Cart Experience (PDP) */}
         <SignalRow
           label="Drawer / slide-out cart"
           icon={<ShoppingCartSimpleIcon size={14} weight="fill" />}

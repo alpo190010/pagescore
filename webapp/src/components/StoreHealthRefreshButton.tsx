@@ -49,7 +49,7 @@ interface StoreHealthRefreshButtonProps {
    * "step-item" — a full <li><button> styled to match a FixSteps step card,
    *               where the whole row is the click target.
    */
-  variant?: "card" | "inline" | "step-item";
+  variant?: "card" | "inline" | "step-item" | "verify-card";
   /** Required when variant="step-item". Two-digit step number like "05". */
   stepNumber?: string;
 }
@@ -240,6 +240,110 @@ export default function StoreHealthRefreshButton({
           )}
         </button>
       </li>
+    );
+  }
+
+  if (variant === "verify-card") {
+    const isLoading = status.kind === "loading";
+    return (
+      <section
+        aria-labelledby={`verify-${dimensionKey}-heading`}
+        className="rounded-[16px] border px-5 py-6 sm:px-7 sm:py-7 flex flex-col items-center text-center gap-4"
+        style={{
+          background: "var(--paper)",
+          borderColor: "color-mix(in srgb, var(--accent) 40%, var(--rule-2))",
+          boxShadow: "0 2px 14px color-mix(in srgb, var(--accent) 10%, transparent)",
+        }}
+      >
+        <div className="flex flex-col gap-1.5 items-center">
+          <span
+            className="font-mono text-[10px] font-bold uppercase"
+            style={{ color: "var(--accent)", letterSpacing: "0.16em" }}
+          >
+            Final step
+          </span>
+          <h3
+            id={`verify-${dimensionKey}-heading`}
+            className="font-display font-bold text-[17px] sm:text-[18px] leading-[1.25]"
+            style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
+          >
+            Check if your fix worked
+          </h3>
+          <p
+            className="text-[13px] leading-[1.5] max-w-[380px]"
+            style={{ color: "var(--ink-2)" }}
+          >
+            We&apos;ll re-scan {dimensionLabel.toLowerCase()} and update your
+            score. Usually takes about a minute.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isLoading}
+          aria-busy={isLoading}
+          aria-label={
+            isLoading ? "Re-analyzing" : `Re-analyze ${dimensionLabel}`
+          }
+          className="group inline-flex items-center justify-center gap-2.5 w-full sm:w-auto min-h-[56px] px-8 rounded-[12px] transition-all font-display font-bold text-[15px]"
+          style={{
+            background: "var(--accent)",
+            color: "var(--accent-ink)",
+            border: "1px solid var(--accent)",
+            cursor: isLoading ? "progress" : "pointer",
+            boxShadow:
+              "0 6px 20px color-mix(in srgb, var(--accent) 30%, transparent)",
+            letterSpacing: "-0.01em",
+          }}
+          onMouseEnter={(e) => {
+            if (!isLoading) {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.background = "var(--accent-dim)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.background = "var(--accent)";
+          }}
+        >
+          <ArrowClockwiseIcon
+            size={18}
+            weight="bold"
+            className={isLoading ? "animate-spin" : ""}
+          />
+          <span>
+            {isLoading ? "Re-analyzing…" : `Re-analyze ${dimensionLabel}`}
+          </span>
+          {status.kind === "idle" && (
+            <ArrowRightIcon
+              size={14}
+              weight="bold"
+              className="transition-transform group-hover:translate-x-0.5"
+              style={{ opacity: 0.85 }}
+            />
+          )}
+        </button>
+
+        {status.kind === "success" && (
+          <div
+            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold"
+            style={{ color: "var(--success-text)" }}
+          >
+            <CheckCircleIcon size={14} weight="fill" />
+            Score updated just now
+          </div>
+        )}
+        {status.kind === "error" && (
+          <div
+            className="inline-flex items-center gap-1.5 text-[12.5px]"
+            style={{ color: "var(--error-text)" }}
+          >
+            <WarningCircleIcon size={14} weight="fill" />
+            {status.message}
+          </div>
+        )}
+      </section>
     );
   }
 

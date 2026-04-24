@@ -17,6 +17,7 @@ from app.auth import get_current_user_optional, get_current_user_required
 from app.database import get_db
 from app.models import ProductAnalysis, Store, StoreAnalysis, StoreProduct, User
 from app.routers.discover_products import _run_store_wide_analysis
+from app.services.dimension_fixes import strip_check_remediation
 from app.services.scoring import STORE_WIDE_KEYS
 
 logger = logging.getLogger(__name__)
@@ -147,7 +148,12 @@ def get_store(
                 "categories": store_analysis_row.categories,
                 "tips": store_analysis_row.tips,
                 "signals": store_analysis_row.signals,
-                "checks": store_analysis_row.checks,
+                "checks": (
+                    store_analysis_row.checks
+                    if current_user is not None
+                    and (current_user.plan_tier or "free") != "free"
+                    else strip_check_remediation(store_analysis_row.checks)
+                ),
                 "analyzedUrl": store_analysis_row.analyzed_url,
                 "updatedAt": (
                     store_analysis_row.updated_at.isoformat()

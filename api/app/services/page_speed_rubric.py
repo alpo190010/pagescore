@@ -303,6 +303,12 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
                 and signals.performance_score >= 90
             ),
             "weight": 25,
+            "remediation": (
+                "Work through the specific fixes below — modern image "
+                "formats, script deferral, preconnect, and hero preload "
+                "typically recover 20–40 Lighthouse points on Shopify "
+                "stores."
+            ),
         })
         checks.append({
             "id": "lcp_good",
@@ -311,6 +317,11 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
                 signals.lcp_ms is not None and signals.lcp_ms <= 2500
             ),
             "weight": 20,
+            "remediation": (
+                "Preload the hero image, remove lazy-loading from "
+                "above-fold content, and serve a responsive srcset with "
+                "AVIF/WebP. LCP > 2.5s roughly doubles bounce rate."
+            ),
         })
         checks.append({
             "id": "cls_good",
@@ -319,6 +330,12 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
                 signals.cls_value is not None and signals.cls_value <= 0.1
             ),
             "weight": 10,
+            "remediation": (
+                "Add explicit width/height on every image and iframe "
+                "so the browser reserves space. Reserve space for "
+                "dynamic banners, review widgets, and cookie consent "
+                "too — they're the usual CLS offenders."
+            ),
         })
         checks.append({
             "id": "tbt_good",
@@ -327,6 +344,11 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
                 signals.tbt_ms is not None and signals.tbt_ms <= 200
             ),
             "weight": 10,
+            "remediation": (
+                "Defer non-critical third-party scripts (Klaviyo, "
+                "ReCharge, chat widgets) until user interaction or a "
+                "requestIdleCallback. Use async/defer on <script> tags."
+            ),
         })
 
     script_weight = 15 if has_psi else 30
@@ -335,6 +357,11 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
         "label": "5 or fewer third-party scripts",
         "passed": signals.third_party_script_count <= 5,
         "weight": script_weight,
+        "remediation": (
+            "Audit installed Shopify apps — each typically injects a "
+            "third-party script. Remove apps you don't use, and defer "
+            "the rest until interaction. Target ≤5 global scripts."
+        ),
     })
 
     image_weight = 2 if has_psi else 6
@@ -344,24 +371,44 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
             "label": "Modern image formats (WebP / AVIF)",
             "passed": bool(signals.has_modern_image_formats),
             "weight": image_weight + (1 if has_psi else 1),
+            "remediation": (
+                "Use Shopify's {{ image | image_url: format: 'webp' }} "
+                "filter (or a responsive <picture> with AVIF → WebP → "
+                "JPG fallback). Cuts hero-image bytes 40–70%."
+            ),
         },
         {
             "id": "explicit_image_dimensions",
             "label": "Explicit width/height on images",
             "passed": bool(signals.has_explicit_image_dimensions),
             "weight": image_weight + (1 if has_psi else 0),
+            "remediation": (
+                "Add width and height attributes (or an aspect-ratio "
+                "CSS rule) to every <img>. Browsers need this to "
+                "reserve space and avoid layout shift."
+            ),
         },
         {
             "id": "hero_preload",
             "label": "Hero image preloaded",
             "passed": bool(signals.has_hero_preload),
             "weight": image_weight + (1 if has_psi else 0),
+            "remediation": (
+                "Add `<link rel=\"preload\" as=\"image\" "
+                "href=\"{{ product.featured_image | image_url }}\">` "
+                "in <head>. Shaves 200–500ms off LCP on mobile."
+            ),
         },
         {
             "id": "lcp_not_lazy",
             "label": "Hero image not lazy-loaded",
             "passed": not signals.lcp_image_lazy_loaded,
             "weight": image_weight + (1 if has_psi else 0),
+            "remediation": (
+                "Remove loading=\"lazy\" from your hero / above-fold "
+                "image. Lazy-loaded LCP images are one of the top "
+                "Lighthouse penalties on Shopify themes."
+            ),
         },
     ])
 
@@ -371,24 +418,46 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
             "label": "Preconnect hints for third-party origins",
             "passed": bool(signals.has_preconnect_hints),
             "weight": 3 if has_psi else 7,
+            "remediation": (
+                "Add `<link rel=\"preconnect\" href=\"https://cdn."
+                "shopify.com\" crossorigin>` and one for fonts.gstatic.com "
+                "in <head>. Parallelizes handshakes that otherwise "
+                "block hero content."
+            ),
         },
         {
             "id": "font_display_swap",
             "label": "font-display: swap on custom fonts",
             "passed": bool(signals.has_font_display_swap),
             "weight": 3 if has_psi else 7,
+            "remediation": (
+                "Add `font-display: swap;` to every @font-face "
+                "declaration so text renders with the fallback while "
+                "the custom font loads. Prevents invisible text "
+                "(FOIT) on slow connections."
+            ),
         },
         {
             "id": "dns_prefetch",
             "label": "DNS prefetch for third-party domains",
             "passed": bool(signals.has_dns_prefetch),
             "weight": 2 if has_psi else 5,
+            "remediation": (
+                "Add `<link rel=\"dns-prefetch\" href=\"//example.com\">` "
+                "for third-party domains your page calls (analytics, "
+                "fonts, review widgets). Cheap — usually saves 50–200ms."
+            ),
         },
         {
             "id": "inline_css_small",
             "label": "Inline CSS under 10KB",
             "passed": signals.inline_css_kb < 10,
             "weight": 2 if has_psi else 6,
+            "remediation": (
+                "Move large inline <style> blocks out into external "
+                "stylesheets so they can be cached across pages. "
+                "Inline only the above-the-fold critical CSS."
+            ),
         },
     ])
 
@@ -398,6 +467,12 @@ def list_page_speed_checks(signals: PageSpeedSignals) -> list[dict]:
             "label": "Modern Shopify theme (Dawn / OS 2.0)",
             "passed": signals.detected_theme in {"dawn", "os2"},
             "weight": 10,
+            "remediation": (
+                "Migrate to a Shopify 2.0 theme (Dawn, Sense, Ride, "
+                "or a third-party OS 2.0 theme). Legacy 1.0 themes "
+                "lack modern image handling, native sections, and "
+                "are structurally slower."
+            ),
         })
 
     return checks

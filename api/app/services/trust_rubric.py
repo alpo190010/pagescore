@@ -221,71 +221,143 @@ def list_trust_checks(signals: TrustSignals) -> list[dict]:
             "label": "Money-back guarantee",
             "passed": bool(signals.has_money_back_guarantee),
             "weight": 20,
+            "remediation": (
+                "Add a clear money-back guarantee line above or near "
+                "Add to Cart (e.g. \"30-day money-back guarantee — no "
+                "questions asked\"). Pair it with the return policy "
+                "link. Lifts first-purchase conversion 10–15%."
+            ),
         },
         {
             "id": "trust_near_atc",
             "label": "Trust elements near Add to Cart",
             "passed": bool(signals.has_trust_near_atc),
             "weight": 15,
+            "remediation": (
+                "Place a compact row of trust signals (SSL / money-back / "
+                "payment icons / review count) directly under the Add "
+                "to Cart button. Proximity matters more than page "
+                "position — buyers decide in the final 2 seconds."
+            ),
         },
         {
             "id": "return_policy",
             "label": "Return policy visible on product page",
             "passed": bool(signals.has_return_policy),
             "weight": 12,
+            "remediation": (
+                "Link to a concrete return policy from the product "
+                "page (not just the footer). State the window and "
+                "cost explicitly: \"30-day returns, free on all "
+                "orders.\""
+            ),
         },
         {
             "id": "security_badge",
             "label": "Security badge (Norton / McAfee / SSL seal)",
             "passed": bool(signals.has_security_badge),
             "weight": 10,
+            "remediation": (
+                "Add a security badge (Norton Secured, McAfee SECURE, "
+                "TrustedSite, or your SSL provider's seal) near the "
+                "Add to Cart and checkout buttons. Free options like "
+                "TrustedSite give a 7–15% conversion lift."
+            ),
         },
         {
             "id": "safe_checkout_badge",
             "label": "\"Guaranteed Safe Checkout\" badge",
             "passed": bool(signals.has_safe_checkout_badge),
             "weight": 8,
+            "remediation": (
+                "Add a \"Guaranteed Safe Checkout\" strip with card "
+                "logos (Visa, Mastercard, Amex, PayPal, Shop Pay) "
+                "beneath the Add to Cart button. Most Shopify trust "
+                "apps (TrustHub, Trustify) ship this pattern."
+            ),
         },
         {
             "id": "live_chat",
             "label": "Live chat available",
             "passed": bool(signals.has_live_chat),
             "weight": 8,
+            "remediation": (
+                "Install a live-chat app (Tidio, Gorgias, Shopify "
+                "Inbox). Even without 24/7 staffing, an off-hours "
+                "auto-responder that collects email recovers 8–12% "
+                "of hesitant buyers."
+            ),
         },
         {
             "id": "secure_checkout_text",
             "label": "\"Secure checkout\" text",
             "passed": bool(signals.has_secure_checkout_text),
             "weight": 7,
+            "remediation": (
+                "Add the phrase \"Secure checkout\" (with a lock icon) "
+                "adjacent to the Add to Cart or checkout button. The "
+                "text alone, without a badge, still measurably reduces "
+                "payment anxiety."
+            ),
         },
         {
             "id": "trust_badges_any",
             "label": "At least one trust badge",
             "passed": signals.trust_badge_count >= 1,
             "weight": 5,
+            "remediation": (
+                "Add at least one trust badge (SSL, money-back, or "
+                "secure-checkout seal) to the product page. Zero "
+                "badges signals \"random website\" to unfamiliar "
+                "buyers."
+            ),
         },
         {
             "id": "trust_badges_two_plus",
             "label": "Two or more trust badges",
             "passed": signals.trust_badge_count >= 2,
             "weight": 3,
+            "remediation": (
+                "Add a second trust signal — pairing SSL + money-back "
+                "(or payment-icons + secure-checkout) converts 4–6% "
+                "better than a single badge alone."
+            ),
         },
         {
             "id": "payment_icons",
             "label": "Payment method trust icons (Visa, MC, etc.)",
             "passed": bool(signals.has_payment_icons),
             "weight": 5,
+            "remediation": (
+                "Render payment-method icons (Visa, Mastercard, Amex, "
+                "PayPal, Shop Pay) under the Add to Cart button. "
+                "Shopify's {{ shop.enabled_payment_types }} object "
+                "renders them automatically."
+            ),
         },
         {
             "id": "phone_number",
             "label": "Phone number visible",
             "passed": bool(signals.has_phone_number),
             "weight": 4,
+            "remediation": (
+                "Show a phone number in the header and footer. Even "
+                "a click-to-call link on mobile signals a real, "
+                "reachable business — critical for first-time buyers "
+                "over $50 AOV."
+            ),
         },
         {
             "id": "free_shipping_badge",
             "label": "Free shipping badge",
             "passed": bool(signals.has_free_shipping_badge),
             "weight": 3,
+            "remediation": (
+                "Add a \"Free shipping\" strip to the announcement bar "
+                "or product page. If you charge shipping, show the "
+                "threshold (\"Free shipping over $50\") — opaque "
+                "shipping costs are the #1 cart abandonment cause "
+                "(Baymard)."
+            ),
         },
     ]

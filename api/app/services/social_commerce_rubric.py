@@ -181,35 +181,67 @@ def list_social_commerce_checks(signals: SocialCommerceSignals) -> list[dict]:
             "label": "At least one social platform embed (Instagram, TikTok, or Pinterest)",
             "passed": any_platform,
             "weight": 30,
+            "remediation": (
+                "Embed your Instagram, TikTok, or Pinterest feed on "
+                "the product page (Foursixty, Pixlee, or Shopify's "
+                "Instagram app). Social proof in context lifts time-"
+                "on-page 2x."
+            ),
         },
         {
             "id": "ugc_gallery",
             "label": "User-generated content gallery app",
             "passed": bool(signals.has_ugc_gallery),
             "weight": 25,
+            "remediation": (
+                "Install a UGC gallery app (Foursixty, Yotpo Visual "
+                "UGC, Pixlee) to surface customer photos directly on "
+                "the product page. UGC galleries drive 29% higher "
+                "conversion than studio-only shots."
+            ),
         },
         {
             "id": "tiktok_embed",
             "label": "TikTok integration",
             "passed": bool(signals.has_tiktok_embed),
             "weight": 15,
+            "remediation": (
+                "Embed TikTok videos via the TikTok for Business "
+                "Shopify app, or add a feed widget showcasing creator "
+                "content. Critical for Gen Z audiences."
+            ),
         },
         {
             "id": "pinterest",
             "label": "Pinterest integration",
             "passed": bool(signals.has_pinterest),
             "weight": 10,
+            "remediation": (
+                "Add Pinterest Save buttons to product images and "
+                "install the Pinterest Shopify app. Pinterest drives "
+                "50% more commercial intent than other social platforms."
+            ),
         },
         {
             "id": "platforms_2plus",
             "label": "Two or more social platforms",
             "passed": signals.platform_count >= 2,
             "weight": 10,
+            "remediation": (
+                "Integrate a second social platform (add TikTok or "
+                "Pinterest if you only have Instagram). Cross-platform "
+                "presence reduces single-channel risk."
+            ),
         },
         {
             "id": "platforms_3",
             "label": "All three platforms (Instagram + TikTok + Pinterest)",
             "passed": signals.platform_count >= 3,
             "weight": 10,
+            "remediation": (
+                "Round out your social stack to all three platforms "
+                "(Instagram + TikTok + Pinterest). Each reaches a "
+                "different audience segment."
+            ),
         },
     ]

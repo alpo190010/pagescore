@@ -395,10 +395,13 @@ _STORE_ANALYSIS_PATCHES = [
     patch(f"{_DP}.get_shipping_tips", return_value=[]),
     patch(f"{_DP}.score_shipping", return_value=50),
     patch(f"{_DP}.detect_shipping", return_value=ShippingSignals()),
-    # checkout chain
+    # checkout chain (legacy PDP-only + new merged rubric)
     patch(f"{_DP}.get_checkout_tips", return_value=[]),
     patch(f"{_DP}.score_checkout", return_value=50),
     patch(f"{_DP}.detect_checkout", return_value=CheckoutSignals()),
+    patch(f"{_DP}.get_merged_checkout_tips", return_value=[]),
+    patch(f"{_DP}.score_merged_checkout", return_value=50),
+    patch(f"{_DP}.list_merged_checkout_checks", return_value=[]),
 ]
 
 _PRODUCTS = [

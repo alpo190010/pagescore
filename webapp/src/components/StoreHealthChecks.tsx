@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { CaretDownIcon, CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
 import type { DimensionCheck } from "@/lib/analysis";
 
 /* ══════════════════════════════════════════════════════════════
@@ -141,13 +142,12 @@ function CheckRow({
   const severity = severityFor(item.weight);
   const sevColors = severityColors(severity);
 
-  return (
-    <li
-      className="flex items-start gap-3 px-4 py-3"
-      style={{
-        borderBottom: isLast ? "none" : "1px solid var(--rule-2)",
-      }}
-    >
+  // Failing rows with remediation text become expandable disclosures.
+  const expandable = tone === "fail" && Boolean(item.remediation);
+  const [open, setOpen] = useState(false);
+
+  const rowContent = (
+    <>
       <span className="shrink-0 mt-0.5" aria-hidden>
         {tone === "pass" ? (
           <CheckCircleIcon size={18} weight="fill" color={iconColor} />
@@ -155,7 +155,7 @@ function CheckRow({
           <XCircleIcon size={18} weight="fill" color={iconColor} />
         )}
       </span>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-left">
         <div
           className="text-[13.5px] leading-[1.4]"
           style={{ color: labelColor, fontWeight: labelWeight }}
@@ -184,6 +184,59 @@ function CheckRow({
         >
           {SEVERITY_LABEL[severity]}
         </span>
+      )}
+      {expandable && (
+        <span
+          className="shrink-0 mt-1"
+          style={{
+            color: "var(--ink-3)",
+            transition: "transform 180ms var(--ease-out-quart)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+          aria-hidden
+        >
+          <CaretDownIcon size={14} weight="bold" />
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <li
+      style={{
+        borderBottom: isLast ? "none" : "1px solid var(--rule-2)",
+      }}
+    >
+      {expandable ? (
+        <button
+          type="button"
+          className="w-full flex items-start gap-3 px-4 py-3 cursor-pointer"
+          style={{
+            background: "transparent",
+            border: "none",
+          }}
+          aria-expanded={open}
+          aria-controls={`check-${item.id}-remediation`}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {rowContent}
+        </button>
+      ) : (
+        <div className="flex items-start gap-3 px-4 py-3">{rowContent}</div>
+      )}
+      {expandable && open && (
+        <div
+          id={`check-${item.id}-remediation`}
+          className="pl-[41px] pr-4 py-3 text-[13px] leading-[1.55]"
+          style={{
+            background: "var(--bg-elev)",
+            color: "var(--ink-2)",
+            borderTop: "1px solid var(--rule-2)",
+            animation: "fade-in-up 200ms var(--ease-out-quart) both",
+          }}
+        >
+          {item.remediation}
+        </div>
       )}
     </li>
   );

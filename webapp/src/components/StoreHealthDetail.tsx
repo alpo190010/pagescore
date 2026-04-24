@@ -69,15 +69,26 @@ export default function StoreHealthDetail({
   const checks: DimensionCheck[] | undefined =
     storeAnalysis.checks?.[dimensionKey];
 
-  const { fix, loading, error, retry } = useDimensionFix(dimensionKey);
+  const { fix, loading, error, retry } = useDimensionFix(dimensionKey, domain);
 
   const label = fix?.label ?? localLabel;
 
+  // Dimensions whose failing checks carry inline remediation text
+  // don't need the separate "How to fix it" steps panel — each
+  // missing row expands to its own fix. Checkout is the first
+  // dimension on this model; other dimensions still fall back to the
+  // legacy FixSteps list until their rubrics are extended.
+  const checksHaveRemediation =
+    !!checks && checks.some((c) => !c.passed && Boolean(c.remediation));
+
   return (
     <div
-      className="h-full w-full px-6 sm:px-10 py-8 sm:py-12"
+      className="h-full w-full px-6 sm:px-10 pt-8 sm:pt-12"
       style={{
         animation: "fade-in-up 400ms var(--ease-out-quart) both",
+        // Keep the verify card well clear of the browser's bottom
+        // chrome (URL bar, home indicator). Respects iOS safe area.
+        paddingBottom: "calc(8rem + env(safe-area-inset-bottom, 0px))",
       }}
     >
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
@@ -182,29 +193,46 @@ export default function StoreHealthDetail({
               <MetaCard label="Scope" value={fix.scope} />
             </section>
 
-            {/* ── Steps or locked stub ── */}
+            {/* ── Steps or locked stub ──
+                When the checklist above already carries per-check
+                remediation (expandable failing rows), the generic
+                "How to fix it" step list would duplicate content —
+                skip it. Locked (free-tier) users still see the
+                upgrade prompt because their check rows are stripped
+                of remediation server-side. */}
             {fix.locked ? (
               <LockedUpgradePrompt />
-            ) : (
-              <FixSteps
-                steps={fix.steps}
-                finalStepLi={
-                  domain && onStoreAnalysisUpdate ? (
-                    <StoreHealthRefreshButton
-                      domain={domain}
-                      dimensionKey={dimensionKey}
-                      dimensionLabel={label}
-                      onRefreshed={onStoreAnalysisUpdate}
-                      variant="step-item"
-                      stepNumber={String(fix.steps.length + 1).padStart(2, "0")}
-                    />
-                  ) : null
-                }
-              />
+            ) : checksHaveRemediation ? null : (
+              <FixSteps steps={fix.steps} />
             )}
 
             {/* ── Code snippet ── */}
             {!fix.locked && fix.code && <FixCodeBlock code={fix.code} />}
+
+            {/* ── Verify (re-analyze) card ── */}
+            {!fix.locked && domain && onStoreAnalysisUpdate && (
+              <StoreHealthRefreshButton
+                domain={domain}
+                dimensionKey={dimensionKey}
+                dimensionLabel={label}
+                onRefreshed={onStoreAnalysisUpdate}
+                variant="verify-card"
+              />
+            )}
+
+            {/* Bottom spacer — explicit breathing room between the
+                last content block (typically the Verify card) and
+                the browser's bottom chrome. Using a real sibling
+                element is more reliable than outer-container padding
+                across the nested scroll containers this page lives
+                in. Accounts for iOS safe-area inset on mobile. */}
+            <div
+              aria-hidden
+              style={{
+                height: "calc(6rem + env(safe-area-inset-bottom, 0px))",
+                flexShrink: 0,
+              }}
+            />
           </>
         )}
       </div>
@@ -251,15 +279,8 @@ function MetaCard({
 }
 
 /* ── Numbered steps ─────────────────────────────────────────── */
-function FixSteps({
-  steps,
-  finalStepLi,
-}: {
-  steps: string[];
-  /** Optional pre-rendered <li> rendered as the final step (e.g. refresh button). */
-  finalStepLi?: React.ReactNode;
-}) {
-  if (steps.length === 0 && !finalStepLi) return null;
+function FixSteps({ steps }: { steps: string[] }) {
+  if (steps.length === 0) return null;
   return (
     <section className="flex flex-col gap-2.5">
       <h2
@@ -296,7 +317,6 @@ function FixSteps({
             </span>
           </li>
         ))}
-        {finalStepLi}
       </ol>
     </section>
   );
