@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PHProvider } from "./providers";
 import Sidebar from "@/components/Sidebar";
@@ -13,10 +13,9 @@ const inter = Inter({
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
+const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-serif",
-  weight: ["400"],
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -63,7 +62,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="antialiased font-[family-name:var(--font-inter)]">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[var(--brand)] focus:text-white focus:text-sm focus:font-semibold">
           Skip to content

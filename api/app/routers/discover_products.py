@@ -340,6 +340,139 @@ def _compute_store_wide_score(categories: dict) -> int:
     return round(total / _STORE_TOTAL_WEIGHT)
 
 
+def _serialize_checkout_signals(s) -> dict:
+    return {
+        "hasAcceleratedCheckout": s.has_accelerated_checkout,
+        "hasDynamicCheckoutButton": s.has_dynamic_checkout_button,
+        "hasPaypal": s.has_paypal,
+        "hasKlarna": s.has_klarna,
+        "hasAfterpay": s.has_afterpay,
+        "hasAffirm": s.has_affirm,
+        "hasSezzle": s.has_sezzle,
+        "paymentMethodCount": s.payment_method_count,
+        "hasDrawerCart": s.has_drawer_cart,
+        "hasAjaxCart": s.has_ajax_cart,
+        "hasStickyCheckout": s.has_sticky_checkout,
+    }
+
+
+def _serialize_shipping_signals(s) -> dict:
+    return {
+        "hasFreeShipping": s.has_free_shipping,
+        "hasFreeShippingThreshold": s.has_free_shipping_threshold,
+        "freeShippingThresholdValue": s.free_shipping_threshold_value,
+        "hasDeliveryDate": s.has_delivery_date,
+        "hasDeliveryEstimate": s.has_delivery_estimate,
+        "hasEddApp": s.has_edd_app,
+        "hasShippingCostShown": s.has_shipping_cost_shown,
+        "hasShippingInStructuredData": s.has_shipping_in_structured_data,
+        "hasShippingPolicyLink": s.has_shipping_policy_link,
+        "hasReturnsMentioned": s.has_returns_mentioned,
+    }
+
+
+def _serialize_trust_signals(s) -> dict:
+    return {
+        "trustBadgeApp": s.trust_badge_app,
+        "trustBadgeCount": s.trust_badge_count,
+        "hasPaymentIcons": s.has_payment_icons,
+        "hasMoneyBackGuarantee": s.has_money_back_guarantee,
+        "hasReturnPolicy": s.has_return_policy,
+        "hasFreeShippingBadge": s.has_free_shipping_badge,
+        "hasSecureCheckoutText": s.has_secure_checkout_text,
+        "hasSecurityBadge": s.has_security_badge,
+        "hasSafeCheckoutBadge": s.has_safe_checkout_badge,
+        "hasLiveChat": s.has_live_chat,
+        "hasPhoneNumber": s.has_phone_number,
+        "hasContactEmail": s.has_contact_email,
+        "hasTrustNearAtc": s.has_trust_near_atc,
+        "trustElementCount": s.trust_element_count,
+    }
+
+
+def _serialize_social_commerce_signals(s) -> dict:
+    return {
+        "hasInstagramEmbed": s.has_instagram_embed,
+        "hasTiktokEmbed": s.has_tiktok_embed,
+        "hasPinterest": s.has_pinterest,
+        "hasUgcGallery": s.has_ugc_gallery,
+        "ugcGalleryApp": s.ugc_gallery_app,
+        "platformCount": s.platform_count,
+    }
+
+
+def _serialize_accessibility_signals(s) -> dict:
+    return {
+        "contrastViolations": s.contrast_violations,
+        "altTextViolations": s.alt_text_violations,
+        "formLabelViolations": s.form_label_violations,
+        "emptyLinkViolations": s.empty_link_violations,
+        "emptyButtonViolations": s.empty_button_violations,
+        "documentLanguageViolations": s.document_language_violations,
+        "totalViolations": s.total_violations,
+        "totalNodesAffected": s.total_nodes_affected,
+        "criticalCount": s.critical_count,
+        "seriousCount": s.serious_count,
+        "moderateCount": s.moderate_count,
+        "minorCount": s.minor_count,
+        "scanCompleted": s.scan_completed,
+    }
+
+
+def _serialize_ai_discoverability_signals(s) -> dict:
+    return {
+        "robotsTxtExists": s.robots_txt_exists,
+        "aiSearchBotsAllowedCount": s.ai_search_bots_allowed_count,
+        "aiTrainingBotsBlockedCount": s.ai_training_bots_blocked_count,
+        "hasOaiSearchbotAllowed": s.has_oai_searchbot_allowed,
+        "hasPerplexitybotAllowed": s.has_perplexitybot_allowed,
+        "hasClaudeSearchbotAllowed": s.has_claude_searchbot_allowed,
+        "hasWildcardBlock": s.has_wildcard_block,
+        "llmsTxtExists": s.llms_txt_exists,
+        "hasOgType": s.has_og_type,
+        "hasOgTitle": s.has_og_title,
+        "hasOgDescription": s.has_og_description,
+        "hasOgImage": s.has_og_image,
+        "hasProductPriceAmount": s.has_product_price_amount,
+        "hasProductPriceCurrency": s.has_product_price_currency,
+        "ogTagCount": s.og_tag_count,
+        "hasStructuredSpecs": s.has_structured_specs,
+        "hasSpecTable": s.has_spec_table,
+        "hasFaqContent": s.has_faq_content,
+        "specMentionCount": s.spec_mention_count,
+        "hasMeasurementUnits": s.has_measurement_units,
+        "entityDensityScore": round(s.entity_density_score, 3),
+    }
+
+
+def _serialize_page_speed_signals(s) -> dict:
+    return {
+        "scriptCount": s.script_count,
+        "thirdPartyScriptCount": s.third_party_script_count,
+        "renderBlockingScriptCount": s.render_blocking_script_count,
+        "appScriptCount": s.app_script_count,
+        "hasLazyLoading": s.has_lazy_loading,
+        "lcpImageLazyLoaded": s.lcp_image_lazy_loaded,
+        "hasExplicitImageDimensions": s.has_explicit_image_dimensions,
+        "hasModernImageFormats": s.has_modern_image_formats,
+        "hasFontDisplaySwap": s.has_font_display_swap,
+        "hasPreconnectHints": s.has_preconnect_hints,
+        "hasDnsPrefetch": s.has_dns_prefetch,
+        "hasHeroPreload": s.has_hero_preload,
+        "inlineCssKb": s.inline_css_kb,
+        "detectedTheme": s.detected_theme,
+        "performanceScore": s.performance_score,
+        "lcpMs": s.lcp_ms,
+        "clsValue": s.cls_value,
+        "tbtMs": s.tbt_ms,
+        "fcpMs": s.fcp_ms,
+        "speedIndexMs": s.speed_index_ms,
+        "hasFieldData": s.has_field_data,
+        "fieldLcpMs": s.field_lcp_ms,
+        "fieldClsValue": s.field_cls_value,
+    }
+
+
 def _serialize_store_signals(
     co_signals,
     sh_signals,
@@ -351,118 +484,13 @@ def _serialize_store_signals(
 ) -> dict:
     """Serialize the 7 store-wide signal dataclasses to camelCase dicts."""
     return {
-        "checkout": {
-            "hasAcceleratedCheckout": co_signals.has_accelerated_checkout,
-            "hasDynamicCheckoutButton": co_signals.has_dynamic_checkout_button,
-            "hasPaypal": co_signals.has_paypal,
-            "hasKlarna": co_signals.has_klarna,
-            "hasAfterpay": co_signals.has_afterpay,
-            "hasAffirm": co_signals.has_affirm,
-            "hasSezzle": co_signals.has_sezzle,
-            "paymentMethodCount": co_signals.payment_method_count,
-            "hasDrawerCart": co_signals.has_drawer_cart,
-            "hasAjaxCart": co_signals.has_ajax_cart,
-            "hasStickyCheckout": co_signals.has_sticky_checkout,
-        },
-        "shipping": {
-            "hasFreeShipping": sh_signals.has_free_shipping,
-            "hasFreeShippingThreshold": sh_signals.has_free_shipping_threshold,
-            "freeShippingThresholdValue": sh_signals.free_shipping_threshold_value,
-            "hasDeliveryDate": sh_signals.has_delivery_date,
-            "hasDeliveryEstimate": sh_signals.has_delivery_estimate,
-            "hasEddApp": sh_signals.has_edd_app,
-            "hasShippingCostShown": sh_signals.has_shipping_cost_shown,
-            "hasShippingInStructuredData": sh_signals.has_shipping_in_structured_data,
-            "hasShippingPolicyLink": sh_signals.has_shipping_policy_link,
-            "hasReturnsMentioned": sh_signals.has_returns_mentioned,
-        },
-        "trust": {
-            "trustBadgeApp": tr_signals.trust_badge_app,
-            "trustBadgeCount": tr_signals.trust_badge_count,
-            "hasPaymentIcons": tr_signals.has_payment_icons,
-            "hasMoneyBackGuarantee": tr_signals.has_money_back_guarantee,
-            "hasReturnPolicy": tr_signals.has_return_policy,
-            "hasFreeShippingBadge": tr_signals.has_free_shipping_badge,
-            "hasSecureCheckoutText": tr_signals.has_secure_checkout_text,
-            "hasSecurityBadge": tr_signals.has_security_badge,
-            "hasSafeCheckoutBadge": tr_signals.has_safe_checkout_badge,
-            "hasLiveChat": tr_signals.has_live_chat,
-            "hasPhoneNumber": tr_signals.has_phone_number,
-            "hasContactEmail": tr_signals.has_contact_email,
-            "hasTrustNearAtc": tr_signals.has_trust_near_atc,
-            "trustElementCount": tr_signals.trust_element_count,
-        },
-        "socialCommerce": {
-            "hasInstagramEmbed": sc_signals.has_instagram_embed,
-            "hasTiktokEmbed": sc_signals.has_tiktok_embed,
-            "hasPinterest": sc_signals.has_pinterest,
-            "hasUgcGallery": sc_signals.has_ugc_gallery,
-            "ugcGalleryApp": sc_signals.ugc_gallery_app,
-            "platformCount": sc_signals.platform_count,
-        },
-        "accessibility": {
-            "contrastViolations": ac_signals.contrast_violations,
-            "altTextViolations": ac_signals.alt_text_violations,
-            "formLabelViolations": ac_signals.form_label_violations,
-            "emptyLinkViolations": ac_signals.empty_link_violations,
-            "emptyButtonViolations": ac_signals.empty_button_violations,
-            "documentLanguageViolations": ac_signals.document_language_violations,
-            "totalViolations": ac_signals.total_violations,
-            "totalNodesAffected": ac_signals.total_nodes_affected,
-            "criticalCount": ac_signals.critical_count,
-            "seriousCount": ac_signals.serious_count,
-            "moderateCount": ac_signals.moderate_count,
-            "minorCount": ac_signals.minor_count,
-            "scanCompleted": ac_signals.scan_completed,
-        },
-        "aiDiscoverability": {
-            "robotsTxtExists": ad_signals.robots_txt_exists,
-            "aiSearchBotsAllowedCount": ad_signals.ai_search_bots_allowed_count,
-            "aiTrainingBotsBlockedCount": ad_signals.ai_training_bots_blocked_count,
-            "hasOaiSearchbotAllowed": ad_signals.has_oai_searchbot_allowed,
-            "hasPerplexitybotAllowed": ad_signals.has_perplexitybot_allowed,
-            "hasClaudeSearchbotAllowed": ad_signals.has_claude_searchbot_allowed,
-            "hasWildcardBlock": ad_signals.has_wildcard_block,
-            "llmsTxtExists": ad_signals.llms_txt_exists,
-            "hasOgType": ad_signals.has_og_type,
-            "hasOgTitle": ad_signals.has_og_title,
-            "hasOgDescription": ad_signals.has_og_description,
-            "hasOgImage": ad_signals.has_og_image,
-            "hasProductPriceAmount": ad_signals.has_product_price_amount,
-            "hasProductPriceCurrency": ad_signals.has_product_price_currency,
-            "ogTagCount": ad_signals.og_tag_count,
-            "hasStructuredSpecs": ad_signals.has_structured_specs,
-            "hasSpecTable": ad_signals.has_spec_table,
-            "hasFaqContent": ad_signals.has_faq_content,
-            "specMentionCount": ad_signals.spec_mention_count,
-            "hasMeasurementUnits": ad_signals.has_measurement_units,
-            "entityDensityScore": round(ad_signals.entity_density_score, 3),
-        },
-        "pageSpeed": {
-            "scriptCount": ps_signals.script_count,
-            "thirdPartyScriptCount": ps_signals.third_party_script_count,
-            "renderBlockingScriptCount": ps_signals.render_blocking_script_count,
-            "appScriptCount": ps_signals.app_script_count,
-            "hasLazyLoading": ps_signals.has_lazy_loading,
-            "lcpImageLazyLoaded": ps_signals.lcp_image_lazy_loaded,
-            "hasExplicitImageDimensions": ps_signals.has_explicit_image_dimensions,
-            "hasModernImageFormats": ps_signals.has_modern_image_formats,
-            "hasFontDisplaySwap": ps_signals.has_font_display_swap,
-            "hasPreconnectHints": ps_signals.has_preconnect_hints,
-            "hasDnsPrefetch": ps_signals.has_dns_prefetch,
-            "hasHeroPreload": ps_signals.has_hero_preload,
-            "inlineCssKb": ps_signals.inline_css_kb,
-            "detectedTheme": ps_signals.detected_theme,
-            "performanceScore": ps_signals.performance_score,
-            "lcpMs": ps_signals.lcp_ms,
-            "clsValue": ps_signals.cls_value,
-            "tbtMs": ps_signals.tbt_ms,
-            "fcpMs": ps_signals.fcp_ms,
-            "speedIndexMs": ps_signals.speed_index_ms,
-            "hasFieldData": ps_signals.has_field_data,
-            "fieldLcpMs": ps_signals.field_lcp_ms,
-            "fieldClsValue": ps_signals.field_cls_value,
-        },
+        "checkout": _serialize_checkout_signals(co_signals),
+        "shipping": _serialize_shipping_signals(sh_signals),
+        "trust": _serialize_trust_signals(tr_signals),
+        "socialCommerce": _serialize_social_commerce_signals(sc_signals),
+        "accessibility": _serialize_accessibility_signals(ac_signals),
+        "aiDiscoverability": _serialize_ai_discoverability_signals(ad_signals),
+        "pageSpeed": _serialize_page_speed_signals(ps_signals),
     }
 
 
@@ -502,22 +530,42 @@ async def _run_store_wide_analysis(
     db: Session,
     *,
     force: bool = False,
+    only_dimensions: set[str] | None = None,
 ) -> dict | None:
-    """Run 7 store-wide detectors on one product page and persist a StoreAnalysis row.
+    """Run store-wide detectors on one product page and persist a StoreAnalysis row.
 
-    When ``force`` is False (default), reuses a cached StoreAnalysis row if one exists
-    for (domain, user_id) and is fresher than _STORE_CACHE_TTL_DAYS — skipping all
-    detectors and external API calls (axe, PSI, AI discoverability).
+    When ``force`` is False (default) and ``only_dimensions`` is None, reuses a
+    cached StoreAnalysis row if fresher than _STORE_CACHE_TTL_DAYS.
 
-    Returns a dict with score/categories/tips/signals/analyzedUrl/updatedAt, or None
-    on failure. Product discovery never fails due to store analysis errors — all
-    exceptions are caught.
+    When ``only_dimensions`` is a set of dimension keys (subset of STORE_WIDE_KEYS),
+    runs only those detector chains and skips external API calls that aren't needed
+    (run_axe_scan only fires for accessibility, fetch_pagespeed_insights only for
+    pageSpeed, fetch_ai_discoverability_data only for aiDiscoverability). The
+    existing StoreAnalysis row is loaded with FOR UPDATE, the targeted dimensions
+    are merged in, and the overall weighted score is recomputed.
+
+    Returns a dict with score/categories/tips/signals/checks/analyzedUrl/updatedAt,
+    or None on failure.
     """
+    if only_dimensions is not None:
+        invalid = only_dimensions - set(STORE_WIDE_KEYS)
+        if invalid:
+            raise ValueError(
+                f"Invalid dimension keys: {sorted(invalid)}. "
+                f"Valid keys: {STORE_WIDE_KEYS}"
+            )
+        if not only_dimensions:
+            raise ValueError("only_dimensions must not be empty when provided")
+    is_targeted = only_dimensions is not None
+    needs: set[str] = (
+        set(only_dimensions) if is_targeted else set(STORE_WIDE_KEYS)
+    )
+
     timings: dict[str, float] = {}
     t_total = time.perf_counter()
 
-    # --- Cache lookup (skipped when caller forces a refresh) ---
-    if not force:
+    # --- Cache lookup (skipped when caller forces a refresh or targets a subset) ---
+    if not force and not is_targeted:
         try:
             cache_row = (
                 db.query(StoreAnalysis)
@@ -558,21 +606,47 @@ async def _run_store_wide_analysis(
 
     try:
         # --- Gather HTML + external API data in parallel ---
-        coros: list = [
-            _timed("render_page_s", render_page(product_url), timings),
-            _timed("run_axe_scan_s", run_axe_scan(product_url), timings),
-            _timed(
-                "fetch_ai_discoverability_s",
-                fetch_ai_discoverability_data(product_url),
-                timings,
-            ),
-        ]
-        has_psi = bool(settings.google_pagespeed_api_key)
+        # HTML is always required (every detector reads it). Axe scan, AI
+        # discoverability fetch, and PSI are each only needed for one dimension
+        # — skip them when the caller is targeting a subset that doesn't need
+        # them. For the common case of targeted checkout/shipping/trust/social
+        # refresh this cuts wall time roughly in half (no axe/PSI/AI fetches).
+        coros: list = []
+        html_idx = len(coros)
+        coros.append(_timed("render_page_s", render_page(product_url), timings))
+
+        run_axe = "accessibility" in needs
+        axe_idx = -1
+        if run_axe:
+            axe_idx = len(coros)
+            coros.append(
+                _timed("run_axe_scan_s", run_axe_scan(product_url), timings)
+            )
+
+        run_ai = "aiDiscoverability" in needs
+        ai_idx = -1
+        if run_ai:
+            ai_idx = len(coros)
+            coros.append(
+                _timed(
+                    "fetch_ai_discoverability_s",
+                    fetch_ai_discoverability_data(product_url),
+                    timings,
+                )
+            )
+
+        has_psi = (
+            bool(settings.google_pagespeed_api_key) and "pageSpeed" in needs
+        )
+        psi_idx = -1
         if has_psi:
+            psi_idx = len(coros)
             coros.append(
                 _timed(
                     "fetch_pagespeed_insights_s",
-                    fetch_pagespeed_insights(product_url, settings.google_pagespeed_api_key),
+                    fetch_pagespeed_insights(
+                        product_url, settings.google_pagespeed_api_key
+                    ),
                     timings,
                 )
             )
@@ -582,7 +656,7 @@ async def _run_store_wide_analysis(
         timings["parallel_io_wall_s"] = round((time.perf_counter() - t_gather) , 3)
 
         # Unpack HTML (required — can't run detectors without it)
-        html_result = results[0]
+        html_result = results[html_idx]
         if isinstance(html_result, Exception):
             logger.warning(
                 "Store analysis: render_page failed for %s: %s",
@@ -600,46 +674,51 @@ async def _run_store_wide_analysis(
 
         # Unpack axe scan (graceful degradation)
         axe_results = None
-        if isinstance(results[1], Exception):
-            logger.warning(
-                "Store analysis: axe scan failed for %s: %s",
-                product_url,
-                results[1],
-                extra={
-                    "event": "external_api_failure",
-                    "api": "axe",
-                    "domain": domain,
-                    "url": product_url,
-                },
-            )
-        else:
-            axe_results = results[1]
+        if axe_idx >= 0:
+            r = results[axe_idx]
+            if isinstance(r, Exception):
+                logger.warning(
+                    "Store analysis: axe scan failed for %s: %s",
+                    product_url,
+                    r,
+                    extra={
+                        "event": "external_api_failure",
+                        "api": "axe",
+                        "domain": domain,
+                        "url": product_url,
+                    },
+                )
+            else:
+                axe_results = r
 
         # Unpack AI discoverability data (graceful degradation)
         ai_disc_data = None
-        if isinstance(results[2], Exception):
-            logger.warning(
-                "Store analysis: AI discoverability fetch failed for %s: %s",
-                product_url,
-                results[2],
-                extra={
-                    "event": "external_api_failure",
-                    "api": "ai_discoverability",
-                    "domain": domain,
-                    "url": product_url,
-                },
-            )
-        else:
-            ai_disc_data = results[2]
+        if ai_idx >= 0:
+            r = results[ai_idx]
+            if isinstance(r, Exception):
+                logger.warning(
+                    "Store analysis: AI discoverability fetch failed for %s: %s",
+                    product_url,
+                    r,
+                    extra={
+                        "event": "external_api_failure",
+                        "api": "ai_discoverability",
+                        "domain": domain,
+                        "url": product_url,
+                    },
+                )
+            else:
+                ai_disc_data = r
 
         # Unpack optional PSI data (graceful degradation)
         psi_data = None
-        if has_psi and len(results) > 3:
-            if isinstance(results[3], Exception):
+        if psi_idx >= 0:
+            r = results[psi_idx]
+            if isinstance(r, Exception):
                 logger.warning(
                     "Store analysis: PSI API failed for %s: %s",
                     product_url,
-                    results[3],
+                    r,
                     extra={
                         "event": "external_api_failure",
                         "api": "psi",
@@ -648,126 +727,183 @@ async def _run_store_wide_analysis(
                     },
                 )
             else:
-                psi_data = results[3]
+                psi_data = r
 
-        # --- Run 7 detect → score → tips → checks chains ---
+        # --- Run detect → score → tips → checks chains for needed dims ---
         t_det = time.perf_counter()
-        co_signals = detect_checkout(html)
-        co_score = score_checkout(co_signals)
-        co_tips = get_checkout_tips(co_signals)
-        co_checks = list_checkout_checks(co_signals)
 
-        sh_signals = detect_shipping(html)
-        sh_score = score_shipping(sh_signals)
-        sh_tips = get_shipping_tips(sh_signals)
-        sh_checks = list_shipping_checks(sh_signals)
+        categories_patch: dict[str, int] = {}
+        tips_patch: dict[str, list[str]] = {}
+        signals_patch: dict[str, dict] = {}
+        checks_patch: dict[str, list[dict]] = {}
 
-        tr_signals = detect_trust(html)
-        tr_score = score_trust(tr_signals)
-        tr_tips = get_trust_tips(tr_signals)
-        tr_checks = list_trust_checks(tr_signals)
+        if "checkout" in needs:
+            s = detect_checkout(html)
+            categories_patch["checkout"] = score_checkout(s)
+            tips_patch["checkout"] = get_checkout_tips(s)
+            signals_patch["checkout"] = _serialize_checkout_signals(s)
+            checks_patch["checkout"] = list_checkout_checks(s)
 
-        sc_signals = detect_social_commerce(html)
-        sc_score = score_social_commerce(sc_signals)
-        sc_tips = get_social_commerce_tips(sc_signals)
-        sc_checks = list_social_commerce_checks(sc_signals)
+        if "shipping" in needs:
+            s = detect_shipping(html)
+            categories_patch["shipping"] = score_shipping(s)
+            tips_patch["shipping"] = get_shipping_tips(s)
+            signals_patch["shipping"] = _serialize_shipping_signals(s)
+            checks_patch["shipping"] = list_shipping_checks(s)
 
-        ac_signals = detect_accessibility(html, axe_results)
-        ac_score = score_accessibility(ac_signals)
-        ac_tips = get_accessibility_tips(ac_signals)
-        ac_checks = list_accessibility_checks(ac_signals)
+        if "trust" in needs:
+            s = detect_trust(html)
+            categories_patch["trust"] = score_trust(s)
+            tips_patch["trust"] = get_trust_tips(s)
+            signals_patch["trust"] = _serialize_trust_signals(s)
+            checks_patch["trust"] = list_trust_checks(s)
 
-        ad_signals = detect_ai_discoverability(html, ai_disc_data)
-        ad_score = score_ai_discoverability(ad_signals)
-        ad_tips = get_ai_discoverability_tips(ad_signals)
-        ad_checks = list_ai_discoverability_checks(ad_signals)
+        if "socialCommerce" in needs:
+            s = detect_social_commerce(html)
+            categories_patch["socialCommerce"] = score_social_commerce(s)
+            tips_patch["socialCommerce"] = get_social_commerce_tips(s)
+            signals_patch["socialCommerce"] = (
+                _serialize_social_commerce_signals(s)
+            )
+            checks_patch["socialCommerce"] = list_social_commerce_checks(s)
 
-        ps_signals = detect_page_speed(html, psi_data)
-        ps_score = score_page_speed(ps_signals)
-        ps_tips = get_page_speed_tips(ps_signals)
-        ps_checks = list_page_speed_checks(ps_signals)
+        if "accessibility" in needs:
+            s = detect_accessibility(html, axe_results)
+            categories_patch["accessibility"] = score_accessibility(s)
+            tips_patch["accessibility"] = get_accessibility_tips(s)
+            signals_patch["accessibility"] = _serialize_accessibility_signals(s)
+            checks_patch["accessibility"] = list_accessibility_checks(s)
+
+        if "aiDiscoverability" in needs:
+            s = detect_ai_discoverability(html, ai_disc_data)
+            categories_patch["aiDiscoverability"] = score_ai_discoverability(s)
+            tips_patch["aiDiscoverability"] = get_ai_discoverability_tips(s)
+            signals_patch["aiDiscoverability"] = (
+                _serialize_ai_discoverability_signals(s)
+            )
+            checks_patch["aiDiscoverability"] = (
+                list_ai_discoverability_checks(s)
+            )
+
+        if "pageSpeed" in needs:
+            s = detect_page_speed(html, psi_data)
+            categories_patch["pageSpeed"] = score_page_speed(s)
+            tips_patch["pageSpeed"] = get_page_speed_tips(s)
+            signals_patch["pageSpeed"] = _serialize_page_speed_signals(s)
+            checks_patch["pageSpeed"] = list_page_speed_checks(s)
+
         timings["detector_chains_s"] = round((time.perf_counter() - t_det) , 3)
 
-        # --- Build results ---
-        categories = {
-            "checkout": co_score,
-            "shipping": sh_score,
-            "trust": tr_score,
-            "socialCommerce": sc_score,
-            "accessibility": ac_score,
-            "aiDiscoverability": ad_score,
-            "pageSpeed": ps_score,
-        }
-
-        score = _compute_store_wide_score(categories)
-        tips_by_dim: dict[str, list[str]] = {
-            "checkout": co_tips,
-            "shipping": sh_tips,
-            "trust": tr_tips,
-            "socialCommerce": sc_tips,
-            "accessibility": ac_tips,
-            "aiDiscoverability": ad_tips,
-            "pageSpeed": ps_tips,
-        }
-        checks_by_dim: dict[str, list[dict]] = {
-            "checkout": co_checks,
-            "shipping": sh_checks,
-            "trust": tr_checks,
-            "socialCommerce": sc_checks,
-            "accessibility": ac_checks,
-            "aiDiscoverability": ad_checks,
-            "pageSpeed": ps_checks,
-        }
-        signals = _serialize_store_signals(
-            co_signals, sh_signals, tr_signals, sc_signals,
-            ac_signals, ad_signals, ps_signals,
-        )
-
-        # --- Upsert StoreAnalysis row ---
+        # --- Persist: targeted merge OR full upsert ---
         updated_at_iso: str | None = None
+        merged_categories: dict = dict(categories_patch)
+        merged_tips: dict = dict(tips_patch)
+        merged_signals: dict = dict(signals_patch)
+        merged_checks: dict = dict(checks_patch)
         t_db = time.perf_counter()
-        try:
-            stmt = (
-                pg_insert(StoreAnalysis)
-                .values(
-                    store_domain=domain,
-                    user_id=user_id,
-                    score=score,
-                    categories=categories,
-                    tips=tips_by_dim,
-                    signals=signals,
-                    checks=checks_by_dim,
-                    analyzed_url=product_url,
-                )
-                .on_conflict_do_update(
-                    constraint="uq_store_analyses_domain_user",
-                    set_={
-                        "score": score,
-                        "categories": categories,
-                        "tips": tips_by_dim,
-                        "signals": signals,
-                        "checks": checks_by_dim,
-                        "analyzed_url": product_url,
-                        "updated_at": func.now(),
-                    },
-                )
-                .returning(StoreAnalysis.updated_at)
-            )
-            row = db.execute(stmt).fetchone()
-            db.commit()
-            if row and row[0]:
-                ts = row[0]
-                if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
-                updated_at_iso = ts.isoformat()
-        except Exception:
-            logger.exception(
-                "StoreAnalysis DB upsert error for domain=%s user_id=%s", domain, user_id
-            )
+
+        if is_targeted:
+            # Lock existing row, merge the refreshed dims on top, recompute
+            # overall score from the merged categories.
             try:
-                db.rollback()
+                existing = (
+                    db.query(StoreAnalysis)
+                    .filter(StoreAnalysis.store_domain == domain)
+                    .filter(StoreAnalysis.user_id == user_id)
+                    .with_for_update()
+                    .first()
+                )
+                if existing is None:
+                    logger.warning(
+                        "Targeted store refresh with no existing row "
+                        "(domain=%s user_id=%s needs=%s) — cannot merge",
+                        domain, user_id, sorted(needs),
+                    )
+                    db.rollback()
+                    return None
+
+                merged_categories = {
+                    **(existing.categories or {}),
+                    **categories_patch,
+                }
+                merged_tips = {
+                    **(existing.tips or {}),
+                    **tips_patch,
+                }
+                merged_signals = {
+                    **(existing.signals or {}),
+                    **signals_patch,
+                }
+                merged_checks = {
+                    **(existing.checks or {}),
+                    **checks_patch,
+                }
+                score = _compute_store_wide_score(merged_categories)
+                now_utc = datetime.now(timezone.utc)
+
+                existing.score = score
+                existing.categories = merged_categories
+                existing.tips = merged_tips
+                existing.signals = merged_signals
+                existing.checks = merged_checks
+                existing.analyzed_url = product_url
+                existing.updated_at = now_utc
+                db.commit()
+                updated_at_iso = now_utc.isoformat()
             except Exception:
-                pass
+                logger.exception(
+                    "Targeted StoreAnalysis merge failed for domain=%s user_id=%s",
+                    domain, user_id,
+                )
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+        else:
+            score = _compute_store_wide_score(categories_patch)
+            try:
+                stmt = (
+                    pg_insert(StoreAnalysis)
+                    .values(
+                        store_domain=domain,
+                        user_id=user_id,
+                        score=score,
+                        categories=merged_categories,
+                        tips=merged_tips,
+                        signals=merged_signals,
+                        checks=merged_checks,
+                        analyzed_url=product_url,
+                    )
+                    .on_conflict_do_update(
+                        constraint="uq_store_analyses_domain_user",
+                        set_={
+                            "score": score,
+                            "categories": merged_categories,
+                            "tips": merged_tips,
+                            "signals": merged_signals,
+                            "checks": merged_checks,
+                            "analyzed_url": product_url,
+                            "updated_at": func.now(),
+                        },
+                    )
+                    .returning(StoreAnalysis.updated_at)
+                )
+                row = db.execute(stmt).fetchone()
+                db.commit()
+                if row and row[0]:
+                    ts = row[0]
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    updated_at_iso = ts.isoformat()
+            except Exception:
+                logger.exception(
+                    "StoreAnalysis DB upsert error for domain=%s user_id=%s",
+                    domain, user_id,
+                )
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
         timings["db_upsert_s"] = round((time.perf_counter() - t_db) , 3)
 
         timings["total_s"] = round((time.perf_counter() - t_total) , 3)
@@ -788,10 +924,10 @@ async def _run_store_wide_analysis(
 
         return {
             "score": score,
-            "categories": categories,
-            "tips": tips_by_dim,
-            "signals": signals,
-            "checks": checks_by_dim,
+            "categories": merged_categories,
+            "tips": merged_tips,
+            "signals": merged_signals,
+            "checks": merged_checks,
             "analyzedUrl": product_url,
             "updatedAt": updated_at_iso,
         }

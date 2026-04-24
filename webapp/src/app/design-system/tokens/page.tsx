@@ -28,7 +28,7 @@ const typeRoles = [
         into wins.
       </span>
     ),
-    spec: "Instrument Serif · 72/0.95 · −0.03em",
+    spec: "Source Serif 4 · 72/0.95 · −0.03em",
   },
   {
     meta: { tag: "H1", use: "Page title, product name" },
@@ -37,7 +37,7 @@ const typeRoles = [
         Arrival 5&quot; Shorts
       </span>
     ),
-    spec: "Instrument Serif · 40/1.05 · 400",
+    spec: "Source Serif 4 · 40/1.05 · 400",
   },
   {
     meta: { tag: "H2", use: "Section title" },
@@ -46,7 +46,7 @@ const typeRoles = [
         Issues Found
       </span>
     ),
-    spec: "Instrument Serif · 28/1.1 · 600",
+    spec: "Source Serif 4 · 28/1.1 · 600",
   },
   {
     meta: { tag: "H3", use: "Card / group heading" },
@@ -55,7 +55,7 @@ const typeRoles = [
         Trust &amp; Transparency
       </span>
     ),
-    spec: "Instrument Serif · 20/1.2 · 700",
+    spec: "Source Serif 4 · 20/1.2 · 700",
   },
   {
     meta: { tag: "Numeral", use: "Score, price, stats" },
@@ -67,7 +67,7 @@ const typeRoles = [
         42
       </span>
     ),
-    spec: "Instrument Serif · 42/1 · 800 · tabular",
+    spec: "Source Serif 4 · 42/1 · 800 · tabular",
   },
   {
     meta: { tag: "Body", use: "Long-form copy" },
@@ -160,7 +160,7 @@ export default function TokensPage() {
         lede={
           <>
             The shared alphabet for every surface in Alpo. Editorial cream,
-            coral accent, Instrument Serif display, Inter for UI, JetBrains
+            coral accent, Source Serif 4 display, Inter for UI, JetBrains
             Mono for spec labels. Tokens live on{" "}
             <code className="font-mono text-[12px] bg-[var(--bg-elev)] px-1.5 py-px rounded text-[var(--ink)]">
               :root
@@ -176,14 +176,14 @@ export default function TokensPage() {
       <DsSection
         id="type"
         title="Type"
-        lede="Instrument Serif carries every display, numeral, and heading. Inter handles UI copy. JetBrains Mono tags specs and eyebrow labels. Coral italic is the single tonal accent — used on one hero word, key numerals, and state color."
+        lede="Source Serif 4 carries every display, numeral, and heading. Inter handles UI copy. JetBrains Mono tags specs and eyebrow labels. Coral italic is the single tonal accent — used on one hero word, key numerals, and state color."
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
             {
               label: "Display · Serif",
               sample: "Aa",
-              family: "Instrument Serif · 400/500 italic",
+              family: "Source Serif 4 · 400/500 italic",
               sampleClass: "font-serif font-normal",
             },
             {

@@ -155,7 +155,7 @@ export default function BrandPage() {
       <DsSection
         id="logo"
         title={<>Logo &amp; wordmark</>}
-        lede='A friendly magnifier-face: a loupe that looks back. The mark always pairs with the "alpo" wordmark set in Instrument Serif 500.'
+        lede='A friendly magnifier-face: a loupe that looks back. The mark always pairs with the "alpo" wordmark set in Source Serif 4 at 500.'
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[var(--paper)] border border-[var(--rule-2)] rounded-2xl p-10 flex items-center justify-center min-h-[180px]">

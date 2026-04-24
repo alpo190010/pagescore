@@ -17,6 +17,7 @@ from app.auth import get_current_user_optional, get_current_user_required
 from app.database import get_db
 from app.models import ProductAnalysis, Store, StoreAnalysis, StoreProduct, User
 from app.routers.discover_products import _run_store_wide_analysis
+from app.services.scoring import STORE_WIDE_KEYS
 
 logger = logging.getLogger(__name__)
 
@@ -187,15 +188,21 @@ def get_store(
 async def refresh_store_analysis(
     request: Request,
     domain: str,
+    dimension: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required),
 ):
     """Force a fresh store-wide analysis, bypassing the 7-day cache.
 
     Picks a representative product page (first StoreProduct for the domain, or
-    falls back to the last analyzed_url on the existing StoreAnalysis row). Runs
-    the 7 store-wide detectors + external API calls (axe, PSI, AI discoverability)
-    and upserts the StoreAnalysis row.
+    falls back to the last analyzed_url on the existing StoreAnalysis row).
+
+    When no ``dimension`` query param is provided, runs all 7 store-wide
+    detectors + every external API call (axe, PSI, AI discoverability) and
+    upserts the row. When a valid dimension key is provided, runs only that
+    detector, skips the external calls it doesn't need, and merges the result
+    into the existing StoreAnalysis row — roughly 2–3× faster for most
+    dimensions since we avoid axe/PSI/AI fetches that aren't relevant.
 
     Free-tier users are rate-limited to 1 refresh per minute (per user). Paid
     tiers (starter, pro, etc.) are unlimited.
@@ -204,6 +211,20 @@ async def refresh_store_analysis(
         return JSONResponse(
             status_code=400, content={"error": "Domain is required"}
         )
+
+    only_dimensions: set[str] | None = None
+    if dimension is not None:
+        if dimension not in STORE_WIDE_KEYS:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": (
+                        f"Invalid dimension '{dimension}'. "
+                        f"Valid keys: {sorted(STORE_WIDE_KEYS)}"
+                    ),
+                },
+            )
+        only_dimensions = {dimension}
 
     # Plan-gated cooldown: free users only.
     if (current_user.plan_tier or "free") == "free":
@@ -274,7 +295,12 @@ async def refresh_store_analysis(
 
         t_phase = time.perf_counter()
         result = await _run_store_wide_analysis(
-            domain, product_url, current_user.id, db, force=True
+            domain,
+            product_url,
+            current_user.id,
+            db,
+            force=True,
+            only_dimensions=only_dimensions,
         )
         timings["store_wide_analysis_s"] = round(
             (time.perf_counter() - t_phase) , 3

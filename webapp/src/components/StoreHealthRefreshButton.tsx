@@ -1,36 +1,46 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import {
   ArrowClockwiseIcon,
   ArrowRightIcon,
   CheckCircleIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
-import { API_URL } from "@/lib/api";
-import { authFetch } from "@/lib/auth-fetch";
 import type { StoreAnalysisData } from "@/lib/analysis";
+import {
+  getRefreshState,
+  startRefresh,
+  subscribeRefresh,
+} from "@/lib/storeHealthRefresh";
 
 /* ══════════════════════════════════════════════════════════════
    StoreHealthRefreshButton — Re-analyzes the current store so the
    user can verify whether a fix worked without leaving the detail
-   page. Calls the existing POST /store/{domain}/refresh-analysis
-   endpoint (runs all 7 detectors, ~45–60s, 1/min rate-limit per IP).
+   page. Calls POST /store/{domain}/refresh-analysis (runs all 7
+   detectors, ~45–60s; free users rate-limited to 1/min per user,
+   paid users unlimited).
 
-   States: idle → loading → success (brief checkmark) → idle.
-   On 429: stays in an error state with a rate-limit message.
-   On success: invokes onRefreshed with the new payload so the parent
-   can update its storeAnalysis state and re-render the score + checks.
+   Refresh state is shared across every mount of this component for
+   the same domain via the module store in lib/storeHealthRefresh.ts.
+   That means navigating between dimensions mid-flight keeps the
+   "Re-analyzing…" state alive instead of resetting to idle.
+
+   States: idle → loading → success → idle (auto after 2.5s).
+   On 429 or network error: loading → error → idle (auto after 6s).
+   On success: the module holds the result briefly; the mounted
+   parent's onRefreshed is invoked once to update storeAnalysis.
    ══════════════════════════════════════════════════════════════ */
-
-type Status =
-  | { kind: "idle" }
-  | { kind: "loading" }
-  | { kind: "success" }
-  | { kind: "error"; message: string };
 
 interface StoreHealthRefreshButtonProps {
   domain: string;
+  /** Dimension key (e.g. "checkout", "pageSpeed"). Scopes refresh state + backend call. */
+  dimensionKey: string;
   dimensionLabel: string;
   onRefreshed: (updated: StoreAnalysisData) => void;
   /**
@@ -46,50 +56,46 @@ interface StoreHealthRefreshButtonProps {
 
 export default function StoreHealthRefreshButton({
   domain,
+  dimensionKey,
   dimensionLabel,
   onRefreshed,
   variant = "card",
   stepNumber,
 }: StoreHealthRefreshButtonProps) {
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // Subscribe to the shared refresh state for this (domain, dimensionKey).
+  // Each dimension has an independent refresh lifecycle — clicking
+  // "Re-analyze Shipping" doesn't affect the Checkout button state.
+  const getSnapshot = useCallback(
+    () => getRefreshState(domain, dimensionKey),
+    [domain, dimensionKey],
+  );
+  const subscribe = useCallback(
+    (cb: () => void) => subscribeRefresh(domain, dimensionKey, cb),
+    [domain, dimensionKey],
+  );
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const status = state.status;
 
-  const handleClick = useCallback(async () => {
-    if (status.kind === "loading") return;
-    setStatus({ kind: "loading" });
-    try {
-      const res = await authFetch(
-        `${API_URL}/store/${encodeURIComponent(domain)}/refresh-analysis`,
-        { method: "POST" },
-      );
-      if (res.status === 429) {
-        let message = "Please wait a minute before re-analyzing again.";
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body?.error) message = body.error;
-        } catch {
-          // Non-JSON body — fall back to default message.
-        }
-        setStatus({ kind: "error", message });
-        return;
-      }
-      if (!res.ok) {
-        setStatus({
-          kind: "error",
-          message: "Re-analysis failed. Please try again.",
-        });
-        return;
-      }
-      const data = (await res.json()) as StoreAnalysisData;
-      onRefreshed(data);
-      setStatus({ kind: "success" });
-      window.setTimeout(() => setStatus({ kind: "idle" }), 2500);
-    } catch {
-      setStatus({
-        kind: "error",
-        message: "Network error. Please try again.",
-      });
+  // Always invoke the latest onRefreshed without re-triggering the
+  // success effect — keeps dependency array clean.
+  const onRefreshedRef = useRef(onRefreshed);
+  useEffect(() => {
+    onRefreshedRef.current = onRefreshed;
+  }, [onRefreshed]);
+
+  // When the module transitions to success with a payload, propagate
+  // it to the parent. Idempotent: two mounts firing this for the same
+  // data produce the same storeAnalysis state.
+  useEffect(() => {
+    if (state.status.kind === "success" && state.data) {
+      onRefreshedRef.current(state.data);
     }
-  }, [domain, status.kind, onRefreshed]);
+  }, [state.status.kind, state.data]);
+
+  const handleClick = useCallback(() => {
+    if (status.kind === "loading") return;
+    startRefresh(domain, dimensionKey);
+  }, [domain, dimensionKey, status.kind]);
 
   const controls = (
     <div className="flex items-center gap-3 flex-wrap">

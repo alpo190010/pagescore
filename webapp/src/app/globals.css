@@ -23,7 +23,7 @@
   --warn:         oklch(0.70 0.14 70);
 
   /* Type system fallbacks (font-family vars are wired via next/font in layout.tsx) */
-  --serif: var(--font-serif), "Instrument Serif", "Times New Roman", serif;
+  --serif: var(--font-serif), "Source Serif 4", "Times New Roman", serif;
   --sans:  var(--font-inter), "Inter", -apple-system, system-ui, sans-serif;
   --mono:  var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
 
@@ -228,18 +228,18 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-/* Editorial display — Instrument Serif. Apply to large, intentional
+/* Editorial display — Source Serif 4. Apply to large, intentional
    display headings only (≥28px). At smaller sizes the thin strokes
    hurt legibility, especially on mobile. */
 .font-display {
-  font-family: var(--font-serif), 'Instrument Serif', 'Times New Roman', serif;
+  font-family: var(--font-serif), 'Source Serif 4', 'Times New Roman', serif;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
 
 .font-serif {
-  font-family: var(--font-serif), 'Instrument Serif', 'Times New Roman', serif;
+  font-family: var(--font-serif), 'Source Serif 4', 'Times New Roman', serif;
 }
 
 .font-mono {

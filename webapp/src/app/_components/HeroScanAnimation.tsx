@@ -36,7 +36,7 @@ const TOKENS = {
   accent40: "color-mix(in srgb, var(--accent) 40%, transparent)",
   ok: "var(--ok)",
   warn: "var(--warn)",
-  serif: "var(--font-serif), 'Instrument Serif', 'Times New Roman', serif",
+  serif: "var(--font-serif), 'Source Serif 4', 'Times New Roman', serif",
   sans: "var(--font-inter), 'Inter', system-ui, sans-serif",
   mono: "var(--font-mono), 'JetBrains Mono', ui-monospace, monospace",
 };

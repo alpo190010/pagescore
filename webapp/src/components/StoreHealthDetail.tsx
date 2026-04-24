@@ -192,6 +192,7 @@ export default function StoreHealthDetail({
                   domain && onStoreAnalysisUpdate ? (
                     <StoreHealthRefreshButton
                       domain={domain}
+                      dimensionKey={dimensionKey}
                       dimensionLabel={label}
                       onRefreshed={onStoreAnalysisUpdate}
                       variant="step-item"
