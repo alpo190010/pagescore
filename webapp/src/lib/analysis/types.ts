@@ -448,6 +448,16 @@ export interface StoreAnalysisData {
   checks?: Partial<Record<string, DimensionCheck[]>>;
   analyzedUrl?: string;
   updatedAt?: string;
+  /**
+   * Plan tier of the viewer at response time. Null when the caller was
+   * anonymous. Mirrors the value `/analyze` returns alongside FreeResult.
+   */
+  planTier?: PlanTier | null;
+  /**
+   * True when free-tier or anonymous — `checks[*].remediation` and `code`
+   * are stripped server-side and the UI should show upgrade affordances.
+   */
+  recommendationsLocked?: boolean;
 }
 
 /** Structured fix payload returned by `GET /fix/{dimensionKey}`. */

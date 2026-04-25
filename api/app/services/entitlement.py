@@ -119,6 +119,27 @@ def count_user_stores(user_id, db: Session) -> int:
     return len(sa | pa)
 
 
+def quota_exhausted_response(user: User, db: Session) -> dict:
+    """Build the canonical 403 body for a store-quota-exhausted scan attempt.
+
+    Used by /analyze, /discover-products, and /store/{domain}/refresh-analysis
+    so all three speak the same wire shape:
+
+        {"error": str, "errorCode": "store_quota_exhausted",
+         "quota": int, "used": int}
+
+    Field names match GET /user/stores (the canonical pre-flight check the
+    HeroForm modal already consumes), so callers can render the same modal
+    regardless of which gate fired.
+    """
+    return {
+        "error": "Store quota reached",
+        "errorCode": "store_quota_exhausted",
+        "quota": _effective_store_quota(user),
+        "used": count_user_stores(user.id, db),
+    }
+
+
 def user_has_store_slot_for(user: User, store_domain: str, db: Session) -> bool:
     """Return True if *user* may scan *store_domain*.
 

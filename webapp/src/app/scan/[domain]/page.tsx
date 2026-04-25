@@ -11,6 +11,7 @@ import MobileAppBar from "@/components/MobileAppBar";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { type FreeResult, type StoreAnalysisData, parseAnalysisResponse } from "@/lib/analysis";
+import { preflightStoreQuota } from "@/lib/storeQuotaPreflight";
 
 /* ═══════════════════════════════════════════════════════════════
    /scan/[domain] — Product discovery + split-view analysis
@@ -71,8 +72,8 @@ function ScanPageContent() {
   const [refreshingStore, setRefreshingStore] = useState(false);
   const [takingLong, setTakingLong] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState<{
-    storeUsed: number;
-    storeQuota: number;
+    used: number;
+    quota: number;
   } | null>(null);
 
   const handleRefreshStoreAnalysis = useCallback(async () => {
@@ -111,6 +112,17 @@ function ScanPageContent() {
     setErrorMessage("");
 
     const url = `https://${domain}`;
+
+    /* ── Pre-flight quota check ── */
+    // Surface the "limit reached" modal before firing /discover-products
+    // so users arriving via bookmark or shared link get the same UX as
+    // HeroForm submitters. On error, fall through to server-side gate.
+    const preflight = await preflightStoreQuota(domain);
+    if (preflight?.exhausted) {
+      setQuotaInfo({ used: preflight.used, quota: preflight.quota });
+      setPhase("quota_exhausted");
+      return;
+    }
 
     /* ── Cache-first: check DB via /api/store before hitting discover-products ── */
     try {
@@ -163,8 +175,8 @@ function ScanPageContent() {
         const errData = (await res.json().catch(() => ({}))) as Record<string, unknown>;
         if (errData.errorCode === "store_quota_exhausted") {
           setQuotaInfo({
-            storeUsed: (errData.storeUsed as number) ?? 0,
-            storeQuota: (errData.storeQuota as number) ?? 0,
+            used: (errData.used as number) ?? 0,
+            quota: (errData.quota as number) ?? 0,
           });
           setPhase("quota_exhausted");
           return;
@@ -277,7 +289,7 @@ function ScanPageContent() {
             Store Limit Reached
           </h2>
           <p className="text-sm text-[var(--on-surface-variant)] max-w-sm mb-5 leading-relaxed">
-            You&apos;re tracking {quotaInfo.storeUsed} of {quotaInfo.storeQuota}{" "}
+            You&apos;re tracking {quotaInfo.used} of {quotaInfo.quota}{" "}
             allowed stores. Delete one from your dashboard to scan{" "}
             <span className="font-medium text-[var(--on-surface)]">{domain}</span>.
           </p>

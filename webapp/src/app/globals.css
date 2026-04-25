@@ -149,6 +149,18 @@
   --error-light:    color-mix(in srgb, var(--accent) 8%, var(--paper));
   --muted:          var(--ink-3);
   --card:           var(--paper);
+
+  /* Code block / snippet — dark surface to make code legible against
+     the warm cream paper background. Used by StoreHealthChecks
+     (per-check inline snippets) and StoreHealthDetail (full code
+     panel). One source of truth so future theme changes don't drift. */
+  --code-bg:        #16130e;
+  --code-fg:        #f5e9d0;
+  --code-border:    #2a241d;
+  --code-button-bg:       rgba(255, 255, 255, 0.06);
+  --code-button-bg-hover: rgba(255, 255, 255, 0.15);
+  --code-button-border:   rgba(255, 255, 255, 0.12);
+  --code-button-fg:       #f5e9d0;
 }
 
 /* ═══════════════════════════════════════════════════════════════

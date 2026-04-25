@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { getUserFriendlyError } from "@/lib/errors";
+import { preflightStoreQuota } from "@/lib/storeQuotaPreflight";
 import {
   type FreeResult,
   type LeakCard,
@@ -62,8 +63,8 @@ function AnalyzePageContent() {
 
   // Store quota exhaustion state (403 with errorCode "store_quota_exhausted")
   const [storeQuotaExhausted, setStoreQuotaExhausted] = useState<{
-    storeUsed: number;
-    storeQuota: number;
+    used: number;
+    quota: number;
   } | null>(null);
 
   // Reveal state
@@ -100,6 +101,21 @@ function AnalyzePageContent() {
           }
           setPlanLoading(false);
 
+          // 1b. Pre-flight quota check — surface the modal before firing
+          // /analyze when the user arrived via bookmark / shared link.
+          if (domain) {
+            const preflight = await preflightStoreQuota(domain);
+            if (preflight?.exhausted) {
+              setStoreQuotaExhausted({
+                used: preflight.used,
+                quota: preflight.quota,
+              });
+              setLoading(false);
+              captureEvent("store_quota_exhausted", { url, source: "preflight" });
+              return null;
+            }
+          }
+
           // 2. Check for cached analysis first
           const cacheRes = await fetch(
             `${API_URL}/analysis?url=${encodeURIComponent(url)}`,
@@ -118,8 +134,8 @@ function AnalyzePageContent() {
             const errData = await analyzeRes.json().catch(() => ({})) as Record<string, unknown>;
             if (errData.errorCode === "store_quota_exhausted") {
               setStoreQuotaExhausted({
-                storeUsed: (errData.storeUsed as number) ?? 0,
-                storeQuota: (errData.storeQuota as number) ?? 0,
+                used: (errData.used as number) ?? 0,
+                quota: (errData.quota as number) ?? 0,
               });
               setLoading(false);
               captureEvent("store_quota_exhausted", { url });
@@ -240,7 +256,7 @@ function AnalyzePageContent() {
               Store Limit Reached
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              You&apos;re tracking {storeQuotaExhausted.storeUsed} of {storeQuotaExhausted.storeQuota}{" "}
+              You&apos;re tracking {storeQuotaExhausted.used} of {storeQuotaExhausted.quota}{" "}
               allowed stores. Delete a store from your dashboard to make room for this one.
             </p>
           </div>

@@ -1,6 +1,16 @@
 # alpo.ai -- Shopify Product Page Analyzer
 
-AI-powered Shopify product page analyzer that scores 18 conversion dimensions and estimates revenue leaks. Merchants paste a product URL, get a score out of 100, and see prioritized recommendations to improve their page. Free to use, targeting small solo Shopify merchants.
+AI-powered Shopify product page analyzer that scores conversion dimensions and estimates revenue leaks. Merchants paste a product URL, get a score out of 100, and see prioritized recommendations to improve their page.
+
+Three plan tiers (see `api/app/plans.py`):
+
+| Tier    | Monthly price | Scans / month         | Per-check fix code |
+|---------|---------------|-----------------------|--------------------|
+| Free    | $0            | 3 scans, 1 store      | Hidden             |
+| Starter | $29           | Unlimited, 1 store    | Visible            |
+| Pro     | $99           | Unlimited, more stores | Visible           |
+
+Paid tiers are billed via Paddle Billing (subscription model with webhook-driven plan-tier updates).
 
 ---
 
@@ -75,7 +85,18 @@ cp .env.production.template .env
 | `NEXT_PUBLIC_API_URL` | Yes | URL the webapp uses to reach the FastAPI backend |
 | `NEXT_PUBLIC_BASE_URL` | Yes | Public base URL for the webapp |
 
-> **Dormant (not required to run core product):** `OPENAI_API_KEY` (OpenRouter key for optional AI features), `RESEND_API_KEY` (email, unused at launch), `PADDLE_*` (payments; optional until the paid Starter plan is live).
+**Required for paid tiers (Starter / Pro):**
+
+| Variable | Purpose |
+|----------|---------|
+| `PADDLE_API_KEY` | Server-side Paddle Billing API key |
+| `PADDLE_WEBHOOK_SECRET` | Verifies inbound webhook signatures |
+| `PADDLE_PRICE_STARTER_MONTHLY` / `PADDLE_PRICE_STARTER_ANNUAL` | Price IDs that map to the `starter` tier |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Browser SDK token for `@paddle/paddle-js` checkout |
+
+Without these, the free tier still works but checkout and `subscription.*` webhooks fail.
+
+> **Optional:** `OPENAI_API_KEY` (OpenRouter key for AI features), `RESEND_API_KEY` (transactional email).
 
 ---
 

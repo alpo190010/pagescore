@@ -20,19 +20,26 @@ import {
 } from "@/lib/storeHealthRefresh";
 
 /* ══════════════════════════════════════════════════════════════
-   StoreHealthRefreshButton — Re-analyzes the current store so the
-   user can verify whether a fix worked without leaving the detail
-   page. Calls POST /store/{domain}/refresh-analysis (runs all 7
-   detectors, ~45–60s; free users rate-limited to 1/min per user,
-   paid users unlimited).
+   StoreHealthRefreshButton — Re-runs the *single* dimension the
+   user is viewing so they can verify whether a fix worked without
+   leaving the detail page. Calls POST /store/{domain}/refresh-analysis
+   ?dimension={dimensionKey}, which runs only the targeted detector
+   (and only the external API calls it needs — axe for accessibility,
+   PSI for pageSpeed, etc.). 2–3× faster than a full 7-dimension
+   refresh, ~10–25s typical.
 
-   Refresh state is shared across every mount of this component for
-   the same domain via the module store in lib/storeHealthRefresh.ts.
-   That means navigating between dimensions mid-flight keeps the
-   "Re-analyzing…" state alive instead of resetting to idle.
+   Free users are rate-limited per-user to 1 refresh/min (rotating
+   dimensions does NOT reset the cooldown — see store.py). Paid
+   users are unlimited. Free users also pay 1 credit per refresh.
+
+   Refresh state is keyed by (domain, dimensionKey), shared across
+   every mount of this component via the module store in
+   lib/storeHealthRefresh.ts. Navigating between dimensions
+   mid-flight keeps the per-dimension "Re-scanning…" state alive,
+   and refreshing different dimensions in parallel works.
 
    States: idle → loading → success → idle (auto after 2.5s).
-   On 429 or network error: loading → error → idle (auto after 6s).
+   On 429, 403, or network error: loading → error → idle (auto after 6s).
    On success: the module holds the result briefly; the mounted
    parent's onRefreshed is invoked once to update storeAnalysis.
    ══════════════════════════════════════════════════════════════ */
@@ -118,8 +125,8 @@ export default function StoreHealthRefreshButton({
           className={status.kind === "loading" ? "animate-spin" : ""}
         />
         {status.kind === "loading"
-          ? "Re-analyzing…"
-          : `Re-analyze ${dimensionLabel}`}
+          ? "Re-scanning…"
+          : `Re-scan ${dimensionLabel}`}
       </button>
       {status.kind === "loading" && (
         <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>
@@ -193,7 +200,7 @@ export default function StoreHealthRefreshButton({
             className="font-display text-[14px] leading-[1.4] font-bold flex-1 min-w-0 truncate"
             style={{ color: "var(--paper)", letterSpacing: "-0.01em" }}
           >
-            {isLoading ? "Re-analyzing…" : `Re-analyze ${dimensionLabel}`}
+            {isLoading ? "Re-scanning…" : `Re-scan ${dimensionLabel}`}
           </span>
           {status.kind === "idle" && (
             <ArrowRightIcon
@@ -284,7 +291,7 @@ export default function StoreHealthRefreshButton({
           disabled={isLoading}
           aria-busy={isLoading}
           aria-label={
-            isLoading ? "Re-analyzing" : `Re-analyze ${dimensionLabel}`
+            isLoading ? "Re-scanning" : `Re-scan ${dimensionLabel}`
           }
           className="group inline-flex items-center justify-center gap-2.5 w-full sm:w-auto min-h-[56px] px-8 rounded-[12px] transition-all font-display font-bold text-[15px]"
           style={{
@@ -313,7 +320,7 @@ export default function StoreHealthRefreshButton({
             className={isLoading ? "animate-spin" : ""}
           />
           <span>
-            {isLoading ? "Re-analyzing…" : `Re-analyze ${dimensionLabel}`}
+            {isLoading ? "Re-scanning…" : `Re-scan ${dimensionLabel}`}
           </span>
           {status.kind === "idle" && (
             <ArrowRightIcon

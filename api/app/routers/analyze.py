@@ -18,11 +18,11 @@ from app.config import settings
 from app.database import get_db
 from app.models import ProductAnalysis, Scan, StoreAnalysis, User
 from app.services.entitlement import (
-    count_user_stores,
     get_credits_limit,
     has_credits_remaining,
     increment_credits,
     maybe_reset_free_credits,
+    quota_exhausted_response,
     user_has_store_slot_for,
 )
 from app.services.page_renderer import render_page, measure_mobile_cta
@@ -195,12 +195,7 @@ async def analyze(
     if store_domain and not user_has_store_slot_for(current_user, store_domain, db):
         return JSONResponse(
             status_code=403,
-            content={
-                "error": "Store quota reached",
-                "errorCode": "store_quota_exhausted",
-                "storeQuota": current_user.store_quota,
-                "storeUsed": count_user_stores(current_user.id, db),
-            },
+            content=quota_exhausted_response(current_user, db),
         )
 
     # --- Credit check ---
@@ -209,6 +204,7 @@ async def analyze(
             status_code=403,
             content={
                 "error": "Credit limit reached",
+                "errorCode": "credit_exhausted",
                 "plan": current_user.plan_tier,
                 "creditsUsed": current_user.credits_used,
                 "creditsLimit": get_credits_limit(current_user.plan_tier),

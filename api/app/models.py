@@ -17,6 +17,24 @@ Base = declarative_base()
 
 
 class ProductAnalysis(Base):
+    """Per-product page analysis (one per product_url + user).
+
+    Intentionally has no foreign key to :class:`StoreAnalysis`. The two
+    tables describe the same store from different angles:
+
+    * ``ProductAnalysis`` — written by ``/analyze``, scores a single
+      product page.
+    * ``StoreAnalysis``   — written by ``/discover-products`` and
+      ``/store/.../refresh-analysis``, aggregates store-wide signals
+      (shipping, trust, checkout, etc.).
+
+    A user may have one without the other for a given domain depending
+    on which entry point they used. ``count_user_stores`` in
+    ``services/entitlement.py`` reconciles them by unioning
+    ``store_domain`` across both tables, so quota math stays correct
+    even when only one row exists.
+    """
+
     __tablename__ = "product_analyses"
     __table_args__ = (
         UniqueConstraint("product_url", "user_id", name="uq_product_analyses_product_url_user_id"),
@@ -41,7 +59,12 @@ class ProductAnalysis(Base):
 
 
 class StoreAnalysis(Base):
-    """Aggregated store-wide analysis (one per store_domain + user)."""
+    """Aggregated store-wide analysis (one per store_domain + user).
+
+    Companion table to :class:`ProductAnalysis`; see that docstring for
+    the relationship rationale (no FK by design — joined at the
+    ``store_domain`` column).
+    """
 
     __tablename__ = "store_analyses"
     __table_args__ = (

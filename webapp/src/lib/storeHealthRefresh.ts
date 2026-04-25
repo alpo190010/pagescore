@@ -124,10 +124,33 @@ export function startRefresh(domain: string, dimensionKey: string): void {
         `?dimension=${encodeURIComponent(dimensionKey)}`;
       const res = await authFetch(url, { method: "POST" });
       if (res.status === 429) {
-        let message = "Please wait a minute before re-analyzing again.";
+        let message = "Please wait a minute before re-scanning again.";
         try {
           const body = (await res.json()) as { error?: string };
           if (body?.error) message = body.error;
+        } catch {
+          // Non-JSON body — use default.
+        }
+        setEntry(key, { status: { kind: "error", message } });
+        scheduleReset(key, ERROR_RESET_MS);
+        return;
+      }
+      if (res.status === 403) {
+        // Credits or quota exhausted — surface a tier-aware message.
+        let message = "Re-analysis blocked. Upgrade your plan to continue.";
+        try {
+          const body = (await res.json()) as {
+            error?: string;
+            errorCode?: string;
+          };
+          if (body?.errorCode === "credit_exhausted") {
+            message =
+              "You're out of credits this month. Upgrade to keep re-scanning.";
+          } else if (body?.errorCode === "store_quota_exhausted") {
+            message = "Store limit reached. Manage your stores in the dashboard.";
+          } else if (body?.error) {
+            message = body.error;
+          }
         } catch {
           // Non-JSON body — use default.
         }

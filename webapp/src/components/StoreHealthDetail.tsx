@@ -350,8 +350,8 @@ function FixCodeBlock({ code }: { code: string }) {
       <div
         className="relative rounded-[14px] font-mono text-[12px] leading-[1.55] overflow-x-auto"
         style={{
-          background: "#16130e",
-          color: "#e8e4d8",
+          background: "var(--code-bg)",
+          color: "var(--code-fg)",
           whiteSpace: "pre",
           padding: "16px 18px",
         }}
@@ -363,17 +363,17 @@ function FixCodeBlock({ code }: { code: string }) {
           style={{
             background: copied
               ? "rgba(130, 200, 140, 0.22)"
-              : "rgba(255,255,255,0.08)",
-            color: copied ? "#b7e3be" : "rgba(255,255,255,0.75)",
+              : "var(--code-button-bg)",
+            color: copied ? "#b7e3be" : "var(--code-button-fg)",
             border: "none",
           }}
           onMouseEnter={(e) => {
             if (!copied)
-              e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+              e.currentTarget.style.background = "var(--code-button-bg-hover)";
           }}
           onMouseLeave={(e) => {
             if (!copied)
-              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.background = "var(--code-button-bg)";
           }}
           aria-label={copied ? "Copied code to clipboard" : "Copy code to clipboard"}
         >

@@ -173,8 +173,8 @@ def test_analyze_returns_403_when_store_quota_exhausted():
     assert resp.status_code == 403
     data = resp.json()
     assert data["errorCode"] == "store_quota_exhausted"
-    assert data["storeQuota"] == 1
-    assert data["storeUsed"] == 1
+    assert data["quota"] == 1
+    assert data["used"] == 1
 
     app.dependency_overrides.clear()
 

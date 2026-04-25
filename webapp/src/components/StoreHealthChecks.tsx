@@ -38,7 +38,7 @@ export default function StoreHealthChecks({ checks }: StoreHealthChecksProps) {
     .sort((a, b) => b.weight - a.weight);
 
   return (
-    <section className="flex flex-col gap-4" aria-label="Dimension audit">
+    <section className="flex flex-col gap-4" aria-label="Dimension checks">
       {passing.length > 0 && (
         <ChecksGroup
           heading="What's working"
@@ -268,9 +268,9 @@ function InlineCodeSnippet({ code }: { code: string }) {
     <div
       className="relative rounded-[10px] font-mono text-[11.5px] leading-[1.55] overflow-x-auto"
       style={{
-        background: "#16130e",
-        color: "#f5e9d0",
-        border: "1px solid #2a241d",
+        background: "var(--code-bg)",
+        color: "var(--code-fg)",
+        border: "1px solid var(--code-border)",
       }}
     >
       <button
@@ -278,9 +278,9 @@ function InlineCodeSnippet({ code }: { code: string }) {
         onClick={handleCopy}
         className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[10.5px] font-bold transition-opacity"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          color: "#f5e9d0",
-          border: "1px solid rgba(255,255,255,0.12)",
+          background: "var(--code-button-bg)",
+          color: "var(--code-button-fg)",
+          border: "1px solid var(--code-button-border)",
           letterSpacing: "0.04em",
         }}
         aria-label={copied ? "Copied" : "Copy code"}

@@ -18,7 +18,14 @@ from app.database import get_db
 from app.models import ProductAnalysis, Store, StoreAnalysis, StoreProduct, User
 from app.routers.discover_products import _run_store_wide_analysis
 from app.services.dimension_fixes import gate_store_analysis_for_free_tier
-from app.services.entitlement import count_user_stores, user_has_store_slot_for
+from app.services.entitlement import (
+    get_credits_limit,
+    has_credits_remaining,
+    increment_credits,
+    maybe_reset_free_credits,
+    quota_exhausted_response,
+    user_has_store_slot_for,
+)
 from app.services.scoring import STORE_WIDE_KEYS
 
 logger = logging.getLogger(__name__)
@@ -27,7 +34,15 @@ router = APIRouter()
 
 PRODUCT_ANALYSIS_TTL = timedelta(hours=24)
 
-# Free-tier refresh cooldown — paid tiers are unlimited. Keyed by user id.
+# Free-tier refresh cooldown.
+#
+# Keyed *per user*, not per (user, dimension): a free-tier user gets one
+# refresh of any kind per minute, full stop. Switching dimensions does NOT
+# reset the timer. This is intentional — the cooldown exists to keep free
+# users from grinding through the credit pool with rapid back-to-back
+# refreshes, and a per-dimension key would let them bypass it by rotating
+# (checkout → trust → shipping → …). Paid tiers (starter, pro) are
+# unlimited and skip this gate entirely.
 _FREE_REFRESH_COOLDOWN_SECONDS = 60
 _free_refresh_last: dict[str, float] = {}
 
@@ -224,11 +239,23 @@ async def refresh_store_analysis(
     if not user_has_store_slot_for(current_user, domain, db):
         return JSONResponse(
             status_code=403,
+            content=quota_exhausted_response(current_user, db),
+        )
+
+    # --- Credit check ---
+    # Refresh forces a fresh scan (force=True below), so it does the same
+    # work as /analyze and consumes one credit. Free users hitting their
+    # monthly cap get the same 403 envelope as /analyze.
+    maybe_reset_free_credits(current_user, db)
+    if not has_credits_remaining(current_user):
+        return JSONResponse(
+            status_code=403,
             content={
-                "error": "Store quota reached",
-                "errorCode": "store_quota_exhausted",
-                "storeQuota": current_user.store_quota,
-                "storeUsed": count_user_stores(current_user.id, db),
+                "error": "Credit limit reached",
+                "errorCode": "credit_exhausted",
+                "plan": current_user.plan_tier,
+                "creditsUsed": current_user.credits_used,
+                "creditsLimit": get_credits_limit(current_user.plan_tier),
             },
         )
 
@@ -330,6 +357,15 @@ async def refresh_store_analysis(
             return JSONResponse(
                 status_code=502,
                 content={"error": "Store-wide analysis failed — please try again"},
+            )
+
+        # --- Consume credit (best-effort — analysis already succeeded) ---
+        try:
+            increment_credits(current_user, db)
+        except Exception:
+            logger.exception(
+                "Credit increment failed for user %s domain=%s — refresh delivered anyway",
+                current_user.id, domain,
             )
         return gate_store_analysis_for_free_tier(result, current_user)
 

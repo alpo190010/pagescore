@@ -379,6 +379,8 @@ class TestGateStoreAnalysisForFreeTier:
             "Install Shop Pay via Shopify Payments."
         )
         assert out["checks"]["checkout"][0]["code"] == "<script>...</script>"
+        assert out["planTier"] == "starter"
+        assert out["recommendationsLocked"] is False
 
     def test_free_tier_strips_remediation_and_code(self) -> None:
         payload = _payload_with_remediation()
@@ -390,6 +392,8 @@ class TestGateStoreAnalysisForFreeTier:
         # Non-premium fields preserved.
         assert check["label"] == "Shop Pay"
         assert check["passed"] is True
+        assert out["planTier"] == "free"
+        assert out["recommendationsLocked"] is True
 
     def test_anonymous_caller_treated_as_free_tier(self) -> None:
         payload = _payload_with_remediation()
@@ -397,6 +401,8 @@ class TestGateStoreAnalysisForFreeTier:
         check = out["checks"]["checkout"][0]
         assert "remediation" not in check
         assert "code" not in check
+        assert out["planTier"] is None
+        assert out["recommendationsLocked"] is True
 
     def test_none_payload_passthrough(self) -> None:
         assert gate_store_analysis_for_free_tier(None, None) is None
@@ -412,12 +418,16 @@ class TestGateStoreAnalysisForFreeTier:
             "Install Shop Pay via Shopify Payments."
         )
         assert payload["checks"]["checkout"][0]["code"] == "<script>...</script>"
+        assert "planTier" not in payload
+        assert "recommendationsLocked" not in payload
 
     def test_empty_plan_tier_string_treated_as_free(self) -> None:
         payload = _payload_with_remediation()
         user = SimpleNamespace(plan_tier="")
         out = gate_store_analysis_for_free_tier(payload, user)
         assert "remediation" not in out["checks"]["checkout"][0]
+        assert out["planTier"] == "free"
+        assert out["recommendationsLocked"] is True
 
 
 class TestStripCheckRemediation:

@@ -20,7 +20,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Store, StoreAnalysis, StoreProduct, User
 from app.services.dimension_fixes import gate_store_analysis_for_free_tier
-from app.services.entitlement import count_user_stores, user_has_store_slot_for
+from app.services.entitlement import quota_exhausted_response, user_has_store_slot_for
 from app.services.page_renderer import render_page
 from app.services.accessibility_scanner import run_axe_scan
 from app.services.page_speed_api import fetch_pagespeed_insights
@@ -1048,17 +1048,18 @@ async def discover_products(
 
         # --- Store quota check (authenticated users only) ---
         # Anonymous scans don't create per-user rows, so quota doesn't apply.
+        #
+        # Credit gating note: /discover-products does NOT consume credits. It
+        # is the discovery + onboarding flow and the store-wide analysis it
+        # runs is cached for 7 days (see _STORE_CACHE_TTL_DAYS). The per-product
+        # /analyze path and the explicit /store/{domain}/refresh-analysis path
+        # are the credit-consuming operations.
         if current_user is not None and not user_has_store_slot_for(
             current_user, domain, db
         ):
             return JSONResponse(
                 status_code=403,
-                content={
-                    "error": "Store quota reached",
-                    "errorCode": "store_quota_exhausted",
-                    "storeQuota": current_user.store_quota,
-                    "storeUsed": count_user_stores(current_user.id, db),
-                },
+                content=quota_exhausted_response(current_user, db),
             )
 
         # Strategy 1: Shopify JSON

@@ -9,8 +9,7 @@ import { isValidUrl, isProductPageUrl, extractDomain } from "@/lib/analysis/help
 import UrlInput from "@/components/ui/UrlInput";
 import Button from "@/components/ui/Button";
 import Modal, { ModalTitle, ModalDescription } from "@/components/ui/Modal";
-import { authFetch } from "@/lib/auth-fetch";
-import { API_URL } from "@/lib/api";
+import { preflightStoreQuota } from "@/lib/storeQuotaPreflight";
 
 const AuthModal = dynamic(() => import("@/components/AuthModal"), {
   ssr: false,
@@ -84,29 +83,15 @@ export default function HeroForm() {
       // instead of letting the destination page catch the 403 after navigation.
       // On any error, fall through — the server will still gate at the API.
       const targetDomain = (extractDomain(validUrl) || validUrl).toLowerCase();
-      try {
-        const res = await authFetch(`${API_URL}/user/stores`);
-        if (res.ok) {
-          const payload = (await res.json()) as {
-            stores: Array<{ domain: string }>;
-            quota: number;
-            used: number;
-          };
-          const alreadyTracked = payload.stores.some(
-            (s) => s.domain.toLowerCase() === targetDomain,
-          );
-          if (!alreadyTracked && payload.used >= payload.quota) {
-            setQuotaModal({
-              targetDomain,
-              used: payload.used,
-              quota: payload.quota,
-            });
-            setSubmitting(false);
-            return;
-          }
-        }
-      } catch {
-        // Ignore — navigation proceeds and the destination page handles 403s.
+      const preflight = await preflightStoreQuota(targetDomain);
+      if (preflight?.exhausted) {
+        setQuotaModal({
+          targetDomain,
+          used: preflight.used,
+          quota: preflight.quota,
+        });
+        setSubmitting(false);
+        return;
       }
 
       router.push(destination);
@@ -132,7 +117,7 @@ export default function HeroForm() {
           onValueChange={handleUrlChange}
           onSubmit={runScan}
           placeholder="Paste your store or product page URL..."
-          ctaLabel="Analyze Free"
+          ctaLabel="Scan Free"
           ctaTrailing={<ArrowRightIcon size={16} weight="bold" />}
           submitting={submitting}
           maxLength={2048}
