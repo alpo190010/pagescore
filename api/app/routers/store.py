@@ -17,7 +17,7 @@ from app.auth import get_current_user_optional, get_current_user_required
 from app.database import get_db
 from app.models import ProductAnalysis, Store, StoreAnalysis, StoreProduct, User
 from app.routers.discover_products import _run_store_wide_analysis
-from app.services.dimension_fixes import strip_check_remediation
+from app.services.dimension_fixes import gate_store_analysis_for_free_tier
 from app.services.entitlement import count_user_stores, user_has_store_slot_for
 from app.services.scoring import STORE_WIDE_KEYS
 
@@ -144,24 +144,22 @@ def get_store(
                 for p in products
             ],
             "analyses": analyses,
-            "storeAnalysis": {
-                "score": store_analysis_row.score,
-                "categories": store_analysis_row.categories,
-                "tips": store_analysis_row.tips,
-                "signals": store_analysis_row.signals,
-                "checks": (
-                    store_analysis_row.checks
-                    if current_user is not None
-                    and (current_user.plan_tier or "free") != "free"
-                    else strip_check_remediation(store_analysis_row.checks)
-                ),
-                "analyzedUrl": store_analysis_row.analyzed_url,
-                "updatedAt": (
-                    store_analysis_row.updated_at.isoformat()
-                    if store_analysis_row.updated_at
-                    else None
-                ),
-            }
+            "storeAnalysis": gate_store_analysis_for_free_tier(
+                {
+                    "score": store_analysis_row.score,
+                    "categories": store_analysis_row.categories,
+                    "tips": store_analysis_row.tips,
+                    "signals": store_analysis_row.signals,
+                    "checks": store_analysis_row.checks,
+                    "analyzedUrl": store_analysis_row.analyzed_url,
+                    "updatedAt": (
+                        store_analysis_row.updated_at.isoformat()
+                        if store_analysis_row.updated_at
+                        else None
+                    ),
+                },
+                current_user,
+            )
             if store_analysis_row
             else None,
         }
@@ -333,7 +331,7 @@ async def refresh_store_analysis(
                 status_code=502,
                 content={"error": "Store-wide analysis failed — please try again"},
             )
-        return result
+        return gate_store_analysis_for_free_tier(result, current_user)
 
     except Exception:
         outcome = "error"

@@ -230,6 +230,26 @@ def strip_check_remediation(checks: dict | None) -> dict | None:
     return out
 
 
+def gate_store_analysis_for_free_tier(payload, user):
+    """Apply free-tier check stripping to a store-analysis payload.
+
+    Used at the API boundary by routes that return a StoreAnalysis-shaped
+    dict (``/discover-products``, ``/store/{domain}``, ``/store/{domain}/refresh-analysis``)
+    so cached, fresh, and refreshed responses all gate identically.
+
+    Anonymous callers (``user is None``) and free-tier users get ``checks``
+    stripped of ``remediation`` and ``code``. Paid tiers see the payload
+    unchanged. ``payload=None`` passes through.
+    """
+    if payload is None:
+        return None
+    if user is not None and (user.plan_tier or "free") != "free":
+        return payload
+    if not isinstance(payload, dict):
+        return payload
+    return {**payload, "checks": strip_check_remediation(payload.get("checks"))}
+
+
 def get_fix_steps(dimension_key: str, signals: dict | None) -> list[str]:
     """Return the fix-step list for a dimension, filtered by scan signals.
 

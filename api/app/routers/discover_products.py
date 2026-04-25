@@ -19,6 +19,7 @@ from app.auth import get_current_user_optional
 from app.config import settings
 from app.database import get_db
 from app.models import Store, StoreAnalysis, StoreProduct, User
+from app.services.dimension_fixes import gate_store_analysis_for_free_tier
 from app.services.entitlement import count_user_stores, user_has_store_slot_for
 from app.services.page_renderer import render_page
 from app.services.accessibility_scanner import run_axe_scan
@@ -1119,7 +1120,9 @@ async def discover_products(
                 "storeName": store_name,
                 "isProductPage": False,
                 "storeId": store_id,
-                "storeAnalysis": store_analysis,
+                "storeAnalysis": gate_store_analysis_for_free_tier(
+                    store_analysis, current_user
+                ),
             }
 
         # Strategy 2: HTML scraping fallback — no overlap gain (scrape blocks).
@@ -1159,7 +1162,13 @@ async def discover_products(
             },
         )
 
-        return {**html_result, "storeId": store_id, "storeAnalysis": store_analysis}
+        return {
+            **html_result,
+            "storeId": store_id,
+            "storeAnalysis": gate_store_analysis_for_free_tier(
+                store_analysis, current_user
+            ),
+        }
 
     except Exception:
         timings["total_s"] = round((time.perf_counter() - t_total) , 3)

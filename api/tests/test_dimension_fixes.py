@@ -10,10 +10,14 @@ from __future__ import annotations
 
 import pytest
 
+from types import SimpleNamespace
+
 from app.services.dimension_fixes import (
     FIX_CONTENT,
     _checkout_fix_steps,
+    gate_store_analysis_for_free_tier,
     get_fix_steps,
+    strip_check_remediation,
 )
 
 
@@ -336,3 +340,103 @@ class TestAlwaysReturnsSteps:
         steps = _checkout_fix_steps(signals)
         for step in steps:
             assert step.strip() != ""
+
+
+# ---------------------------------------------------------------------
+# gate_store_analysis_for_free_tier — paywall-leak regression coverage
+# ---------------------------------------------------------------------
+
+
+def _payload_with_remediation() -> dict:
+    """A minimal store-analysis payload that includes premium fields."""
+    return {
+        "score": 72,
+        "categories": {"checkout": 80},
+        "tips": {"checkout": ["Tip 1"]},
+        "signals": {"checkout": {"hasShopPay": True}},
+        "checks": {
+            "checkout": [
+                {
+                    "key": "shop_pay",
+                    "label": "Shop Pay",
+                    "passed": True,
+                    "remediation": "Install Shop Pay via Shopify Payments.",
+                    "code": "<script>...</script>",
+                },
+            ],
+        },
+        "analyzedUrl": "https://example.com/p/x",
+        "updatedAt": "2026-04-25T12:00:00+00:00",
+    }
+
+
+class TestGateStoreAnalysisForFreeTier:
+    def test_paid_tier_passthrough(self) -> None:
+        payload = _payload_with_remediation()
+        user = SimpleNamespace(plan_tier="starter")
+        out = gate_store_analysis_for_free_tier(payload, user)
+        assert out["checks"]["checkout"][0]["remediation"] == (
+            "Install Shop Pay via Shopify Payments."
+        )
+        assert out["checks"]["checkout"][0]["code"] == "<script>...</script>"
+
+    def test_free_tier_strips_remediation_and_code(self) -> None:
+        payload = _payload_with_remediation()
+        user = SimpleNamespace(plan_tier="free")
+        out = gate_store_analysis_for_free_tier(payload, user)
+        check = out["checks"]["checkout"][0]
+        assert "remediation" not in check
+        assert "code" not in check
+        # Non-premium fields preserved.
+        assert check["label"] == "Shop Pay"
+        assert check["passed"] is True
+
+    def test_anonymous_caller_treated_as_free_tier(self) -> None:
+        payload = _payload_with_remediation()
+        out = gate_store_analysis_for_free_tier(payload, None)
+        check = out["checks"]["checkout"][0]
+        assert "remediation" not in check
+        assert "code" not in check
+
+    def test_none_payload_passthrough(self) -> None:
+        assert gate_store_analysis_for_free_tier(None, None) is None
+        user = SimpleNamespace(plan_tier="starter")
+        assert gate_store_analysis_for_free_tier(None, user) is None
+
+    def test_does_not_mutate_input(self) -> None:
+        payload = _payload_with_remediation()
+        user = SimpleNamespace(plan_tier="free")
+        gate_store_analysis_for_free_tier(payload, user)
+        # Original retained the premium fields — gating returned a copy.
+        assert payload["checks"]["checkout"][0]["remediation"] == (
+            "Install Shop Pay via Shopify Payments."
+        )
+        assert payload["checks"]["checkout"][0]["code"] == "<script>...</script>"
+
+    def test_empty_plan_tier_string_treated_as_free(self) -> None:
+        payload = _payload_with_remediation()
+        user = SimpleNamespace(plan_tier="")
+        out = gate_store_analysis_for_free_tier(payload, user)
+        assert "remediation" not in out["checks"]["checkout"][0]
+
+
+class TestStripCheckRemediation:
+    def test_passes_none_through(self) -> None:
+        assert strip_check_remediation(None) is None
+
+    def test_removes_premium_fields_only(self) -> None:
+        checks = {
+            "trust": [
+                {
+                    "key": "ssl",
+                    "passed": True,
+                    "remediation": "Renew certificate.",
+                    "code": "openssl s_client ...",
+                },
+            ],
+        }
+        out = strip_check_remediation(checks)
+        assert out["trust"][0] == {"key": "ssl", "passed": True}
+
+    def test_handles_non_dict_input(self) -> None:
+        assert strip_check_remediation("not a dict") == "not a dict"  # type: ignore[arg-type]
