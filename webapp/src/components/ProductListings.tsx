@@ -563,6 +563,7 @@ export default function ProductListings({
             <AnalysisPane {...analysisPaneProps} />
           ))}
       </main>
+      </div>
 
       {/* ═══ AUTH GATE — Run Deep Analysis requires free signup ═══ */}
       <AuthModal
