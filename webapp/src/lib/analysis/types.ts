@@ -234,6 +234,16 @@ export interface PageSpeedDesktopSignals {
 }
 
 export interface PageSpeedSignals {
+  /**
+   * True while the synchronous scan response was returned but the PSI
+   * (Lighthouse lab + CrUX field) data is still being fetched in the
+   * background. Frontend polls GET /store/{domain} every ~5 s until this
+   * flips to false. When false, the score is final (PSI either succeeded
+   * or `psiFailed` is set).
+   */
+  psiPending?: boolean;
+  /** True when the background PSI fetch ultimately failed (timeout / API error). */
+  psiFailed?: boolean;
   scriptCount: number;
   thirdPartyScriptCount: number;
   renderBlockingScriptCount: number;

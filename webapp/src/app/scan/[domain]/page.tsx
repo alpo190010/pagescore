@@ -86,7 +86,7 @@ function ScanPageContent() {
     try {
       const res = await authFetch(
         `${API_URL}/store/${encodeURIComponent(domain)}/rescan`,
-        { method: "POST" },
+        { method: "POST", timeoutMs: 90_000 },
       );
       if (!res.ok) {
         console.warn("Store rescan failed:", res.status);
@@ -183,6 +183,7 @@ function ScanPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
         signal,
+        timeoutMs: 90_000,
       });
       if (res.status === 403) {
         const errData = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -234,14 +235,16 @@ function ScanPageContent() {
 
     const controller = new AbortController();
 
-    // 45 s safety timeout — transition to error if discovery hangs
+    // 90 s safety timeout — transition to error if discovery hangs.
+    // Scans legitimately take 40–60 s when PSI is slow; this is the
+    // outer ceiling that must be ≥ authFetch's per-call timeout.
     const timeout = setTimeout(() => {
       controller.abort();
       setPhase("error");
       setErrorMessage(
         "Discovery is taking too long. The site may be unreachable.",
       );
-    }, 45_000);
+    }, 90_000);
 
     discoverProducts(controller.signal).finally(() => clearTimeout(timeout));
 
@@ -275,6 +278,62 @@ function ScanPageContent() {
     products.length,
     handleRescanStore,
   ]);
+
+  /* ── PSI background-fill poll: when storeAnalysis arrives with
+       signals.pageSpeed.psiPending=true, the server is still fetching
+       PageSpeed Insights. Poll GET /store/{domain} every 5s until the
+       flag clears, the page unmounts, or 120s elapses. The cap matches
+       the backend's 90s PSI timeout plus a small buffer for the Google
+       round-trip and our DB write. ── */
+  const psiPending = Boolean(
+    (storeAnalysis?.signals as { pageSpeed?: { psiPending?: boolean } } | undefined)
+      ?.pageSpeed?.psiPending,
+  );
+  useEffect(() => {
+    if (!psiPending) return;
+    if (status !== "authenticated") return;
+    if (!domain) return;
+
+    let cancelled = false;
+    const startedAt = Date.now();
+    const POLL_INTERVAL_MS = 5_000;
+    const MAX_POLL_MS = 120_000;
+
+    async function pollOnce() {
+      if (cancelled) return;
+      if (Date.now() - startedAt > MAX_POLL_MS) return;
+      try {
+        const res = await authFetch(
+          `${API_URL}/store/${encodeURIComponent(domain)}`,
+        );
+        if (cancelled) return;
+        if (res.ok) {
+          const data = (await res.json()) as { storeAnalysis?: StoreAnalysisData };
+          if (cancelled) return;
+          if (data.storeAnalysis) {
+            const stillPending = Boolean(
+              (data.storeAnalysis.signals as
+                | { pageSpeed?: { psiPending?: boolean } }
+                | undefined)?.pageSpeed?.psiPending,
+            );
+            setStoreAnalysis(data.storeAnalysis);
+            if (!stillPending) return;
+          }
+        }
+      } catch {
+        // Swallow — next tick will retry
+      }
+      if (!cancelled && Date.now() - startedAt + POLL_INTERVAL_MS <= MAX_POLL_MS) {
+        timer = setTimeout(pollOnce, POLL_INTERVAL_MS);
+      }
+    }
+
+    let timer = setTimeout(pollOnce, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [psiPending, domain, status]);
 
   /* ── Session loading — show spinner while auth resolves ── */
   if (status === "loading") {

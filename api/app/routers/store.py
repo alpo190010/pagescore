@@ -482,6 +482,9 @@ async def rescan_store_analysis(
             )
 
         t_phase = time.perf_counter()
+        # Defer PSI to background only on full rescans. Targeted (per-dimension)
+        # rescans of pageSpeed must wait for fresh PSI; partial-row updates with
+        # psiPending=True would lose the existing PSI score from the prior run.
         result = await _run_store_wide_analysis(
             domain,
             product_url,
@@ -489,6 +492,7 @@ async def rescan_store_analysis(
             db,
             force=True,
             only_dimensions=only_dimensions,
+            defer_psi=only_dimensions is None,
         )
         timings["store_wide_analysis_s"] = round(
             (time.perf_counter() - t_phase) , 3

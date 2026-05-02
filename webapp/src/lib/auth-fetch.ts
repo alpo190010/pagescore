@@ -68,7 +68,7 @@ export async function getAuthToken(): Promise<string | null> {
 
 export async function authFetch(
   input: RequestInfo | URL,
-  init?: RequestInit,
+  init?: RequestInit & { timeoutMs?: number },
 ): Promise<Response> {
   const token = await getAuthToken();
 
@@ -77,13 +77,17 @@ export async function authFetch(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Merge caller's abort signal with a default 30 s timeout
-  const timeout = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
-  const signal = init?.signal
-    ? AbortSignal.any([init.signal, timeout])
+  // Merge caller's abort signal with a per-call timeout (default 30 s).
+  // Long-running endpoints (scan, rescan) override via timeoutMs since
+  // store-wide analysis can take 40–60 s when PSI is slow.
+  const { timeoutMs, ...rest } = init ?? {};
+  const effectiveTimeout = timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timeout = AbortSignal.timeout(effectiveTimeout);
+  const signal = rest.signal
+    ? AbortSignal.any([rest.signal, timeout])
     : timeout;
 
-  const res = await fetch(input, { ...init, headers, signal });
+  const res = await fetch(input, { ...rest, headers, signal });
 
   // Bust token cache on 401 so the next call fetches a fresh token
   if (res.status === 401) invalidateTokenCache();

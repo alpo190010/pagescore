@@ -17,7 +17,7 @@ from sqlalchemy.sql import func
 
 from app.auth import get_current_user_optional
 from app.config import settings
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.models import Store, StoreAnalysis, StoreProduct, User
 from app.services.dimension_fixes import gate_store_analysis_for_free_tier
 from app.services.entitlement import (
@@ -28,7 +28,10 @@ from app.services.entitlement import (
 from app.services.shopify_sitemap import fetch_product_count, total_pages_for
 from app.services.page_renderer import render_page
 from app.services.accessibility_scanner import run_axe_scan
-from app.services.page_speed_api import fetch_pagespeed_insights
+from app.services.page_speed_api import (
+    canonicalize_url_for_psi,
+    fetch_pagespeed_insights,
+)
 from app.services.ai_discoverability_api import fetch_ai_discoverability_data
 from app.services.checkout_detector import detect_checkout, combine_signals
 from app.services.checkout_flow_simulator import simulate_checkout_flow
@@ -85,6 +88,11 @@ from app.rate_limit import limiter
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Strong references to in-flight background PSI tasks. Without this set
+# asyncio only holds a weak ref via the loop, and Python's GC can drop a
+# fire-and-forget task mid-execution. add_done_callback evicts on completion.
+_background_psi_tasks: set[asyncio.Task] = set()
 
 
 class DiscoverProductsRequest(BaseModel):
@@ -545,8 +553,10 @@ def _serialize_ai_discoverability_signals(s) -> dict:
     }
 
 
-def _serialize_page_speed_signals(s) -> dict:
+def _serialize_page_speed_signals(s, *, psi_pending: bool = False, psi_failed: bool = False) -> dict:
     return {
+        "psiPending": psi_pending,
+        "psiFailed": psi_failed,
         "scriptCount": s.script_count,
         "thirdPartyScriptCount": s.third_party_script_count,
         "renderBlockingScriptCount": s.render_blocking_script_count,
@@ -638,6 +648,124 @@ def _store_analysis_dict(row: StoreAnalysis) -> dict:
     }
 
 
+async def _run_psi_background_fill(
+    domain: str,
+    user_id,
+    product_url: str,
+    html: str,
+) -> None:
+    """Fetch PSI in the background, then patch the persisted StoreAnalysis row.
+
+    Runs after _run_store_wide_analysis returns the synchronous response so
+    the user isn't blocked on PSI's 30s ceiling. Updates ``categories.pageSpeed``,
+    ``signals.pageSpeed``, ``tips.pageSpeed``, ``checks.pageSpeed``, and the
+    overall weighted ``score``. Clears ``psiPending``; sets ``psiFailed`` if
+    both strategies returned None.
+
+    Failures are swallowed (logged) — the row keeps psiPending until next scan,
+    and the UI's polling will time out and display the existing HTML-only
+    fallback message. Opens its own SessionLocal because the request's db is
+    already closed by the time this runs.
+    """
+    api_key = settings.google_pagespeed_api_key
+    if not api_key:
+        return
+
+    t_start = time.perf_counter()
+    db = SessionLocal()
+    try:
+        canonical_url = await canonicalize_url_for_psi(product_url)
+        # 90 s timeout: heavy Shopify PDPs (120+ scripts, 60+ third-party
+        # tags) can take 40–60 s for Lighthouse to reach network-idle. The
+        # user is no longer blocked here — they got the synchronous
+        # response ~30 s ago and are polling for the PSI fill — so we can
+        # afford a longer wait than the 30 s sync ceiling.
+        psi_mobile, psi_desktop = await asyncio.gather(
+            fetch_pagespeed_insights(
+                canonical_url, api_key, timeout=90.0, strategy="MOBILE",
+            ),
+            fetch_pagespeed_insights(
+                canonical_url, api_key, timeout=90.0, strategy="DESKTOP",
+            ),
+            return_exceptions=True,
+        )
+        if isinstance(psi_mobile, Exception):
+            psi_mobile = None
+        if isinstance(psi_desktop, Exception):
+            psi_desktop = None
+        psi_failed = psi_mobile is None and psi_desktop is None
+
+        signals = detect_page_speed(html, psi_mobile, psi_desktop)
+        new_score = score_page_speed(signals)
+        new_signals_dict = _serialize_page_speed_signals(
+            signals, psi_pending=False, psi_failed=psi_failed
+        )
+        new_tips = get_page_speed_tips(signals)
+        new_checks = list_page_speed_checks(signals)
+
+        row = (
+            db.query(StoreAnalysis)
+            .filter(StoreAnalysis.store_domain == domain)
+            .filter(StoreAnalysis.user_id == user_id)
+            .with_for_update()
+            .first()
+        )
+        if row is None:
+            logger.warning(
+                "Background PSI fill: StoreAnalysis row missing (domain=%s user_id=%s) — skipping",
+                domain, user_id,
+            )
+            db.rollback()
+            return
+
+        row.categories = {**(row.categories or {}), "pageSpeed": new_score}
+        row.tips = {**(row.tips or {}), "pageSpeed": new_tips}
+        row.signals = {**(row.signals or {}), "pageSpeed": new_signals_dict}
+        row.checks = {**(row.checks or {}), "pageSpeed": new_checks}
+        row.score = _compute_store_wide_score(row.categories)
+        row.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        logger.info(
+            "psi_background_complete domain=%s user_id=%s elapsed_s=%.3f psi_failed=%s",
+            domain,
+            user_id,
+            time.perf_counter() - t_start,
+            psi_failed,
+            extra={
+                "event": "psi_background_complete",
+                "domain": domain,
+                "user_id": str(user_id) if user_id is not None else None,
+                "elapsed_s": round(time.perf_counter() - t_start, 3),
+                "psi_failed": psi_failed,
+            },
+        )
+    except Exception:
+        logger.exception(
+            "Background PSI fill failed for domain=%s user_id=%s",
+            domain, user_id,
+        )
+        # Best-effort: clear pending so the UI stops polling.
+        try:
+            db.rollback()
+            row = (
+                db.query(StoreAnalysis)
+                .filter(StoreAnalysis.store_domain == domain)
+                .filter(StoreAnalysis.user_id == user_id)
+                .first()
+            )
+            if row is not None:
+                ps = dict((row.signals or {}).get("pageSpeed", {}))
+                ps["psiPending"] = False
+                ps["psiFailed"] = True
+                row.signals = {**(row.signals or {}), "pageSpeed": ps}
+                db.commit()
+        except Exception:
+            logger.exception("Failed to clear psiPending after error")
+    finally:
+        db.close()
+
+
 async def _run_store_wide_analysis(
     domain: str,
     product_url: str,
@@ -646,6 +774,7 @@ async def _run_store_wide_analysis(
     *,
     force: bool = False,
     only_dimensions: set[str] | None = None,
+    defer_psi: bool = False,
 ) -> dict | None:
     """Run store-wide detectors on one product page and persist a StoreAnalysis row.
 
@@ -750,8 +879,15 @@ async def _run_store_wide_analysis(
                 )
             )
 
+        # When defer_psi is True we skip PSI from the synchronous path and
+        # let the background task fill it in. The pageSpeed dimension is
+        # still computed (HTML-only signals) so the row is complete enough
+        # for the response; psiPending=True signals the UI to poll.
+        psi_will_defer = defer_psi and not is_targeted and "pageSpeed" in needs
         has_psi = (
-            bool(settings.google_pagespeed_api_key) and "pageSpeed" in needs
+            bool(settings.google_pagespeed_api_key)
+            and "pageSpeed" in needs
+            and not psi_will_defer
         )
         psi_idx = -1
         psi_desktop_idx = -1
@@ -956,7 +1092,9 @@ async def _run_store_wide_analysis(
             s = detect_page_speed(html, psi_data, psi_desktop_data)
             categories_patch["pageSpeed"] = score_page_speed(s)
             tips_patch["pageSpeed"] = get_page_speed_tips(s)
-            signals_patch["pageSpeed"] = _serialize_page_speed_signals(s)
+            signals_patch["pageSpeed"] = _serialize_page_speed_signals(
+                s, psi_pending=psi_will_defer
+            )
             checks_patch["pageSpeed"] = list_page_speed_checks(s)
 
         timings["detector_chains_s"] = round((time.perf_counter() - t_det) , 3)
@@ -1085,9 +1223,20 @@ async def _run_store_wide_analysis(
                 "user_id": str(user_id) if user_id is not None else None,
                 "url": product_url,
                 "psi_enabled": has_psi,
+                "psi_deferred": psi_will_defer,
                 "timings_s": timings,
             },
         )
+
+        # Kick off the background PSI fill AFTER the row is persisted so the
+        # background coroutine has a row to update. We hold a strong ref in
+        # _background_psi_tasks so the task isn't GC'd before completion.
+        if psi_will_defer:
+            task = asyncio.create_task(
+                _run_psi_background_fill(domain, user_id, product_url, html)
+            )
+            _background_psi_tasks.add(task)
+            task.add_done_callback(_background_psi_tasks.discard)
 
         return {
             "score": score,
@@ -1169,7 +1318,12 @@ async def discover_products(
                     _timed(
                         "store_wide_analysis_s",
                         _run_store_wide_analysis(
-                            domain, first_url, current_user.id, db, force=False
+                            domain,
+                            first_url,
+                            current_user.id,
+                            db,
+                            force=False,
+                            defer_psi=True,
                         ),
                         timings,
                     ),
@@ -1242,7 +1396,12 @@ async def discover_products(
         if products and current_user is not None:
             t_phase = time.perf_counter()
             store_analysis = await _run_store_wide_analysis(
-                domain, products[0]["url"], current_user.id, db, force=False
+                domain,
+                products[0]["url"],
+                current_user.id,
+                db,
+                force=False,
+                defer_psi=True,
             )
             timings["store_wide_analysis_s"] = round(
                 (time.perf_counter() - t_phase) , 3

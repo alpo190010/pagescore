@@ -163,6 +163,13 @@ export default function PageSpeedScorecard({ signals }: Props) {
   // can't score and the per-check list below is blank. Surface the
   // notice rather than showing partial desktop-only data.
   if (signals.performanceScore == null) {
+    // psiPending: we returned the synchronous scan response before PSI
+    // finished; the page poller is waiting for the background fetch to
+    // patch this row. Show a "Computing…" state so users don't think the
+    // score is final or stuck. psiFailed takes precedence (terminal state).
+    if (signals.psiPending && !signals.psiFailed) {
+      return <PsiComputingNotice />;
+    }
     return <PsiUnavailableNotice />;
   }
 
@@ -425,6 +432,40 @@ function FooterLine({ metrics }: { metrics: ActiveMetrics }) {
         </>
       )}
     </p>
+  );
+}
+
+/* ── Loading state while PSI is still running in the background ── */
+function PsiComputingNotice() {
+  return (
+    <div
+      className="flex items-start gap-3 rounded-[14px] border px-4 py-3.5"
+      style={{
+        background: "var(--bg-elev)",
+        borderColor: "var(--rule-2)",
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        aria-hidden
+        className="mt-0.5 w-[18px] h-[18px] rounded-full border-2 border-[var(--brand)] border-t-transparent flex-shrink-0"
+        style={{ animation: "spin 0.8s linear infinite" }}
+      />
+      <div className="flex-1 min-w-0">
+        <div
+          className="font-mono text-[10px] font-bold uppercase mb-1"
+          style={{ color: "var(--ink-3)", letterSpacing: "0.14em" }}
+        >
+          Computing PageSpeed…
+        </div>
+        <p className="text-[12.5px] leading-[1.5]" style={{ color: "var(--ink-2)" }}>
+          Google PageSpeed Insights is still loading the page in a real browser
+          to measure Lighthouse metrics. Score will fill in shortly — no action
+          needed.
+        </p>
+      </div>
+    </div>
   );
 }
 

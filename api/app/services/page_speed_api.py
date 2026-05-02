@@ -16,19 +16,41 @@ logger = logging.getLogger(__name__)
 PSI_API_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
 
+async def canonicalize_url_for_psi(url: str, *, timeout: float = 5.0) -> str:
+    """Resolve redirects so we send PSI the URL real visitors see.
+
+    PSI caches per exact URL string. Many Shopify stores redirect
+    apex → www (e.g. allbirds.com → www.allbirds.com). Sending the
+    pre-redirect URL is a guaranteed cache miss; sending the canonical
+    URL hits Google's cache when anyone has analyzed it recently.
+
+    Returns the canonical URL or the original on any failure (HEAD
+    blocked, timeout, network error). Cheap (~100–500 ms).
+    """
+    try:
+        async with httpx.AsyncClient(
+            timeout=timeout, follow_redirects=True
+        ) as client:
+            response = await client.head(url)
+            return str(response.url)
+    except Exception:
+        # Don't log noisily — most failures here are benign (bot block,
+        # slow HEAD). Caller falls back to the original URL.
+        return url
+
+
 async def fetch_pagespeed_insights(
     url: str,
     api_key: str,
-    timeout: float = 12.0,
+    timeout: float = 30.0,
     strategy: str = "MOBILE",
 ) -> dict | None:
     """Fetch PageSpeed Insights metrics for a URL.
 
-    Makes a single GET request to the PSI v5 API. Successful PSI calls
-    return in ~1–10 s; we cap at 12 s so a slow/failed call doesn't
-    stretch the parent scan past 25 s. Downstream detectors handle a
-    None return gracefully. Caller is responsible for fanning out
-    (e.g. one call per strategy in parallel via asyncio.gather).
+    Makes a single GET request to the PSI v5 API. PSI calls typically
+    take 10–25 s per strategy, so the default timeout is 30 s. Caller
+    is responsible for fanning out (e.g. one call per strategy in
+    parallel via asyncio.gather).
 
     Args:
         url: The page URL to analyse.
