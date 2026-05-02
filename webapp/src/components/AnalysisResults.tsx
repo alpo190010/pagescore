@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { useSession } from "next-auth/react";
-import {
-  ArrowsClockwiseIcon,
-  CursorClickIcon,
-  LightningIcon,
-  MagnifyingGlassIcon,
-  PackageIcon,
-  ShieldCheckIcon,
-  type Icon as PhosphorIcon,
-} from "@phosphor-icons/react";
+import { ArrowsClockwiseIcon } from "@phosphor-icons/react";
 import {
   type FreeResult,
   type LeakCard,
@@ -21,8 +13,12 @@ import {
   splitLeaksByScope,
 } from "@/lib/analysis";
 import {
-  buildProductGroups,
-  type ProductGroupView,
+  CATEGORY_SVG,
+  PRODUCT_LEVEL_DIMENSIONS,
+} from "@/lib/analysis/constants";
+import {
+  buildProductDimensions,
+  type ProductDimensionGroup,
 } from "@/lib/analysis/productChecks";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
@@ -38,28 +34,17 @@ import { severityFor, type Severity } from "@/components/checks/severity";
 
    Layout (top-to-bottom):
      1. Score ring + revenue summary
-     2. "Score breakdown" grid — one card per thematic dimension
-        group (DIMENSION_GROUPS), sorted worst→best, first selected
-        by default. Click to switch the active group.
+     2. "Score breakdown" grid — one card per raw dimension present
+        in `result.signals`, sorted worst→best, first selected by
+        default. Click to switch the active dimension.
      3. "What's working" + "Issues found" lists for the active
-        group. Severity chips (All / Critical / Major / Minor)
+        dimension. Severity chips (All / Critical / Major / Minor)
         filter the issues list. Visuals reuse the storewide
         ChecksGroup / CheckRow primitive.
      4. Analyze again CTA
    ══════════════════════════════════════════════════════════════ */
 
 type SeverityFilter = "all" | Severity;
-
-/* Per-thematic-group icons. Keyed by `DIMENSION_GROUPS[].id`. The
-   icon sits inside the donut ring on each ScoreCard — the ring
-   reads the score visually, the icon reads the category. */
-const GROUP_ICONS: Record<string, PhosphorIcon> = {
-  buying: PackageIcon,
-  trust: ShieldCheckIcon,
-  conversion: CursorClickIcon,
-  discovery: MagnifyingGlassIcon,
-  technical: LightningIcon,
-};
 
 interface AnalysisResultsProps {
   result: FreeResult;
@@ -111,46 +96,70 @@ const AnalysisResults = memo(function AnalysisResults({
   /* ── Product-only leaks ── */
   const { productLeaks } = useMemo(() => splitLeaksByScope(leaks), [leaks]);
 
-  /* ── Thematic group view (drives the Score breakdown grid) ── */
-  const groups = useMemo(
-    () => buildProductGroups(result, productLeaks),
+  /* ── Per-dimension view (drives the Score breakdown grid) ── */
+  const dimensions = useMemo(
+    () => buildProductDimensions(result, productLeaks),
     [result, productLeaks],
   );
 
   const totalMissing = useMemo(
     () =>
-      groups.reduce(
-        (sum, g) => sum + g.checks.filter((c) => !c.passed).length,
+      dimensions.reduce(
+        (sum, d) => sum + d.checks.filter((c) => !c.passed).length,
         0,
       ),
-    [groups],
+    [dimensions],
   );
-  const everythingPassing = groups.length > 0 && totalMissing === 0;
+  const totalCritical = useMemo(
+    () =>
+      dimensions.reduce(
+        (sum, d) =>
+          sum +
+          d.checks.filter((c) => !c.passed && severityFor(c.weight) === "critical")
+            .length,
+        0,
+      ),
+    [dimensions],
+  );
+  const everythingPassing = dimensions.length > 0 && totalMissing === 0;
 
-  /* ── Active group selection ── */
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  /* ── Active dimension selection ── */
+  const [activeDimKey, setActiveDimKey] = useState<string | null>(null);
   useEffect(() => {
-    if (groups.length > 0 && (!activeGroupId || !groups.some((g) => g.id === activeGroupId))) {
-      setActiveGroupId(groups[0].id);
+    if (
+      dimensions.length > 0 &&
+      (!activeDimKey || !dimensions.some((d) => d.key === activeDimKey))
+    ) {
+      setActiveDimKey(dimensions[0].key);
     }
-  }, [groups, activeGroupId]);
-  const activeGroup =
-    groups.find((g) => g.id === activeGroupId) ?? groups[0] ?? null;
+  }, [dimensions, activeDimKey]);
+  const activeDim =
+    dimensions.find((d) => d.key === activeDimKey) ?? dimensions[0] ?? null;
 
-  /* ── Severity chip filter (resets when active group changes) ── */
+  /* ── Severity chip filter (resets when active dimension changes) ── */
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   useEffect(() => {
     setSeverityFilter("all");
-  }, [activeGroupId]);
+  }, [activeDimKey]);
 
-  /* ── Active group's working / missing partitions ── */
+  /* ── Score-card grid: collapse to 2 rows by default (8 cards on
+     desktop @ 4 cols), "Show more" reveals the remainder. ── */
+  const VISIBLE_DEFAULT = 8;
+  const [showAllCards, setShowAllCards] = useState(false);
+  const hasMoreCards = dimensions.length > VISIBLE_DEFAULT;
+  const visibleDimensions = showAllCards
+    ? dimensions
+    : dimensions.slice(0, VISIBLE_DEFAULT);
+  const hiddenCount = dimensions.length - VISIBLE_DEFAULT;
+
+  /* ── Active dimension's working / missing partitions ── */
   const activeWorking = useMemo(
-    () => (activeGroup ? activeGroup.checks.filter((c) => c.passed) : []),
-    [activeGroup],
+    () => (activeDim ? activeDim.checks.filter((c) => c.passed) : []),
+    [activeDim],
   );
   const activeMissing = useMemo(
-    () => (activeGroup ? activeGroup.checks.filter((c) => !c.passed) : []),
-    [activeGroup],
+    () => (activeDim ? activeDim.checks.filter((c) => !c.passed) : []),
+    [activeDim],
   );
   const severityCounts = useMemo(() => {
     const counts = { all: activeMissing.length, critical: 0, major: 0, minor: 0 };
@@ -192,7 +201,9 @@ const AnalysisResults = memo(function AnalysisResults({
               productImage={productImage}
               summary={result.summary}
               categories={result.categories}
-              leaksCount={leaks.length}
+              leaksCount={totalMissing}
+              criticalCount={totalCritical}
+              scopedDimensionKeys={PRODUCT_LEVEL_DIMENSIONS}
             />
 
             {showRevenue && (
@@ -205,8 +216,8 @@ const AnalysisResults = memo(function AnalysisResults({
         </section>
       )}
 
-      {/* ═══ SCORE BREAKDOWN + ACTIVE GROUP DETAIL ═══ */}
-      {showLeaks && groups.length > 0 && (
+      {/* ═══ SCORE BREAKDOWN + ACTIVE DIMENSION DETAIL ═══ */}
+      {showLeaks && dimensions.length > 0 && (
         <div
           ref={issuesRef}
           style={{ animation: "fade-in-up 600ms var(--ease-out-quart) both" }}
@@ -216,20 +227,38 @@ const AnalysisResults = memo(function AnalysisResults({
             <h2 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[var(--ink)] mb-4">
               Score breakdown
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {groups.map((g) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {visibleDimensions.map((d) => (
                 <ScoreCard
-                  key={g.id}
-                  group={g}
-                  selected={g.id === activeGroupId}
-                  onSelect={() => setActiveGroupId(g.id)}
+                  key={d.key}
+                  dim={d}
+                  selected={d.key === activeDimKey}
+                  onSelect={() => setActiveDimKey(d.key)}
                 />
               ))}
             </div>
+            {hasMoreCards && (
+              <div className="mt-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllCards((v) => !v)}
+                  className="text-[13px] font-semibold rounded-full px-4 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]/30"
+                  style={{
+                    color: "var(--ink-2)",
+                    background: "transparent",
+                    border: "1px solid var(--rule-2)",
+                  }}
+                >
+                  {showAllCards
+                    ? "Show less"
+                    : `Show ${hiddenCount} more`}
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Active group detail */}
-          {activeGroup && (
+          {/* Active dimension detail */}
+          {activeDim && (
             <div className="space-y-5">
               {/* Issues found header + severity chips */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -244,7 +273,10 @@ const AnalysisResults = memo(function AnalysisResults({
                     </span>
                   </h3>
                   <p className="text-[12.5px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-                    {activeGroup.label} · {activeGroup.question}
+                    {activeDim.label}
+                    {activeDim.conversionLoss > 0 && (
+                      <> · ~{activeDim.conversionLoss.toFixed(1)}% est. conversion loss</>
+                    )}
                   </p>
                 </div>
                 <SeverityChips
@@ -254,7 +286,7 @@ const AnalysisResults = memo(function AnalysisResults({
                 />
               </div>
 
-              {/* What's working — for the active group */}
+              {/* What's working — for the active dimension */}
               {activeWorking.length > 0 && (
                 <ChecksGroup
                   heading="What's working"
@@ -277,7 +309,7 @@ const AnalysisResults = memo(function AnalysisResults({
                   items={filteredMissing}
                 />
               ) : severityCounts.all === 0 ? (
-                <AllClearBanner label={activeGroup.label} />
+                <AllClearBanner label={activeDim.label} />
               ) : (
                 <EmptyFilter />
               )}
@@ -339,15 +371,15 @@ export default AnalysisResults;
    Selected state: ink border + raised shadow.
    ══════════════════════════════════════════════════════════════ */
 function ScoreCard({
-  group,
+  dim,
   selected,
   onSelect,
 }: {
-  group: ProductGroupView;
+  dim: ProductDimensionGroup;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const Icon = GROUP_ICONS[group.id] ?? PackageIcon;
+  const icon = CATEGORY_SVG[dim.key];
   return (
     <button
       type="button"
@@ -362,21 +394,25 @@ function ScoreCard({
           : "var(--shadow-subtle)",
       }}
     >
-      <ScoreDonut score={group.avgScore}>
-        <Icon size={16} weight="fill" aria-hidden />
+      <ScoreDonut score={dim.score}>
+        {icon && (
+          <span className="flex items-center justify-center" style={{ fontSize: 0 }}>
+            {icon}
+          </span>
+        )}
       </ScoreDonut>
       <div className="flex-1 min-w-0">
         <div
-          className="font-display font-bold text-[15px] leading-tight truncate"
+          className="font-display font-bold text-[14px] leading-tight truncate"
           style={{ color: "var(--ink)" }}
         >
-          {group.label}
+          {dim.label}
         </div>
         <div
           className="font-mono text-[13px] mt-0.5 tabular-nums"
-          style={{ color: scoreColor(group.avgScore) }}
+          style={{ color: scoreColor(dim.score) }}
         >
-          {group.avgScore}/100
+          {dim.score}/100
         </div>
       </div>
     </button>

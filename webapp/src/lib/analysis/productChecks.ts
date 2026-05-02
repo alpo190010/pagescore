@@ -46,7 +46,11 @@ import type {
   TrustSignals,
   VariantUxSignals,
 } from "@/lib/analysis/types";
-import { CATEGORY_LABELS, DIMENSION_GROUPS } from "@/lib/analysis/constants";
+import {
+  CATEGORY_LABELS,
+  DIMENSION_GROUPS,
+  PRODUCT_LEVEL_DIMENSIONS,
+} from "@/lib/analysis/constants";
 
 /* ────────────────────────────────────────────────────────────────
    Grouped output — one entry per dimension. Used by the per-product
@@ -2409,6 +2413,12 @@ export function buildProductDimensions(
   const groups: ProductDimensionGroup[] = [];
 
   for (const [key, build] of Object.entries(DIMENSION_BUILDERS)) {
+    // Only product-scope dimensions appear on the per-product surface.
+    // Store-wide dimensions (pageSpeed, checkout, accessibility, etc.)
+    // are owned by the storewide route — duplicating them here would
+    // confuse users and dilute the storewide page's purpose.
+    if (!PRODUCT_LEVEL_DIMENSIONS.has(key)) continue;
+
     const checks = build(result, leakFor(key));
     if (checks.length === 0) continue;
 

@@ -16,6 +16,14 @@ interface ScoreRingProps {
   categories: CategoryScores;
   leaksCount: number;
   variant?: "compact" | "full";
+  /**
+   * Optional set of dimension keys to scope the Issues / Critical /
+   * Dimensions counters. When provided (e.g. `PRODUCT_LEVEL_DIMENSIONS`
+   * on the per-product surface), the strip only counts dimensions in
+   * this set so store-wide dimensions don't pollute product stats.
+   * Defaults to `ACTIVE_DIMENSIONS` (all 18) when omitted.
+   */
+  scopedDimensionKeys?: ReadonlySet<string>;
 }
 
 const ScoreRing = memo(function ScoreRing({
@@ -29,9 +37,11 @@ const ScoreRing = memo(function ScoreRing({
   categories,
   leaksCount,
   variant = "compact",
+  scopedDimensionKeys,
 }: ScoreRingProps) {
   const full = variant === "full";
-  const activeEntries = Object.entries(categories).filter(([k]) => ACTIVE_DIMENSIONS.has(k));
+  const scope = scopedDimensionKeys ?? ACTIVE_DIMENSIONS;
+  const activeEntries = Object.entries(categories).filter(([k]) => scope.has(k));
   const criticalCount = activeEntries.filter(([, s]) => s < 40).length;
   const ringSize = full ? "w-28 h-28 sm:w-32 sm:h-32" : "w-24 h-24 sm:w-28 sm:h-28";
   const HeadingTag = full ? "h1" : "h2";
