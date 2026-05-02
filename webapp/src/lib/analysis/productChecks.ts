@@ -146,6 +146,8 @@ export function buildSocialProofChecks(
       label: sp.reviewApp ? `Review app: ${sp.reviewApp}` : "No review app detected",
       passed: sp.reviewApp !== null,
       weight: 8,
+      remediation:
+        "Install a review app (Judge.me, Loox, or Yotpo) and turn on the post-purchase email so every fulfilled order gets a review request.",
     },
     {
       id: "socialProof.starRating",
@@ -153,12 +155,13 @@ export function buildSocialProofChecks(
         sp.starRating !== null
           ? `Star rating: ${sp.starRating}/5`
           : "No star rating found",
-      // Optimal range only carries the "passed" badge; matches the original
-      // `starRating !== null` present check while highlighting out-of-range
-      // ratings via the detail string the JSX emitted.
       passed: sp.starRating !== null && starInOptimalRange,
       weight: 8,
       detail: starOutOfRangeDetail,
+      remediation:
+        sp.starRating === null
+          ? "Surface your aggregate rating in the product header — most review apps expose a one-click widget to drop into the theme."
+          : "Aim for 4.2–4.7. If you're below, reply publicly to negative reviews and follow up with happy customers; if you're above 4.7, ask all buyers — perfect averages read as fake.",
     },
     {
       id: "socialProof.reviewCount",
@@ -167,6 +170,8 @@ export function buildSocialProofChecks(
       passed: reviewCount !== null && reviewCount >= 30,
       weight: 8,
       detail: reviewCountDetail,
+      remediation:
+        "Run a 3 / 14 / 30-day post-delivery email sequence asking for a review. Offer a small incentive (loyalty points or 5% off) on the second touch.",
     },
     {
       id: "socialProof.photoReviews",
@@ -174,12 +179,16 @@ export function buildSocialProofChecks(
       passed: sp.hasPhotoReviews,
       weight: 8,
       detail: !sp.hasPhotoReviews ? "Photo reviews boost conversion by 106%" : undefined,
+      remediation:
+        "Offer 50–100 loyalty points or a coupon for photo reviews — every major review app has a built-in photo-incentive flow.",
     },
     {
       id: "socialProof.videoReviews",
       label: "Video reviews",
       passed: sp.hasVideoReviews,
       weight: 3,
+      remediation:
+        "Switch on video uploads in your review app and reach out to your most engaged customers — even one video lifts engagement on the page.",
     },
     {
       id: "socialProof.starAboveFold",
@@ -189,6 +198,8 @@ export function buildSocialProofChecks(
       detail: !sp.starRatingAboveFold
         ? "56% of shoppers check reviews before anything else"
         : undefined,
+      remediation:
+        "Drop the star widget directly under the product title in the theme editor — most themes expose a 'reviews summary' block you can pin above the buy box.",
     },
     {
       id: "socialProof.reviewFiltering",
@@ -198,6 +209,8 @@ export function buildSocialProofChecks(
       detail: !sp.hasReviewFiltering
         ? "Shoppers who filter reviews are 2x more likely to convert"
         : undefined,
+      remediation:
+        "Upgrade to a review app tier that supports filtering by rating / photo / verified-buyer — Yotpo, Stamped, and Judge.me Pro all include it.",
     },
   ];
 
@@ -246,6 +259,8 @@ export function buildStructuredDataChecks(
       detail: !sd.hasProductSchema
         ? "Product schema is required for rich results in Google Shopping"
         : undefined,
+      remediation:
+        "Most Shopify themes ship a Product JSON-LD block — switch it on in theme settings, or paste a Product schema generator's output into theme.liquid. Validate with the Rich Results test.",
     },
     {
       id: "structuredData.requiredFields",
@@ -263,6 +278,8 @@ export function buildStructuredDataChecks(
               .filter(Boolean)
               .join(", ")}`
           : undefined,
+      remediation:
+        "Open the Product JSON-LD block in your theme and confirm `name`, `image`, `description`, and `offers` are wired to the product object — these are the four Google requires for any rich card.",
     },
     {
       id: "structuredData.offersDetail",
@@ -279,6 +296,8 @@ export function buildStructuredDataChecks(
               .filter(Boolean)
               .join(", ")}`
           : undefined,
+      remediation:
+        "Inside the Offer object, populate `price`, `priceCurrency` (ISO 4217 — e.g. USD), and `availability` (`InStock` / `OutOfStock`). Without all three, Google will drop the listing from Shopping results.",
     },
     {
       id: "structuredData.brand",
@@ -290,6 +309,8 @@ export function buildStructuredDataChecks(
         : !sd.hasBrand
           ? "Adding brand improves merchant listing quality"
           : undefined,
+      remediation:
+        "Add `brand: { '@type': 'Brand', name: 'Your Brand' }` to the Product JSON-LD. In Shopify, set the product's vendor field — most themes pipe vendor → brand automatically.",
     },
     {
       id: "structuredData.recommendedFields",
@@ -307,6 +328,8 @@ export function buildStructuredDataChecks(
               .filter(Boolean)
               .join(", ")}`
           : undefined,
+      remediation:
+        "Wire SKU and GTIN/UPC from the variant; expose `aggregateRating` from your review app's structured data block; set `priceValidUntil` if you run scheduled discounts.",
     },
     {
       id: "structuredData.shippingReturns",
@@ -322,6 +345,8 @@ export function buildStructuredDataChecks(
               .filter(Boolean)
               .join(", ")}`
           : undefined,
+      remediation:
+        "Add `shippingDetails` (with `shippingRate` and `deliveryTime`) and `hasMerchantReturnPolicy` to the Offer block. Google now requires both for free Shopping listings.",
     },
     {
       id: "structuredData.breadcrumbList",
@@ -331,6 +356,8 @@ export function buildStructuredDataChecks(
       detail: !sd.hasBreadcrumbList
         ? "Breadcrumbs improve search appearance and click-through rate"
         : undefined,
+      remediation:
+        "Render a BreadcrumbList JSON-LD block alongside Product schema (Home → Collection → Product). Most themes have this as a separate liquid include — enable it in theme settings.",
     },
     {
       id: "structuredData.organization",
@@ -340,6 +367,8 @@ export function buildStructuredDataChecks(
       detail: !sd.hasOrganization
         ? "Organization schema helps Google display business info in search"
         : undefined,
+      remediation:
+        "Add Organization JSON-LD to the homepage layout (`name`, `url`, `logo`, `sameAs` for social profiles). One block in the master layout covers every page.",
     },
   ];
 
@@ -350,6 +379,8 @@ export function buildStructuredDataChecks(
       passed: false,
       weight: 8,
       detail: errorItems.join("; "),
+      remediation:
+        "Run the URL through Google's Rich Results Test (search.google.com/test/rich-results) — it pinpoints which JSON-LD field is rejecting and shows the exact line. Fix one error at a time and re-test.",
     });
   }
 
@@ -621,25 +652,18 @@ export function buildPricingChecks(
   const checks: DimensionCheck[] = [
     {
       id: "pricing.compareAtPrice",
-      label: pr.hasCompareAtPrice
-        ? "Compare-at price detected"
-        : "No compare-at price",
-      passed: pr.hasCompareAtPrice,
+      label:
+        pr.hasCompareAtPrice || pr.hasStrikethroughPrice
+          ? "Price anchoring detected (compare-at / strikethrough)"
+          : "No price anchoring",
+      passed: pr.hasCompareAtPrice || pr.hasStrikethroughPrice,
       weight: 8,
-      detail: !pr.hasCompareAtPrice
-        ? "Strikethrough anchoring produces a 25–40% conversion lift"
-        : undefined,
-    },
-    {
-      id: "pricing.strikethrough",
-      label: pr.hasStrikethroughPrice
-        ? "Strikethrough price present"
-        : "No strikethrough price",
-      passed: pr.hasStrikethroughPrice,
-      weight: 8,
-      detail: !pr.hasStrikethroughPrice
-        ? "Visible original price with strike-through reinforces value"
-        : undefined,
+      detail:
+        !(pr.hasCompareAtPrice || pr.hasStrikethroughPrice)
+          ? "Strikethrough anchoring produces a 25–40% conversion lift"
+          : undefined,
+      remediation:
+        "Set a Compare-at price on each variant in the Shopify admin — most themes auto-render it as a strikethrough next to the sale price. No code change needed.",
     },
     {
       id: "pricing.charmPricing",
@@ -657,6 +681,8 @@ export function buildPricingChecks(
         !pr.hasCharmPricing && pr.isRoundPrice
           ? "MIT field experiments show 24% sales increase from .99 endings"
           : undefined,
+      remediation:
+        "Drop the price by one cent (e.g. $40 → $39.99). For premium positioning, prefer round numbers; for value-driven catalogs, .99 endings consistently outperform.",
     },
     {
       id: "pricing.bnplNearPrice",
@@ -668,24 +694,8 @@ export function buildPricingChecks(
       detail: !pr.hasBnplNearPrice
         ? "'Pay in 4' framing increases conversion 20–35% on items over $50"
         : undefined,
-    },
-    {
-      id: "pricing.klarna",
-      label: "Klarna",
-      passed: pr.hasKlarnaPlacement,
-      weight: 3,
-    },
-    {
-      id: "pricing.afterpay",
-      label: "Afterpay",
-      passed: pr.hasAfterPayBadge,
-      weight: 3,
-    },
-    {
-      id: "pricing.shopPayInstallments",
-      label: "Shop Pay Installments",
-      passed: pr.hasShopPayInstallments,
-      weight: 3,
+      remediation:
+        "Install Shop Pay Installments (free with Shopify Payments), Klarna, or Afterpay and place their messaging block directly under the price — apps include drop-in widgets for every theme.",
     },
     {
       id: "pricing.countdownTimer",
@@ -699,6 +709,9 @@ export function buildPricingChecks(
         : !pr.hasCountdownTimer
           ? "Truthful countdown timers increase conversion up to 17.8%"
           : undefined,
+      remediation: pr.hasFakeTimerRisk
+        ? "Tie the timer to a real promotion end date (e.g. Hextom or Bold Sale Motivator). FTC has begun citing fake-urgency timers — the legal risk isn't worth the lift."
+        : "Run a time-bound promotion (Sale ends midnight Sunday) and surface a real countdown via a Shopify timer app — Hextom Ultimate Sales Boost or Bold Sale Motivator both work.",
     },
     {
       id: "pricing.scarcityMessaging",
@@ -710,6 +723,8 @@ export function buildPricingChecks(
       detail: !pr.hasScarcityMessaging
         ? "Real-time stock levels ('Only 3 left') drive urgency and increase conversions"
         : undefined,
+      remediation:
+        "Surface real inventory below a threshold (e.g. show 'Only N left' when stock < 10). Most scarcity apps (Hurrify, Sales Pop) tie to live inventory — never hardcode a fake number.",
     },
   ];
 
@@ -737,6 +752,8 @@ export function buildImagesChecks(
           : im.imageCount < 5
             ? "Good start, but 5–8 images is optimal for conversion"
             : undefined,
+      remediation:
+        "Add product images covering: front / back / detail / scale-reference / packaging / lifestyle. Brief your photographer (or supplier) for at least 5 distinct angles per SKU.",
     },
     {
       id: "images.video",
@@ -744,6 +761,8 @@ export function buildImagesChecks(
       passed: im.hasVideo,
       weight: 8,
       detail: !im.hasVideo ? "Product video increases add-to-cart by 37%" : undefined,
+      remediation:
+        "Upload a 15–30 second clip showing the product in use to the product gallery (Shopify supports MP4 directly). Even a phone-shot video outperforms a static gallery.",
     },
     {
       id: "images.view360",
@@ -751,6 +770,8 @@ export function buildImagesChecks(
       passed: im.has360View,
       weight: 3,
       detail: !im.has360View ? "360° views increase conversion by 27%" : undefined,
+      remediation:
+        "Use a 360 spin app (Magic 360, Spinify, or WebRotate) — most accept a folder of 24–36 sequenced images. Worth the effort on hero SKUs only.",
     },
     {
       id: "images.zoom",
@@ -760,6 +781,8 @@ export function buildImagesChecks(
       detail: !im.hasZoom
         ? "42% of shoppers gauge size from images (Baymard)"
         : undefined,
+      remediation:
+        "Switch on hover-zoom or click-to-expand in your theme settings — modern Shopify themes (Dawn, Impulse, Prestige) include it by default. Or install Magic Zoom Plus.",
     },
     {
       id: "images.altText",
@@ -772,6 +795,8 @@ export function buildImagesChecks(
           : im.altTextScore < 0.7
             ? "Alt text is decent but could be more descriptive and unique"
             : undefined,
+      remediation:
+        "Edit each image in the product admin and write a unique alt text that includes the product name, color/size, and angle (e.g. 'Navy crew sweater, front view'). Avoid 'image1.jpg'.",
     },
     {
       id: "images.modernFormat",
@@ -783,6 +808,8 @@ export function buildImagesChecks(
       detail: !im.hasModernFormat
         ? "WebP/AVIF saves 25–50% file size vs JPEG"
         : undefined,
+      remediation:
+        "Shopify CDN auto-serves WebP — upgrade to a 2.0+ theme that emits WebP via the `image_url` filter, or install an image-optimizer app (TinyIMG, Crush.pics) to convert in bulk.",
     },
     {
       id: "images.heroQuality",
@@ -794,6 +821,8 @@ export function buildImagesChecks(
       detail: !im.hasHighRes
         ? "Serve images at 1000px+ width for quality zoom experience"
         : undefined,
+      remediation:
+        "Re-upload product images at 2000–3000px on the long edge. Shopify will downscale per breakpoint automatically; you only need to provide the high-res master.",
     },
     {
       id: "images.lifestyle",
@@ -805,6 +834,8 @@ export function buildImagesChecks(
       detail: !im.hasLifestyleImages
         ? "Contextual imagery drives 38% higher conversion"
         : undefined,
+      remediation:
+        "Add 1–2 in-context shots: model wearing the apparel, product in a styled room, food on a plate. Repurposing UGC from Instagram (with permission) is the cheapest source.",
     },
     {
       id: "images.cdn",
@@ -814,6 +845,8 @@ export function buildImagesChecks(
       detail: !im.cdnHosted
         ? "CDN delivery improves page load and global performance"
         : undefined,
+      remediation:
+        "Move images off your origin server. Shopify's built-in CDN handles this for theme-uploaded assets; for third-party-hosted images, route through Cloudflare Images or imgix.",
     },
   ];
 
@@ -839,6 +872,8 @@ export function buildTitleChecks(
       detail: !ti.hasH1
         ? "Products with proper heading hierarchy see 12–15% better CTR"
         : undefined,
+      remediation:
+        "Make sure your theme's product template wraps the product name in `<h1>` (Dawn / Sense / Impulse all do this by default). Don't replace it with `<div class='product-title'>`.",
     },
     {
       id: "title.singleH1",
@@ -851,6 +886,8 @@ export function buildTitleChecks(
           : ti.h1Count === 0
             ? "Every page needs exactly one H1"
             : undefined,
+      remediation:
+        "Audit the theme for stray `<h1>`s in headers, hero blocks, or section titles — demote those to `<h2>` and reserve the H1 for the product name only.",
     },
     {
       id: "title.h1Length",
@@ -861,6 +898,8 @@ export function buildTitleChecks(
         ti.h1Length > 80
           ? `${ti.h1Length - 80} characters over the 80-char limit`
           : undefined,
+      remediation:
+        "Shorten the product name to under 80 characters. Move secondary specs (material, dimensions) into the description; keep the H1 to brand + core product type + key descriptor.",
     },
     {
       id: "title.metaTitleLength",
@@ -873,6 +912,8 @@ export function buildTitleChecks(
         ti.metaTitleLength > 60
           ? `${ti.metaTitleLength - 60} chars over SERP limit — title will be truncated`
           : undefined,
+      remediation:
+        "In the product's SEO section (admin → Search engine listing), write a custom title under 60 chars: `[Product] – [Key Benefit] | [Brand]`. Don't let Shopify auto-generate.",
     },
     {
       id: "title.brandInTitle",
@@ -887,6 +928,8 @@ export function buildTitleChecks(
         !ti.hasBrandInTitle && ti.brandName
           ? "97% of top-performing titles include the brand"
           : undefined,
+      remediation:
+        "Append the brand to the meta title (e.g. 'Trino® Cozy Crew Sweater | Wool & Prince'). Easiest done in the theme's `theme.liquid` — append `| {{ shop.name }}` to `<title>`.",
     },
     {
       id: "title.keywordStuffing",
@@ -898,6 +941,8 @@ export function buildTitleChecks(
       detail: ti.hasKeywordStuffing
         ? "Repeated keywords reduce trust and risk Google penalties"
         : undefined,
+      remediation:
+        "Rewrite the title to read like a human description: each meaningful word should appear at most twice. Replace duplicates with synonyms or remove them entirely.",
     },
     {
       id: "title.allCaps",
@@ -907,6 +952,8 @@ export function buildTitleChecks(
       detail: ti.isAllCaps
         ? "Mixed case is 40% more readable and trustworthy"
         : undefined,
+      remediation:
+        "Switch to title case in the product admin. If your theme is forcing uppercase via CSS (`text-transform: uppercase`), remove that rule from the product-title selector.",
     },
     {
       id: "title.promotionalText",
@@ -918,6 +965,8 @@ export function buildTitleChecks(
       detail: ti.hasPromotionalText
         ? "SEO titles should describe the product, not the deal"
         : undefined,
+      remediation:
+        "Strip 'SALE', 'NEW', or 'FREE SHIPPING' from the product title — those belong on a banner or badge, not in metadata Google indexes for search.",
     },
     {
       id: "title.h1MetaDiffer",
@@ -930,6 +979,8 @@ export function buildTitleChecks(
         !ti.h1MetaDiffer && ti.hasH1 && ti.metaTitle
           ? "Optimize meta title for SERP display separately from the on-page H1"
           : undefined,
+      remediation:
+        "Set a custom Page Title in the product's Search engine listing section that's optimized for click-through (include benefit + brand), distinct from the on-page H1.",
     },
     {
       id: "title.specifics",
@@ -941,6 +992,8 @@ export function buildTitleChecks(
       detail: !ti.hasSpecifics
         ? "Adding color, size, or material improves search specificity"
         : undefined,
+      remediation:
+        "Bake one or two concrete specs into the title — e.g. 'Merino Wool Crew Sweater – Navy' beats 'Cozy Crew Sweater'. Pick the spec shoppers Google for.",
     },
   ];
 
@@ -968,6 +1021,8 @@ export function buildDescriptionChecks(
       detail: !de.descriptionFound
         ? "87% of shoppers consider descriptions the most important purchase factor"
         : undefined,
+      remediation:
+        "Open the product in admin and paste at least one paragraph (~100 words) into the Description field. Lead with the problem this product solves, then list specs.",
     },
     {
       id: "description.wordCount",
@@ -984,6 +1039,10 @@ export function buildDescriptionChecks(
               : de.wordCount > 400
                 ? "Slightly long — 100–400 words is the sweet spot"
                 : undefined,
+      remediation:
+        de.wordCount > 400
+          ? "Trim to 100–400 words. Move spec tables, FAQs, and care instructions into expandable sections below the main copy."
+          : "Expand to at least 100 words: 1 hook line, 3 benefit bullets, 1 paragraph of detail, 1 reassurance line. Don't pad — every line should answer a buyer question.",
     },
     {
       id: "description.readingLevel",
@@ -996,6 +1055,10 @@ export function buildDescriptionChecks(
           : de.fleschKincaidGrade < 4 && de.descriptionFound
             ? "Very simple — grade 6–8 is the target"
             : undefined,
+      remediation:
+        de.fleschKincaidGrade > 10
+          ? "Run the copy through Hemingway Editor and rewrite anything flagged red. Replace technical synonyms with everyday words ('utilize' → 'use', 'commence' → 'start')."
+          : "Add a touch more substance — concrete sensory detail and richer noun phrases will lift the reading level into the 6–8 sweet spot without making it harder to read.",
     },
     {
       id: "description.avgSentence",
@@ -1008,6 +1071,10 @@ export function buildDescriptionChecks(
           : de.avgSentenceLength < 8 && de.descriptionFound
             ? "Sentences are very short — 10–20 words is ideal"
             : undefined,
+      remediation:
+        de.avgSentenceLength > 20
+          ? "Find any sentence over 25 words and break it at the conjunction (' and ', ' but ', ' which '). Two clear sentences always beat one long one."
+          : "Combine choppy sentences with a comma or conjunction — but only when ideas naturally flow. Don't pad; just ensure rhythm varies.",
     },
     {
       id: "description.benefitRatio",
@@ -1020,6 +1087,10 @@ export function buildDescriptionChecks(
           : de.benefitRatio > 0.7 && de.benefitWordCount + de.featureWordCount > 3
             ? "Add more feature details — shoppers need specs to confirm their decision"
             : undefined,
+      remediation:
+        de.benefitRatio < 0.3
+          ? "Rewrite each feature bullet as a benefit using the 'so you can…' test. ('Merino wool' → 'Merino wool stays warm even when wet — so you can hike all day.')"
+          : "Add a concrete spec table or bullet list: dimensions, weight, materials, warranty terms. Buyers need spec confirmation before they hit Add to Cart.",
     },
     {
       id: "description.emotional",
@@ -1030,6 +1101,8 @@ export function buildDescriptionChecks(
         de.emotionalDensity < 0.01 && de.descriptionFound
           ? "Copy feels flat — 3–8% emotional words drives higher engagement"
           : undefined,
+      remediation:
+        "Sprinkle in 2–4 sensory or emotional words (cozy, butter-soft, effortless, dependable). Match the brand voice — luxury skews calm; outdoors skews bold; baby skews tender.",
     },
     {
       id: "description.htmlVariety",
@@ -1042,6 +1115,8 @@ export function buildDescriptionChecks(
           : de.htmlTagVariety < 4 && de.descriptionFound
             ? "Basic formatting — add more variety for better scannability"
             : undefined,
+      remediation:
+        "In the rich-text editor, add at least: 1 H2 heading, 1 bulleted list, 1 bold key phrase, and 1 image. That mix alone hits 4 tag types and makes the copy scannable.",
     },
     {
       id: "description.structure",
@@ -1061,6 +1136,8 @@ export function buildDescriptionChecks(
           : !de.hasBulletLists && de.descriptionFound
             ? "Add bullet points — only 16% of users read word-for-word"
             : undefined,
+      remediation:
+        "Restructure the copy as: H2 'What it does' + benefit bullets, H2 'Specs' + spec bullets, H2 'In the box' + included items. Use the editor's Heading 2 / List buttons.",
     },
   ];
 
@@ -1452,6 +1529,8 @@ export function buildMobileCtaChecks(
       detail: !mc.ctaFound
         ? "A visible Add to Cart button is essential for conversion"
         : undefined,
+      remediation:
+        "Inspect the product template — the Add to Cart button may be hidden behind a JS-only flow or sold-out flag. Restore a visible `<button name='add'>` rendered in the initial HTML.",
     },
     {
       id: "mobileCta.viewportMeta",
@@ -1463,6 +1542,8 @@ export function buildMobileCtaChecks(
       detail: !mc.hasViewportMeta
         ? "Viewport meta is required for proper mobile rendering"
         : undefined,
+      remediation:
+        "Add `<meta name='viewport' content='width=device-width, initial-scale=1'>` to the `<head>` in `theme.liquid`. Without it, mobile browsers render at desktop width and zoom out.",
     },
     {
       id: "mobileCta.responsiveMeta",
@@ -1474,6 +1555,8 @@ export function buildMobileCtaChecks(
       detail: !mc.hasResponsiveMeta
         ? "Use width=device-width for responsive layout"
         : undefined,
+      remediation:
+        "Update the viewport tag to include `width=device-width, initial-scale=1`. Avoid `user-scalable=no` — it's an accessibility violation on iOS.",
     },
     {
       id: "mobileCta.tapTarget",
@@ -1493,6 +1576,8 @@ export function buildMobileCtaChecks(
           : mc.meetsMin44px === true && !mc.meetsOptimal60_72px
             ? "Meets minimum but 60–72px height converts better on mobile"
             : undefined,
+      remediation:
+        "In your theme's CSS, set the buy button's `min-height` to 56–64px on mobile (`@media (max-width: 749px)`). Add `padding: 18px 24px` for comfortable tap area.",
     },
     {
       id: "mobileCta.aboveFold",
@@ -1508,6 +1593,8 @@ export function buildMobileCtaChecks(
         mc.aboveFold === false
           ? "70% of mobile users never scroll — keep CTA visible immediately"
           : undefined,
+      remediation:
+        "Tighten the mobile product layout: reduce hero image height, hide secondary specs behind an accordion, and ensure the Add to Cart button lives within the first 750px of viewport.",
     },
     {
       id: "mobileCta.sticky",
@@ -1519,6 +1606,8 @@ export function buildMobileCtaChecks(
         : mc.hasStickyApp
           ? `via ${mc.hasStickyApp}`
           : undefined,
+      remediation:
+        "Install a sticky buy button (Hextom Sticky Add to Cart, Sticky Buy Button by ShopPad) or add `position: sticky; bottom: 0` to a duplicate ATC bar at mobile breakpoints.",
     },
     {
       id: "mobileCta.fullWidth",
@@ -1529,6 +1618,8 @@ export function buildMobileCtaChecks(
         mc.isFullWidth === false
           ? "Full-width buttons are easier to tap on mobile"
           : undefined,
+      remediation:
+        "Set `width: 100%` on the buy button at mobile breakpoints in your theme's CSS — full-width is the modern Shopify default and reduces miss-taps.",
     },
     {
       id: "mobileCta.thumbZone",
@@ -1544,6 +1635,8 @@ export function buildMobileCtaChecks(
         mc.inThumbZone === false
           ? "Place primary CTA in the bottom-center thumb zone for one-handed use"
           : undefined,
+      remediation:
+        "Use a sticky bottom-bar that pins the buy button within the bottom 200px of viewport — the natural reach zone for one-handed use on phones over 6'.",
     },
   ];
 
@@ -1568,6 +1661,8 @@ export function buildCrossSellChecks(
       detail: !cs.hasCrossSellSection
         ? "Cross-sell recommendations increase AOV by 10–30%"
         : undefined,
+      remediation:
+        "Add a 'You might also like' or 'Frequently bought together' block below the main product details. Shopify's built-in `recommended_products` API or apps like ReConvert or Frequently Bought Together both work.",
     },
   ];
 
@@ -1600,6 +1695,10 @@ export function buildCrossSellChecks(
           : !cs.recommendationCountOptimal
             ? "Optimal is 3–6 recommendations — too many causes decision fatigue"
             : undefined,
+      remediation:
+        cs.productCount === 0
+          ? "Hand-curate or auto-populate 3–6 complementary items via Shopify's product recommendations API. Pin the highest-margin SKUs as fallback."
+          : "Trim the recommendation rail to 3–6 products. Use Search & Discovery's manual rules to demote slow-movers and promote attach products.",
     },
     {
       id: "crossSell.bundlePricing",
@@ -1610,6 +1709,8 @@ export function buildCrossSellChecks(
         !cs.hasBundlePricing && cs.hasCrossSellSection
           ? "Bundle discounts increase cross-sell acceptance 25%"
           : undefined,
+      remediation:
+        "Build a bundle through Shopify's native Bundles app (free) or Frequently Bought Together. Show the combined price with the bundle savings called out.",
     },
     {
       id: "crossSell.bundleDiscount",
@@ -1622,6 +1723,8 @@ export function buildCrossSellChecks(
         !cs.hasDiscountOnBundle && cs.hasCrossSellSection
           ? "'Save 15% when bought together' is a proven conversion driver"
           : undefined,
+      remediation:
+        "Apply a 10–15% automatic discount when both items are in cart (Shopify Functions or apps like Bundler). Surface the savings as a callout: 'Save $12 when bundled.'",
     },
     {
       id: "crossSell.addAllToCart",
@@ -1634,6 +1737,8 @@ export function buildCrossSellChecks(
         !cs.hasAddAllToCart && cs.hasCrossSellSection
           ? "One-click bundle add reduces friction"
           : undefined,
+      remediation:
+        "Pick a cross-sell app that supports a single 'Add Bundle to Cart' button (FBT by Code Black Belt, ReConvert). Avoid making shoppers click each item individually.",
     },
     {
       id: "crossSell.checkboxSelection",
@@ -1646,6 +1751,8 @@ export function buildCrossSellChecks(
         !cs.hasCheckboxSelection && cs.hasCrossSellSection
           ? "Let shoppers pick which items to add"
           : undefined,
+      remediation:
+        "Use a 'Frequently Bought Together' widget that lets shoppers tick which add-ons they want. The total price updates live as boxes are checked.",
     },
     {
       id: "crossSell.nearBuyButton",
@@ -1658,6 +1765,8 @@ export function buildCrossSellChecks(
         !cs.nearBuyButton && cs.hasCrossSellSection
           ? "Proximity to the Buy button drives higher engagement"
           : undefined,
+      remediation:
+        "Move the cross-sell rail directly above or below the Add to Cart button (not at the bottom of the page). Most theme editors let you drag sections to reorder.",
     },
   );
 
@@ -1679,6 +1788,8 @@ export function buildVariantUxChecks(
         : "No product variants found",
       passed: vu.hasVariants,
       weight: 8,
+      remediation:
+        "If this product comes in multiple sizes or colors, configure them as variants in the admin (Shopify → Product → Variants). For single-SKU products, ignore this check.",
     },
     {
       id: "variantUx.visualSwatches",
@@ -1687,19 +1798,12 @@ export function buildVariantUxChecks(
       weight: 8,
       detail:
         !vu.hasVisualSwatches && vu.hasVariants
-          ? "Visual swatches increase engagement 26% vs text-only selectors"
+          ? vu.colorUsesDropdown
+            ? "Replace the color dropdown with visual swatches — 60% of shoppers prefer them"
+            : "Visual swatches increase engagement 26% vs text-only selectors"
           : undefined,
-    },
-    {
-      id: "variantUx.colorDropdown",
-      label: vu.colorUsesDropdown
-        ? "Color uses dropdown (not ideal)"
-        : "Color not using dropdown",
-      passed: !vu.colorUsesDropdown,
-      weight: 3,
-      detail: vu.colorUsesDropdown
-        ? "Replace color dropdowns with visual swatches — 60% of shoppers prefer them"
-        : undefined,
+      remediation:
+        "Switch on color swatches in the theme editor (Dawn 13+, Sense, Impulse, Prestige all support them) or install Swatch King / Variant Image Wizard. Upload a small color square per variant.",
     },
     {
       id: "variantUx.variantImageLink",
@@ -1712,6 +1816,8 @@ export function buildVariantUxChecks(
         !vu.hasVariantImageLink && vu.hasVariants
           ? "Linking variants to images reduces return rate 5–10%"
           : undefined,
+      remediation:
+        "On each variant in the admin, set 'Image' to the matching photo. Most themes auto-swap the gallery; if yours doesn't, install Variant Image Wizard.",
     },
     {
       id: "variantUx.stockIndicator",
@@ -1722,6 +1828,8 @@ export function buildVariantUxChecks(
         !vu.hasStockIndicator && vu.hasVariants
           ? "Per-variant stock status reduces disappointment at checkout"
           : undefined,
+      remediation:
+        "Show 'In stock' / 'Low stock' / 'Sold out' next to the variant selector. Most themes have an `inventory_management` block — enable it in section settings.",
     },
     {
       id: "variantUx.lowStockUrgency",
@@ -1734,6 +1842,8 @@ export function buildVariantUxChecks(
         !vu.hasLowStockUrgency && vu.hasVariants
           ? "'Only 3 left' messaging drives urgency and faster decisions"
           : undefined,
+      remediation:
+        "Surface real inventory below a threshold (show 'Only N left' when stock < 5). Most stock-indicator themes already support this — switch on the threshold in section settings.",
     },
     {
       id: "variantUx.soldOutHandling",
@@ -1746,6 +1856,8 @@ export function buildVariantUxChecks(
         !vu.hasSoldOutHandling && vu.hasVariants
           ? "Gray out or label sold-out variants instead of hiding them"
           : undefined,
+      remediation:
+        "In section settings, enable 'Show sold-out variants as disabled' (rather than hiding them). Add CSS `.swatch.unavailable { opacity: 0.4; text-decoration: line-through }`.",
     },
     {
       id: "variantUx.notifyMe",
@@ -1758,6 +1870,8 @@ export function buildVariantUxChecks(
         !vu.hasNotifyMe && vu.hasVariants
           ? "Back-in-stock alerts recover 5–15% of otherwise lost sales"
           : undefined,
+      remediation:
+        "Install a back-in-stock app (Klaviyo Back in Stock, Restock Rocket, or Notify Me) — they replace the disabled 'Sold Out' button with a 'Notify Me' email-capture form.",
     },
   ];
 
@@ -1790,6 +1904,8 @@ export function buildSizeGuideChecks(
         !sg.hasSizeGuideLink && sg.categoryApplicable
           ? "Size guides reduce returns by 32% in apparel/footwear"
           : undefined,
+      remediation:
+        "Add a 'Size guide' link directly under the size selector. In Shopify, create a snippet `size-guide.liquid` with the chart and include it via a modal trigger.",
     },
     {
       id: "sizeGuide.popup",
@@ -1802,6 +1918,8 @@ export function buildSizeGuideChecks(
         !sg.hasSizeGuidePopup && sg.hasSizeGuideLink
           ? "Popup keeps shoppers on the product page while checking sizing"
           : undefined,
+      remediation:
+        "Wrap the size guide in a modal overlay (most themes ship a `<details>` or modal helper) — never link to a separate page; you'll lose the buying context.",
     },
     {
       id: "sizeGuide.chartTable",
@@ -1814,6 +1932,8 @@ export function buildSizeGuideChecks(
         !sg.hasSizeChartTable && sg.categoryApplicable
           ? "Comparison tables make size selection faster and more confident"
           : undefined,
+      remediation:
+        "Inside the size guide, render an actual `<table>` with rows for each size and columns for chest/waist/length. Include both inches and cm — international shoppers thank you.",
     },
     {
       id: "sizeGuide.fitFinder",
@@ -1824,6 +1944,8 @@ export function buildSizeGuideChecks(
         !sg.hasFitFinder && sg.categoryApplicable
           ? "Interactive fit finders increase conversion 20% and reduce returns"
           : undefined,
+      remediation:
+        "Install a fit-finder app like Kiwi Sizing or True Fit — they ask 3–5 quick questions (height/weight/preferred fit) and recommend a size. Worth the cost on apparel SKUs.",
     },
     {
       id: "sizeGuide.modelMeasurements",
@@ -1836,6 +1958,8 @@ export function buildSizeGuideChecks(
         !sg.hasModelMeasurements && sg.categoryApplicable
           ? "'Model is 5'10\" wearing size M' gives a concrete reference point"
           : undefined,
+      remediation:
+        "Add a one-line note under the gallery or in the description: 'Model is 5'10\" / 178cm wearing size M.' Shoppers anchor their own size against the model.",
     },
     {
       id: "sizeGuide.fitRecommendation",
@@ -1848,6 +1972,8 @@ export function buildSizeGuideChecks(
         !sg.hasFitRecommendation && sg.categoryApplicable
           ? "'Runs true to size' or 'Order one size up' reduces hesitation"
           : undefined,
+      remediation:
+        "Bake one short fit line into the description: 'True to size,' 'Runs small — order one size up,' or 'Relaxed fit.' Lean on actual return data to phrase it accurately.",
     },
     {
       id: "sizeGuide.measurementInstructions",
@@ -1860,6 +1986,8 @@ export function buildSizeGuideChecks(
         !sg.hasMeasurementInstructions && sg.categoryApplicable
           ? "Self-measurement guides reduce sizing errors"
           : undefined,
+      remediation:
+        "In the size-guide modal, add a 'How to measure' section with a labelled diagram and bullet instructions for chest, waist, hips, inseam. Reusable across the catalog.",
     },
     {
       id: "sizeGuide.nearSizeSelector",
@@ -1872,6 +2000,8 @@ export function buildSizeGuideChecks(
         !sg.nearSizeSelector && sg.hasSizeGuideLink
           ? "Place the size guide link directly next to the size dropdown"
           : undefined,
+      remediation:
+        "In the variant-picker template, render the size-guide trigger inline with the size label (`Size [Size guide ›]`). It's the moment shoppers actually need it.",
     },
   ];
 
@@ -2051,6 +2181,8 @@ export function buildContentFreshnessChecks(
         cf.copyrightYear && !cf.copyrightYearIsCurrent
           ? "Outdated copyright year makes the site look abandoned"
           : undefined,
+      remediation:
+        "Replace the hardcoded year in the footer with `{{ 'now' | date: '%Y' }}` (Liquid) or `new Date().getFullYear()` (JS) so it auto-updates every January 1st.",
     },
     {
       id: "contentFreshness.expiredPromotion",
@@ -2064,6 +2196,8 @@ export function buildContentFreshnessChecks(
           ? `"${cf.expiredPromotionText.slice(0, 60)}${cf.expiredPromotionText.length > 60 ? "…" : ""}"`
           : "Expired deals erode trust — remove or update them"
         : undefined,
+      remediation:
+        "Search the page for the dated promo copy and either remove it or schedule a recurring announcement-bar campaign so the call-out stays in sync with active sales.",
     },
     {
       id: "contentFreshness.seasonalMismatch",
@@ -2075,6 +2209,8 @@ export function buildContentFreshnessChecks(
       detail: cf.hasSeasonalMismatch
         ? "Off-season promotions make the page look neglected"
         : undefined,
+      remediation:
+        "Set up Shopify's scheduled publishing on seasonal banners and product copy. Add a recurring calendar reminder to swap holiday/season callouts within 7 days of the date.",
     },
     {
       id: "contentFreshness.newLabel",
@@ -2088,6 +2224,9 @@ export function buildContentFreshnessChecks(
       detail: cf.newLabelIsStale
         ? "Remove 'New' badges from products older than 90 days"
         : undefined,
+      remediation: cf.newLabelIsStale
+        ? "Use a dynamic 'New' badge that auto-expires (most badge apps tag based on product `published_at`). Set the threshold to 90 days from publish date."
+        : "Add a 'New' badge tied to product publish date. Frame it tightly — 30–60 days max — so the label always feels meaningful.",
     },
     {
       id: "contentFreshness.latestReview",
@@ -2102,26 +2241,8 @@ export function buildContentFreshnessChecks(
           : cf.reviewStaleness === "moderate"
             ? "Recent reviews would strengthen trust — consider a review request campaign"
             : undefined,
-    },
-    {
-      id: "contentFreshness.dateModified",
-      label: cf.dateModifiedIso
-        ? `Last modified: ${ageLabel(cf.dateModifiedAgeDays) ?? cf.dateModifiedIso.slice(0, 10)}`
-        : "No dateModified in schema",
-      passed: cf.dateModifiedAgeDays != null && cf.dateModifiedAgeDays < 180,
-      weight: 3,
-      detail:
-        cf.dateModifiedAgeDays != null && cf.dateModifiedAgeDays > 365
-          ? "Schema shows content unchanged for over a year — search engines notice"
-          : undefined,
-    },
-    {
-      id: "contentFreshness.lastModifiedHeader",
-      label: cf.lastModifiedHeader
-        ? `Last-Modified header: ${ageLabel(cf.lastModifiedAgeDays) ?? cf.lastModifiedHeader}`
-        : "No Last-Modified HTTP header",
-      passed: cf.lastModifiedAgeDays != null && cf.lastModifiedAgeDays < 180,
-      weight: 3,
+      remediation:
+        "Re-engage past customers with a one-time review-request email targeting orders from the last 6 months. Offer a small loyalty incentive (50 points, 5% off) for completing a review.",
     },
     {
       id: "contentFreshness.freshestSignal",
@@ -2135,6 +2256,8 @@ export function buildContentFreshnessChecks(
         cf.freshestSignalAgeDays != null && cf.freshestSignalAgeDays > 365
           ? "All content signals are over a year old — page appears dormant to both users and AI"
           : undefined,
+      remediation:
+        "Touch the product page at least once per quarter — refresh a hero image, update copy, or post a new review. Schedule a recurring task in your project tool to keep the page from going dormant.",
     },
   ];
 

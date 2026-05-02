@@ -13,7 +13,7 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
  *   - PADDLE_CLIENT_TOKEN       — public client-side token from Paddle dashboard
  *   - PADDLE_ENVIRONMENT        — "sandbox" | "production"
  *   - PADDLE_PRICE_STARTER_MONTHLY — pri_... for $29/mo
- *   - PADDLE_PRICE_STARTER_ANNUAL  — pri_... for $278/yr
+ *   - PADDLE_PRICE_STARTER_ANNUAL  — pri_... for ~$139/yr (60% off monthly)
  */
 
 const CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";

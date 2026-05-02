@@ -40,7 +40,7 @@ interface PricingTier {
   comingSoon?: boolean;
 }
 
-const ANNUAL_DISCOUNT = 0.2; // 20 % off when billed annually
+const ANNUAL_DISCOUNT = 0.6; // 60 % off when billed annually
 const annualTotal = (monthly: number) =>
   Math.round(monthly * 12 * (1 - ANNUAL_DISCOUNT));
 
@@ -100,7 +100,7 @@ const TIERS: PricingTier[] = [
 ];
 
 export default function PricingPlans() {
-  const [billing, setBilling] = useState<Billing>("monthly");
+  const [billing, setBilling] = useState<Billing>("annual");
   const { data: session, status } = useSession();
 
   // The session JWT bakes `plan_tier` in at sign-in, so admin changes to a
@@ -132,56 +132,11 @@ export default function PricingPlans() {
   return (
     <section className="pb-16 sm:pb-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-8">
-        {/* Monthly ↔ Annual toggle */}
-        <div className="flex justify-center mb-10">
-          <div
-            role="tablist"
-            aria-label="Billing cadence"
-            className="inline-flex items-center p-1 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-sm font-semibold"
-          >
-            <button
-              role="tab"
-              type="button"
-              aria-selected={billing === "monthly"}
-              onClick={() => setBilling("monthly")}
-              className={`px-5 py-2 rounded-full transition-colors ${
-                billing === "monthly"
-                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
-                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              role="tab"
-              type="button"
-              aria-selected={billing === "annual"}
-              onClick={() => setBilling("annual")}
-              className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-2 ${
-                billing === "annual"
-                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
-                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
-              }`}
-            >
-              Annual
-              <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  billing === "annual"
-                    ? "bg-[var(--paper)] text-[var(--brand)]"
-                    : "bg-[var(--success-light)] text-[var(--success-text)]"
-                }`}
-              >
-                Save 20%
-              </span>
-            </button>
-          </div>
-        </div>
-
         {/* Tier grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
           {TIERS.map((tier) => {
             const isFree = tier.priceMonthly === 0;
-            const showAnnual = billing === "annual" && !isFree;
+            const showAnnual = billing === "annual" && tier.key === "starter";
             const displayMonthly = showAnnual
               ? Math.round(tier.priceAnnualTotal / 12)
               : tier.priceMonthly;
@@ -260,8 +215,53 @@ export default function PricingPlans() {
                           / month
                         </span>
                       </div>
+                      {tier.key === "starter" && (
+                        <div className="mt-3">
+                          <div
+                            role="tablist"
+                            aria-label="Starter billing cadence"
+                            className="inline-flex items-center p-0.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-xs font-semibold"
+                          >
+                            <button
+                              role="tab"
+                              type="button"
+                              aria-selected={billing === "monthly"}
+                              onClick={() => setBilling("monthly")}
+                              className={`px-3 py-1 rounded-full transition-colors ${
+                                billing === "monthly"
+                                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
+                                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
+                              }`}
+                            >
+                              Monthly
+                            </button>
+                            <button
+                              role="tab"
+                              type="button"
+                              aria-selected={billing === "annual"}
+                              onClick={() => setBilling("annual")}
+                              className={`px-3 py-1 rounded-full transition-colors inline-flex items-center gap-1.5 ${
+                                billing === "annual"
+                                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
+                                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
+                              }`}
+                            >
+                              Annual
+                              <span
+                                className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                                  billing === "annual"
+                                    ? "bg-[var(--paper)] text-[var(--brand)]"
+                                    : "bg-[var(--success-light)] text-[var(--success-text)]"
+                                }`}
+                              >
+                                Save 60%
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {showAnnual && (
-                        <div className="text-xs text-[var(--on-surface-variant)] mt-1">
+                        <div className="text-xs text-[var(--on-surface-variant)] mt-2">
                           Billed ${tier.priceAnnualTotal} / year
                         </div>
                       )}
