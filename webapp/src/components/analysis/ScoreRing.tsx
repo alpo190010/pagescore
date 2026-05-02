@@ -17,13 +17,21 @@ interface ScoreRingProps {
   leaksCount: number;
   variant?: "compact" | "full";
   /**
-   * Optional set of dimension keys to scope the Issues / Critical /
-   * Dimensions counters. When provided (e.g. `PRODUCT_LEVEL_DIMENSIONS`
-   * on the per-product surface), the strip only counts dimensions in
-   * this set so store-wide dimensions don't pollute product stats.
-   * Defaults to `ACTIVE_DIMENSIONS` (all 18) when omitted.
+   * Optional set of dimension keys to scope the Dimensions counter.
+   * When provided (e.g. `PRODUCT_LEVEL_DIMENSIONS` on the per-product
+   * surface), only dimensions in this set are counted so store-wide
+   * dimensions don't pollute product stats. Defaults to
+   * `ACTIVE_DIMENSIONS` (all 18) when omitted.
    */
   scopedDimensionKeys?: ReadonlySet<string>;
+  /**
+   * Optional explicit critical-issue count. When provided, overrides
+   * the legacy fallback (count of dimensions with `score < 40`).
+   * The per-product surface passes the count of failing checks whose
+   * severity is critical (weight ≥ 15) so the strip reflects actual
+   * issue severity rather than per-dimension scoring buckets.
+   */
+  criticalCount?: number;
 }
 
 const ScoreRing = memo(function ScoreRing({
@@ -38,11 +46,13 @@ const ScoreRing = memo(function ScoreRing({
   leaksCount,
   variant = "compact",
   scopedDimensionKeys,
+  criticalCount: criticalCountProp,
 }: ScoreRingProps) {
   const full = variant === "full";
   const scope = scopedDimensionKeys ?? ACTIVE_DIMENSIONS;
   const activeEntries = Object.entries(categories).filter(([k]) => scope.has(k));
-  const criticalCount = activeEntries.filter(([, s]) => s < 40).length;
+  const criticalCount =
+    criticalCountProp ?? activeEntries.filter(([, s]) => s < 40).length;
   const ringSize = full ? "w-28 h-28 sm:w-32 sm:h-32" : "w-24 h-24 sm:w-28 sm:h-28";
   const HeadingTag = full ? "h1" : "h2";
 
