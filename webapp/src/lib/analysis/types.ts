@@ -486,6 +486,13 @@ export interface DimensionCheck {
    * disclosure drawer.
    */
   rules?: AccessibilityRule[] | null;
+  /**
+   * Optional Page Speed signals payload. When present on a failing
+   * row, the disclosure drawer renders <PageSpeedScorecard> above
+   * any remediation/code so the rich CWV tile UI is preserved
+   * inside the flat product-page checks list.
+   */
+  pageSpeedSignals?: PageSpeedSignals;
 }
 
 export interface StoreAnalysisData {

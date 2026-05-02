@@ -4,31 +4,62 @@ import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { useSession } from "next-auth/react";
 import {
   ArrowsClockwiseIcon,
-  CaretDownIcon,
+  CursorClickIcon,
+  LightningIcon,
+  MagnifyingGlassIcon,
+  PackageIcon,
+  ShieldCheckIcon,
+  type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import {
   type FreeResult,
   type LeakCard,
   useCountUp,
   captureEvent,
-  groupLeaks,
   scoreColor,
-  scoreColorTintBg,
   calculateDollarLossPerThousand,
   splitLeaksByScope,
 } from "@/lib/analysis";
+import {
+  buildProductGroups,
+  type ProductGroupView,
+} from "@/lib/analysis/productChecks";
 import { API_URL } from "@/lib/api";
 import { authFetch } from "@/lib/auth-fetch";
 import Button from "@/components/ui/Button";
-import CollapsibleRegion from "@/components/ui/CollapsibleRegion";
 import ScoreRing from "@/components/analysis/ScoreRing";
 import PluginCTACard from "@/components/analysis/PluginCTACard";
-import IssueCard from "@/components/analysis/IssueCard";
 import CTACard from "@/components/analysis/CTACard";
+import ChecksGroup from "@/components/checks/ChecksGroup";
+import { severityFor, type Severity } from "@/components/checks/severity";
 
 /* ══════════════════════════════════════════════════════════════
-   AnalysisResults — Complete results display for right-pane
+   AnalysisResults — per-product page health.
+
+   Layout (top-to-bottom):
+     1. Score ring + revenue summary
+     2. "Score breakdown" grid — one card per thematic dimension
+        group (DIMENSION_GROUPS), sorted worst→best, first selected
+        by default. Click to switch the active group.
+     3. "What's working" + "Issues found" lists for the active
+        group. Severity chips (All / Critical / Major / Minor)
+        filter the issues list. Visuals reuse the storewide
+        ChecksGroup / CheckRow primitive.
+     4. Analyze again CTA
    ══════════════════════════════════════════════════════════════ */
+
+type SeverityFilter = "all" | Severity;
+
+/* Per-thematic-group icons. Keyed by `DIMENSION_GROUPS[].id`. The
+   icon sits inside the donut ring on each ScoreCard — the ring
+   reads the score visually, the icon reads the category. */
+const GROUP_ICONS: Record<string, PhosphorIcon> = {
+  buying: PackageIcon,
+  trust: ShieldCheckIcon,
+  conversion: CursorClickIcon,
+  discovery: MagnifyingGlassIcon,
+  technical: LightningIcon,
+};
 
 interface AnalysisResultsProps {
   result: FreeResult;
@@ -77,39 +108,65 @@ const AnalysisResults = memo(function AnalysisResults({
   const [showLeaks, setShowLeaks] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
 
-  /* ── Product-specific leaks only (store-wide shown in the left-column StoreHealth card) ── */
+  /* ── Product-only leaks ── */
   const { productLeaks } = useMemo(() => splitLeaksByScope(leaks), [leaks]);
 
-  /* ── Grouped leaks (product-specific only) ── */
-  const grouped = useMemo(() => groupLeaks(productLeaks), [productLeaks]);
+  /* ── Thematic group view (drives the Score breakdown grid) ── */
+  const groups = useMemo(
+    () => buildProductGroups(result, productLeaks),
+    [result, productLeaks],
+  );
+
+  const totalMissing = useMemo(
+    () =>
+      groups.reduce(
+        (sum, g) => sum + g.checks.filter((c) => !c.passed).length,
+        0,
+      ),
+    [groups],
+  );
+  const everythingPassing = groups.length > 0 && totalMissing === 0;
+
+  /* ── Active group selection ── */
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  useEffect(() => {
+    if (groups.length > 0 && (!activeGroupId || !groups.some((g) => g.id === activeGroupId))) {
+      setActiveGroupId(groups[0].id);
+    }
+  }, [groups, activeGroupId]);
+  const activeGroup =
+    groups.find((g) => g.id === activeGroupId) ?? groups[0] ?? null;
+
+  /* ── Severity chip filter (resets when active group changes) ── */
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  useEffect(() => {
+    setSeverityFilter("all");
+  }, [activeGroupId]);
+
+  /* ── Active group's working / missing partitions ── */
+  const activeWorking = useMemo(
+    () => (activeGroup ? activeGroup.checks.filter((c) => c.passed) : []),
+    [activeGroup],
+  );
+  const activeMissing = useMemo(
+    () => (activeGroup ? activeGroup.checks.filter((c) => !c.passed) : []),
+    [activeGroup],
+  );
+  const severityCounts = useMemo(() => {
+    const counts = { all: activeMissing.length, critical: 0, major: 0, minor: 0 };
+    for (const c of activeMissing) counts[severityFor(c.weight)] += 1;
+    return counts;
+  }, [activeMissing]);
+  const filteredMissing = useMemo(() => {
+    if (severityFilter === "all") return activeMissing;
+    return activeMissing.filter((c) => severityFor(c.weight) === severityFilter);
+  }, [activeMissing, severityFilter]);
 
   /* ── Dollar loss for PluginCTACard ── */
   const dollarLoss = useMemo(
     () => calculateDollarLossPerThousand(result.categories, result.productPrice, result.productCategory),
     [result.categories, result.productPrice, result.productCategory],
   );
-
-  /* ── Collapsed groups — worst group (index 0) starts expanded, rest collapsed ── */
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    if (grouped.length > 0) {
-      setCollapsedGroups(new Set(grouped.slice(1).map((g) => g.group.id)));
-    }
-  }, [grouped]);
-
-  const toggleGroup = (id: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const allCollapsed = grouped.length > 0 && collapsedGroups.size === grouped.length;
-  const toggleAllGroups = () => {
-    setCollapsedGroups(allCollapsed ? new Set() : new Set(grouped.map((g) => g.group.id)));
-  };
 
   useEffect(() => {
     setShowCard(true);
@@ -148,139 +205,112 @@ const AnalysisResults = memo(function AnalysisResults({
         </section>
       )}
 
-      {/* ═══ GROUPED ISSUES ═══ */}
-      {showLeaks && (
-        <div ref={issuesRef}>
-          {/* Section header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
-            <div className="border-l-[3px] border-[var(--brand)] pl-5">
-              <h2
-                className="text-xl sm:text-2xl font-extrabold text-[var(--on-surface)] tracking-tight font-display"
-              >
-                Issues Found
-              </h2>
-              <p className="text-[var(--on-surface-variant)] text-sm mt-1">
-                {productLeaks.length} product leak{productLeaks.length !== 1 ? "s" : ""} across {grouped.length} area{grouped.length !== 1 ? "s" : ""}.{" "}
-                {isPaid ? "Click any to see the details." : "Click any to get the fix."}
-              </p>
+      {/* ═══ SCORE BREAKDOWN + ACTIVE GROUP DETAIL ═══ */}
+      {showLeaks && groups.length > 0 && (
+        <div
+          ref={issuesRef}
+          style={{ animation: "fade-in-up 600ms var(--ease-out-quart) both" }}
+        >
+          {/* Score breakdown grid */}
+          <div className="mb-8">
+            <h2 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[var(--ink)] mb-4">
+              Score breakdown
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {groups.map((g) => (
+                <ScoreCard
+                  key={g.id}
+                  group={g}
+                  selected={g.id === activeGroupId}
+                  onSelect={() => setActiveGroupId(g.id)}
+                />
+              ))}
             </div>
-            {grouped.length > 1 && (
-              <button
-                type="button"
-                onClick={toggleAllGroups}
-                className="self-start sm:self-auto text-xs font-semibold text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--surface-container-low)]"
-              >
-                {allCollapsed ? "Expand all" : "Collapse all"}
-              </button>
-            )}
           </div>
 
-          {/* Grouped sections */}
-          <div className="space-y-6">
-            {grouped.map((g, gi) => {
-              const isCollapsed = collapsedGroups.has(g.group.id);
-              const groupBodyId = `group-body-${g.group.id}`;
-
-              return (
-                <section
-                  key={g.group.id}
-                  style={{
-                    animation: `fade-in-up 400ms var(--ease-out-quart) ${gi * 100}ms both`,
-                  }}
-                >
-                  {/* Section header — clickable, section-styled (no wrapper card) */}
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(g.group.id)}
-                    aria-expanded={!isCollapsed}
-                    aria-controls={groupBodyId}
-                    className="w-full flex items-center gap-4 px-3 py-3 -mx-3 rounded-xl text-left hover:bg-[var(--surface-container-low)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
-                  >
-                    {/* Score pill — solid tint bg for contrast */}
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-extrabold shrink-0 font-display"
-                      style={{
-                        background: scoreColorTintBg(g.avgScore),
-                        color: scoreColor(g.avgScore),
-                        fontVariantNumeric: "tabular-nums",
-                      }}
+          {/* Active group detail */}
+          {activeGroup && (
+            <div className="space-y-5">
+              {/* Issues found header + severity chips */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-[var(--ink)]">
+                    Issues found{" "}
+                    <span
+                      className="font-mono text-base font-bold tabular-nums"
+                      style={{ color: "var(--ink-3)" }}
                     >
-                      {g.avgScore}
-                    </div>
+                      ({severityCounts.all})
+                    </span>
+                  </h3>
+                  <p className="text-[12.5px] mt-0.5" style={{ color: "var(--ink-3)" }}>
+                    {activeGroup.label} · {activeGroup.question}
+                  </p>
+                </div>
+                <SeverityChips
+                  counts={severityCounts}
+                  active={severityFilter}
+                  onChange={setSeverityFilter}
+                />
+              </div>
 
-                    {/* Label + question */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-base sm:text-lg font-semibold text-[var(--on-surface)] tracking-tight font-display">
-                          {g.group.label}
-                        </h3>
-                        <span className="text-xs text-[var(--on-surface-variant)] font-medium">
-                          {g.leaks.length} issue{g.leaks.length !== 1 ? "s" : ""}
-                        </span>
-                        <span className="ml-auto text-xs font-bold text-[var(--warning-text)] font-display shrink-0">
-                          ~{g.conversionLoss.toFixed(1)}% conversion loss
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
-                        {g.group.question}
-                      </p>
-                    </div>
+              {/* What's working — for the active group */}
+              {activeWorking.length > 0 && (
+                <ChecksGroup
+                  heading="What's working"
+                  count={activeWorking.length}
+                  tone="pass"
+                  items={activeWorking}
+                />
+              )}
 
-                    {/* Chevron */}
-                    <CaretDownIcon
-                      size={16}
-                      weight="bold"
-                      className="text-[var(--on-surface-variant)] shrink-0 transition-transform duration-300"
-                      style={{
-                        transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
-                      }}
-                      aria-hidden="true"
-                    />
-                  </button>
+              {/* Missing list — filtered by chip */}
+              {filteredMissing.length > 0 ? (
+                <ChecksGroup
+                  heading={
+                    severityFilter === "all"
+                      ? "What's missing"
+                      : `What's missing — ${capitalize(severityFilter)}`
+                  }
+                  count={filteredMissing.length}
+                  tone="fail"
+                  items={filteredMissing}
+                />
+              ) : severityCounts.all === 0 ? (
+                <AllClearBanner label={activeGroup.label} />
+              ) : (
+                <EmptyFilter />
+              )}
 
-                  {/* Section body — expanded IssueCards span both columns via
-                      lg:col-span-2 so details render inline without stretching siblings. */}
-                  <CollapsibleRegion isOpen={!isCollapsed} id={groupBodyId}>
-                    <div className="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {g.leaks.map((leak, i) => {
-                        const locked = result.recommendationsLocked ?? !isPaid;
-                        return (
-                          <IssueCard
-                            key={leak.key}
-                            leak={leak}
-                            index={i}
-                            onClick={() => onIssueClick(leak.key)}
-                            expandable={!locked}
-                            locked={locked}
-                            signals={locked ? undefined : result.signals}
-                          />
-                        );
-                      })}
-                    </div>
-                  </CollapsibleRegion>
-                </section>
-              );
-            })}
+              {!isPaid && severityCounts.all > 0 && (
+                <CTACard
+                  leaksCount={leaks.length}
+                  animationDelay={100}
+                  onClick={() => {
+                    onIssueClick(leaks[0]?.key || "");
+                    captureEvent("cta_card_clicked", { url });
+                  }}
+                />
+              )}
+            </div>
+          )}
 
-            {/* CTA Card — only for free users */}
-            {!isPaid && (
-              <CTACard
-                leaksCount={leaks.length}
-                animationDelay={grouped.length * 100}
-                onClick={() => {
-                  onIssueClick(leaks[0]?.key || "");
-                  captureEvent("cta_card_clicked", { url });
-                }}
+          {/* Whole-product celebration when nothing is missing anywhere */}
+          {everythingPassing && (
+            <div className="mt-6">
+              <AllClearBanner
+                label="this product"
+                body="Every signal we check is in good shape. Re-scan after your next change to keep it that way."
+                strong
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ═══ ANALYZE AGAIN ═══ */}
       {showLeaks && (
         <section style={{ animation: "fade-in-up 600ms var(--ease-out-quart) 400ms both" }}>
-          {/* Analyze again CTA */}
           <div className="text-center mt-8">
             <Button
               type="button"
@@ -301,3 +331,225 @@ const AnalysisResults = memo(function AnalysisResults({
 });
 
 export default AnalysisResults;
+
+/* ══════════════════════════════════════════════════════════════
+   ScoreCard — one tile in the Score breakdown grid. Mirrors the
+   editorial paper aesthetic: cream surface, 1px rule, small
+   donut-style score ring + display-font label + coral score.
+   Selected state: ink border + raised shadow.
+   ══════════════════════════════════════════════════════════════ */
+function ScoreCard({
+  group,
+  selected,
+  onSelect,
+}: {
+  group: ProductGroupView;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const Icon = GROUP_ICONS[group.id] ?? PackageIcon;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className="text-left rounded-[14px] border px-4 py-3 sm:py-3.5 flex items-center gap-3.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]/30"
+      style={{
+        background: selected ? "var(--bg-elev)" : "var(--paper)",
+        borderColor: selected ? "var(--ink)" : "var(--rule-2)",
+        boxShadow: selected
+          ? "0 0 0 1px var(--ink), var(--shadow-subtle)"
+          : "var(--shadow-subtle)",
+      }}
+    >
+      <ScoreDonut score={group.avgScore}>
+        <Icon size={16} weight="fill" aria-hidden />
+      </ScoreDonut>
+      <div className="flex-1 min-w-0">
+        <div
+          className="font-display font-bold text-[15px] leading-tight truncate"
+          style={{ color: "var(--ink)" }}
+        >
+          {group.label}
+        </div>
+        <div
+          className="font-mono text-[13px] mt-0.5 tabular-nums"
+          style={{ color: scoreColor(group.avgScore) }}
+        >
+          {group.avgScore}/100
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ── Donut score ring with optional centered icon (used inside ScoreCard) ── */
+function ScoreDonut({
+  score,
+  children,
+}: {
+  score: number;
+  children?: React.ReactNode;
+}) {
+  const size = 44;
+  const stroke = 3.5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const arc = (Math.max(0, Math.min(100, score)) / 100) * c;
+  const color = scoreColor(score);
+  return (
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size, color }}
+    >
+      <svg width={size} height={size} aria-hidden>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="var(--rule-2)"
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={`${arc} ${c}`}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: "stroke-dasharray 600ms var(--ease-out-quart)" }}
+        />
+      </svg>
+      {children && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SeverityChips — pill toggle for All / Critical / Major / Minor.
+   Active chip is ink-filled; others are outlined and dim.
+   ══════════════════════════════════════════════════════════════ */
+function SeverityChips({
+  counts,
+  active,
+  onChange,
+}: {
+  counts: { all: number; critical: number; major: number; minor: number };
+  active: SeverityFilter;
+  onChange: (next: SeverityFilter) => void;
+}) {
+  const items: { value: SeverityFilter; label: string; n: number }[] = [
+    { value: "all", label: "All", n: counts.all },
+    { value: "critical", label: "Critical", n: counts.critical },
+    { value: "major", label: "Major", n: counts.major },
+    { value: "minor", label: "Minor", n: counts.minor },
+  ];
+  return (
+    <div className="flex items-center gap-2 flex-wrap" role="tablist" aria-label="Filter issues by severity">
+      {items.map((item) => {
+        const isActive = active === item.value;
+        const disabled = item.n === 0 && item.value !== "all";
+        return (
+          <button
+            key={item.value}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]/30"
+            style={{
+              background: isActive ? "var(--ink)" : "transparent",
+              color: isActive ? "var(--paper)" : "var(--ink-2)",
+              border: `1px solid ${isActive ? "var(--ink)" : "var(--rule-2)"}`,
+            }}
+          >
+            {item.label} <span className="tabular-nums opacity-80">{item.n}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AllClearBanner — shown when the active group (or whole product)
+   has zero failing checks. Mirrors StoreHealthDetail's "You're
+   crushing it" treatment but at product/group scope.
+   ══════════════════════════════════════════════════════════════ */
+function AllClearBanner({
+  label,
+  body,
+  strong,
+}: {
+  label: string;
+  body?: string;
+  strong?: boolean;
+}) {
+  return (
+    <section
+      role="status"
+      className="rounded-[14px] flex items-center gap-3.5 px-5 py-4"
+      style={{
+        background: "var(--success-light)",
+        border: "1px solid var(--success-border)",
+      }}
+    >
+      <span
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-display font-extrabold text-base"
+        style={{ background: "var(--success-text)", color: "var(--paper)" }}
+        aria-hidden
+      >
+        ✓
+      </span>
+      <div className="min-w-0">
+        <h4
+          className={
+            strong
+              ? "font-display font-extrabold text-[18px] leading-tight"
+              : "font-display font-bold text-[15px] leading-tight"
+          }
+          style={{ color: "var(--success-text)", letterSpacing: "-0.01em" }}
+        >
+          {strong
+            ? `${capitalize(label)} is firing on all cylinders`
+            : `Nothing missing in ${label}`}
+        </h4>
+        {body && (
+          <p className="text-[13px] mt-1" style={{ color: "var(--ink-2)" }}>
+            {body}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EmptyFilter — shown when the chosen severity chip has no items
+   in the active group (e.g. user clicked "Critical" but everything
+   is major/minor). Encourages switching back to All.
+   ══════════════════════════════════════════════════════════════ */
+function EmptyFilter() {
+  return (
+    <p
+      className="text-[13px] italic px-1"
+      style={{ color: "var(--ink-3)" }}
+    >
+      No issues at this severity. Pick another chip to see the rest.
+    </p>
+  );
+}
+
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
