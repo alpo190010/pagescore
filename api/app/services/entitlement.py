@@ -70,6 +70,39 @@ def increment_credits(user: User, db: Session) -> None:
     db.commit()
 
 
+def maybe_expire_membership(user: User, db: Session) -> None:
+    """Downgrade a user whose 1-year Membership has expired.
+
+    A Membership is identified by:
+      - plan_tier != "free"
+      - paddle_subscription_id IS NULL  (one-time, not recurring)
+      - current_period_end IS NOT NULL  (a window was set)
+
+    Recurring subscribers (paddle_subscription_id present) are managed by
+    Paddle webhook events, not by this function — leave them alone. Legacy
+    paid users with no period_end (set to None pre-membership-window) are
+    likewise left alone.
+    """
+    if user.plan_tier == "free":
+        return
+    if user.paddle_subscription_id is not None:
+        return
+    if user.current_period_end is None:
+        return
+
+    period_end = user.current_period_end
+    if period_end.tzinfo is None:
+        period_end = period_end.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) < period_end:
+        return
+
+    user.plan_tier = "free"
+    user.current_period_end = None
+    user.credits_used = 0
+    user.credits_reset_at = datetime.now(timezone.utc)
+    db.commit()
+
+
 def maybe_reset_free_credits(user: User, db: Session) -> None:
     """Reset credits for a *free*-tier user when the calendar month rolls over.
 

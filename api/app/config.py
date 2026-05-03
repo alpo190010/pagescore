@@ -12,8 +12,9 @@ class Settings(BaseSettings):
     paddle_api_key: str = ""
     paddle_webhook_secret: str = ""
     paddle_environment: str = "sandbox"  # "sandbox" | "production"
-    paddle_price_starter_monthly: str = ""
-    paddle_price_starter_annual: str = ""
+    paddle_price_membership: str = ""  # $79 one-time at Paddle, 1-year access enforced server-side
+    paddle_price_starter_monthly: str = ""  # dormant subscription path
+    paddle_price_starter_annual: str = ""  # dormant subscription path
 
     auth_secret: str = ""
     google_pagespeed_api_key: str = ""

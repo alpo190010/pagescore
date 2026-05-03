@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import {
   CheckCircle,
   Sparkle,
-  RocketLaunch,
   Lightning,
   Star,
   CheckCircle as CheckCircleIcon,
@@ -14,35 +13,36 @@ import { authFetch } from "@/lib/auth-fetch";
 import { API_URL } from "@/lib/api";
 import PricingActions from "./PricingActions";
 
-type Billing = "monthly" | "annual";
-
-/** Map the user's persisted plan_tier to the card key used in TIERS. */
+/** Map the user's persisted plan_tier to the card key used in TIERS.
+ *
+ * Both legacy Starter subscribers (if any remain) and new Membership buyers
+ * persist as ``plan_tier === "starter"``, so they share the same card.
+ */
 function cardKeyForPlanTier(
   planTier: string | undefined,
-): "free" | "starter" | "pro-waitlist" | null {
+): "free" | "membership" | null {
   if (planTier === "free") return "free";
-  if (planTier === "starter") return "starter";
-  if (planTier === "pro") return "pro-waitlist";
+  if (planTier === "starter") return "membership";
   return null;
 }
 
 interface PricingTier {
-  key: "free" | "starter" | "pro-waitlist";
+  key: "free" | "membership";
   name: string;
   description: string;
   scanPill: string;
-  priceMonthly: number;
-  priceAnnualTotal: number; // total billed annually
+  /** USD; rendered with the appropriate suffix per tier. */
+  price: number;
+  /** Optional strikethrough anchor — must be a real previous price, not a
+   * fabricated MSRP. */
+  originalPrice?: number;
+  /** Optional small line under the price explaining the strikethrough. */
+  priceNote?: string;
   features: string[];
   icon: React.ReactNode;
   ctaLabel: string;
   highlighted?: boolean;
-  comingSoon?: boolean;
 }
-
-const ANNUAL_DISCOUNT = 0.6; // 60 % off when billed annually
-const annualTotal = (monthly: number) =>
-  Math.round(monthly * 12 * (1 - ANNUAL_DISCOUNT));
 
 const TIERS: PricingTier[] = [
   {
@@ -50,8 +50,7 @@ const TIERS: PricingTier[] = [
     name: "Free",
     description: "See exactly where you're losing revenue.",
     scanPill: "3 scans per month",
-    priceMonthly: 0,
-    priceAnnualTotal: 0,
+    price: 0,
     features: [
       "3 scans per calendar month",
       "Full 18-dimension scoring",
@@ -62,45 +61,31 @@ const TIERS: PricingTier[] = [
     ctaLabel: "Start Free",
   },
   {
-    key: "starter",
-    name: "Starter",
-    description: "Unlimited scans and the fixes to close every leak.",
-    scanPill: "Unlimited scans",
-    priceMonthly: 29,
-    priceAnnualTotal: annualTotal(29),
+    key: "membership",
+    name: "Membership",
+    description:
+      "A year of unlimited fix recommendations across every product in your store.",
+    scanPill: "Unlimited scans, one store",
+    price: 79,
+    // The annual Starter plan was previously listed at $139/year (60% off
+    // monthly $29 × 12). Verifiable in git history. Membership replaces it
+    // at a lower price.
+    originalPrice: 139,
+    priceNote: "Down from our previous annual rate.",
     features: [
-      "Unlimited scans",
       "Full fix recommendations",
       "All 18 dimensions",
       "Revenue leak estimates",
       "Email support",
+      "1-year access — no auto-renewal",
     ],
     icon: <Lightning size={24} weight="fill" />,
-    ctaLabel: "Upgrade to Starter",
+    ctaLabel: "Become a member",
     highlighted: true,
-  },
-  {
-    key: "pro-waitlist",
-    name: "Pro",
-    description: "Everything in Starter, plus AI that does the fixing for you.",
-    scanPill: "Unlimited + AI credits",
-    priceMonthly: 99,
-    priceAnnualTotal: annualTotal(99),
-    features: [
-      "Everything in Starter",
-      "AI-powered auto-fix",
-      "Store monitoring",
-      "Competitor insights",
-      "Priority support",
-    ],
-    icon: <RocketLaunch size={24} weight="regular" />,
-    ctaLabel: "Join Waitlist",
-    comingSoon: true,
   },
 ];
 
 export default function PricingPlans() {
-  const [billing, setBilling] = useState<Billing>("annual");
   const { data: session, status } = useSession();
 
   // The session JWT bakes `plan_tier` in at sign-in, so admin changes to a
@@ -131,15 +116,11 @@ export default function PricingPlans() {
 
   return (
     <section className="pb-16 sm:pb-24">
-      <div className="max-w-6xl mx-auto px-4 sm:px-8">
-        {/* Tier grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+      <div className="max-w-3xl mx-auto px-4 sm:px-8">
+        {/* Tier grid — 2 cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
           {TIERS.map((tier) => {
-            const isFree = tier.priceMonthly === 0;
-            const showAnnual = billing === "annual" && tier.key === "starter";
-            const displayMonthly = showAnnual
-              ? Math.round(tier.priceAnnualTotal / 12)
-              : tier.priceMonthly;
+            const isFree = tier.price === 0;
             const isCurrent = tier.key === currentCardKey;
 
             return (
@@ -150,13 +131,11 @@ export default function PricingPlans() {
                   isCurrent
                     ? "border-[var(--ok)] shadow-[var(--shadow-brand-md)] ring-2 ring-[var(--ok)]/30"
                     : tier.highlighted
-                    ? "border-[var(--brand)] shadow-[var(--shadow-brand-md)] ring-2 ring-[var(--brand)]/20"
-                    : tier.comingSoon
-                    ? "border-[var(--outline-variant)] opacity-85"
-                    : "border-[var(--outline-variant)]"
+                      ? "border-[var(--brand)] shadow-[var(--shadow-brand-md)] ring-2 ring-[var(--brand)]/20"
+                      : "border-[var(--outline-variant)]"
                 }`}
               >
-                {/* Badge: Current plan takes priority over Most popular / Coming Soon */}
+                {/* Badge: Current plan takes priority over Most popular */}
                 {isCurrent ? (
                   <div
                     className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"
@@ -169,10 +148,6 @@ export default function PricingPlans() {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold bg-[var(--brand)] text-[var(--paper)] inline-flex items-center gap-1">
                     <Star size={12} weight="fill" />
                     Most popular
-                  </div>
-                ) : tier.comingSoon ? (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]">
-                    Coming Soon
                   </div>
                 ) : null}
 
@@ -208,62 +183,25 @@ export default function PricingPlans() {
                     </div>
                   ) : (
                     <>
-                      <div className="font-display text-4xl font-extrabold text-[var(--on-surface)]">
-                        ${displayMonthly}
-                        <span className="text-base font-semibold text-[var(--on-surface-variant)]">
-                          {" "}
-                          / month
-                        </span>
-                      </div>
-                      {tier.key === "starter" && (
-                        <div className="mt-3">
-                          <div
-                            role="tablist"
-                            aria-label="Starter billing cadence"
-                            className="inline-flex items-center p-0.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-xs font-semibold"
-                          >
-                            <button
-                              role="tab"
-                              type="button"
-                              aria-selected={billing === "monthly"}
-                              onClick={() => setBilling("monthly")}
-                              className={`px-3 py-1 rounded-full transition-colors ${
-                                billing === "monthly"
-                                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
-                                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
-                              }`}
-                            >
-                              Monthly
-                            </button>
-                            <button
-                              role="tab"
-                              type="button"
-                              aria-selected={billing === "annual"}
-                              onClick={() => setBilling("annual")}
-                              className={`px-3 py-1 rounded-full transition-colors inline-flex items-center gap-1.5 ${
-                                billing === "annual"
-                                  ? "bg-[var(--brand)] text-[var(--paper)] shadow-[var(--shadow-brand-sm)]"
-                                  : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
-                              }`}
-                            >
-                              Annual
-                              <span
-                                className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                                  billing === "annual"
-                                    ? "bg-[var(--paper)] text-[var(--brand)]"
-                                    : "bg-[var(--success-light)] text-[var(--success-text)]"
-                                }`}
-                              >
-                                Save 60%
-                              </span>
-                            </button>
-                          </div>
+                      {tier.originalPrice && (
+                        <div
+                          className="text-sm font-semibold text-[var(--on-surface-variant)] line-through mb-1"
+                          aria-label={`Previously $${tier.originalPrice} per year`}
+                        >
+                          ${tier.originalPrice} / year
                         </div>
                       )}
-                      {showAnnual && (
-                        <div className="text-xs text-[var(--on-surface-variant)] mt-2">
-                          Billed ${tier.priceAnnualTotal} / year
-                        </div>
+                      <div className="font-display text-4xl font-extrabold text-[var(--on-surface)]">
+                        ${tier.price}
+                        <span className="text-base font-semibold text-[var(--on-surface-variant)]">
+                          {" "}
+                          / year
+                        </span>
+                      </div>
+                      {tier.priceNote && (
+                        <p className="text-xs text-[var(--on-surface-variant)] mt-2">
+                          {tier.priceNote}
+                        </p>
                       )}
                     </>
                   )}
@@ -303,7 +241,6 @@ export default function PricingPlans() {
                   tier={{
                     key: tier.key,
                     ctaLabel: tier.ctaLabel,
-                    billing,
                     isCurrent,
                   }}
                 />

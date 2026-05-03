@@ -6,7 +6,8 @@ Signature format (Paddle Billing):
     Algorithm: HMAC-SHA256 using ``settings.paddle_webhook_secret``
 
 Events handled:
-    - subscription.created    — activate paid tier
+    - transaction.completed   — one-time purchase paid (current Full Report flow)
+    - subscription.created    — activate paid tier (dormant subscription path)
     - subscription.updated    — tier change / renewal / past_due
     - subscription.canceled   — scheduled end; keep access until current_period_end
     - subscription.past_due   — leave tier, rely on customer to recover (or
@@ -21,7 +22,7 @@ import hashlib
 import hmac as hmac_mod
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -162,6 +163,8 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         event_type = body.get("event_type")
         data = body.get("data") or {}
 
+        if event_type == "transaction.completed":
+            return _handle_transaction_completed(data, db)
         if event_type == "subscription.created":
             return _handle_subscription_created(data, db)
         if event_type == "subscription.updated":
@@ -183,6 +186,55 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # Event handlers
 # ---------------------------------------------------------------------------
+
+
+def _handle_transaction_completed(data: dict, db: Session) -> dict:
+    """Membership purchase paid. Resolve user by custom_data.user_id.
+
+    Paddle charges this as a one-time transaction (no subscription_id), but
+    alpo grants 1 year of access by stamping ``current_period_end`` to
+    ``now + 365 days``. Expiration is enforced lazily by
+    ``maybe_expire_membership`` in the entitlement layer (no scheduler
+    required).
+
+    We reuse ``plan_tier = "starter"`` because that already encodes
+    "all features unlocked" — the user-facing label "Membership" lives only
+    in the UI.
+    """
+    user = _resolve_user_by_custom_data(data, db)
+    if user is None:
+        return {"ok": True}
+
+    price_id = _extract_price_id(data)
+    tier = get_tier_for_price_id(price_id) if price_id else None
+
+    if tier is None:
+        logger.warning(
+            "transaction.completed: unknown price_id=%s for user_id=%s",
+            price_id, user.id,
+        )
+        return {"ok": True}
+
+    now = datetime.now(timezone.utc)
+    period_end = now + timedelta(days=365)
+
+    old_tier = user.plan_tier
+    user.plan_tier = tier
+    user.paddle_customer_id = data.get("customer_id")
+    # Membership: no recurring subscription, but a 1-year access window.
+    user.paddle_subscription_id = None
+    user.current_period_end = period_end
+    user.paddle_customer_portal_url = None
+
+    user.credits_used = 0
+    user.credits_reset_at = now
+
+    db.commit()
+    logger.info(
+        "transaction.completed (membership): user_id=%s tier %s→%s expires=%s price_id=%s",
+        user.id, old_tier, tier, period_end.isoformat(), price_id,
+    )
+    return {"ok": True}
 
 
 def _handle_subscription_created(data: dict, db: Session) -> dict:

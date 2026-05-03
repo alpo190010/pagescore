@@ -21,6 +21,7 @@ from app.services.entitlement import (
     get_credits_limit,
     has_credits_remaining,
     increment_credits,
+    maybe_expire_membership,
     maybe_reset_free_credits,
     quota_exhausted_response,
     user_has_store_slot_for,
@@ -187,7 +188,8 @@ async def analyze(
 
     parsed_url = urllib.parse.urlparse(url)
 
-    # --- Calendar-month credit reset (free tier only) ---
+    # --- Lazy membership expiration + calendar-month credit reset ---
+    maybe_expire_membership(current_user, db)
     maybe_reset_free_credits(current_user, db)
 
     # --- Store quota check (admin-configurable cap on distinct stores) ---

@@ -12,6 +12,7 @@ from app.services.entitlement import (
     get_credits_limit,
     has_credits_remaining,
     increment_credits,
+    maybe_expire_membership,
     maybe_reset_free_credits,
     user_has_store_slot_for,
 )
@@ -261,3 +262,85 @@ class TestUserHasStoreSlotFor:
         user.store_quota = None
         db = _quota_db(sa_domains=["existing.com"], pa_domains=[])
         assert user_has_store_slot_for(user, "new.com", db) is False
+
+
+# -- maybe_expire_membership -----------------------------------------------
+
+
+class TestMaybeExpireMembership:
+    """1-year Membership expiration. Lazy check called from request paths."""
+
+    def test_downgrades_when_period_end_in_past(self):
+        user = _make_user(plan_tier="starter")
+        user.paddle_subscription_id = None  # one-time membership
+        user.current_period_end = datetime.now(timezone.utc) - timedelta(days=1)
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        assert user.plan_tier == "free"
+        assert user.current_period_end is None
+        assert user.credits_used == 0
+        db.commit.assert_called_once()
+
+    def test_no_op_for_active_membership(self):
+        user = _make_user(plan_tier="starter")
+        user.paddle_subscription_id = None
+        user.current_period_end = datetime.now(timezone.utc) + timedelta(days=200)
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        assert user.plan_tier == "starter"
+        assert user.current_period_end is not None
+        db.commit.assert_not_called()
+
+    def test_skips_recurring_subscribers(self):
+        """A user with paddle_subscription_id is on a real recurring sub; webhook
+        events manage their lifecycle, not this lazy check."""
+        user = _make_user(plan_tier="starter")
+        user.paddle_subscription_id = "sub_legacy_123"
+        user.current_period_end = datetime.now(timezone.utc) - timedelta(days=10)
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        assert user.plan_tier == "starter"  # untouched
+        assert user.paddle_subscription_id == "sub_legacy_123"
+        db.commit.assert_not_called()
+
+    def test_skips_free_tier(self):
+        user = _make_user(plan_tier="free")
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        db.commit.assert_not_called()
+
+    def test_skips_paid_user_with_no_period_end(self):
+        """Legacy paid users without a current_period_end (e.g., admin-flipped
+        accounts) should be left alone — no window means no expiration."""
+        user = _make_user(plan_tier="starter")
+        user.paddle_subscription_id = None
+        user.current_period_end = None
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        assert user.plan_tier == "starter"
+        db.commit.assert_not_called()
+
+    def test_handles_naive_period_end(self):
+        """current_period_end stored without tzinfo (e.g., from a buggy migration)
+        should still be treated as UTC, not crash."""
+        user = _make_user(plan_tier="starter")
+        user.paddle_subscription_id = None
+        # Naive datetime (no tzinfo) in the past.
+        past = datetime.now(timezone.utc) - timedelta(days=1)
+        user.current_period_end = past.replace(tzinfo=None)
+        db = MagicMock()
+
+        maybe_expire_membership(user, db)
+
+        assert user.plan_tier == "free"
+        db.commit.assert_called_once()

@@ -18,6 +18,7 @@ WEBHOOK_SECRET = "test-webhook-secret-123"
 TEST_USER_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 MONTHLY_PRICE_ID = "pri_monthly_001"
 ANNUAL_PRICE_ID = "pri_annual_001"
+MEMBERSHIP_PRICE_ID = "pri_membership_001"
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +107,31 @@ def _subscription_event(
         "event_id": "evt_1",
         "event_type": event_type,
         "occurred_at": "2026-05-01T12:00:00Z",
+        "data": data,
+    }
+
+
+def _transaction_event(
+    *,
+    transaction_id: str = "txn_abc",
+    customer_id: str | None = "ctm_xyz",
+    price_id: str | None = MEMBERSHIP_PRICE_ID,
+    user_id: str | None = TEST_USER_ID,
+) -> dict:
+    """Build a Paddle ``transaction.completed`` event payload."""
+    data: dict = {
+        "id": transaction_id,
+        "status": "completed",
+        "customer_id": customer_id,
+    }
+    if price_id is not None:
+        data["items"] = [{"price": {"id": price_id}, "quantity": 1}]
+    if user_id is not None:
+        data["custom_data"] = {"user_id": user_id}
+    return {
+        "event_id": "evt_txn_1",
+        "event_type": "transaction.completed",
+        "occurred_at": "2026-05-03T12:00:00Z",
         "data": data,
     }
 
@@ -411,6 +437,69 @@ class TestSubscriptionPastDue:
 
 
 # ---------------------------------------------------------------------------
+# transaction.completed (one-time Full Report purchase)
+# ---------------------------------------------------------------------------
+
+
+class TestTransactionCompleted:
+    @patch("app.routers.webhook.get_tier_for_price_id", return_value="starter")
+    @patch("app.routers.webhook.settings")
+    def test_membership_purchase_unlocks_starter(
+        self, mock_settings, mock_tier
+    ):
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        user = _make_mock_user(plan_tier="free")
+        db = _mock_db_with_user(user)
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        before = datetime.now(timezone.utc)
+        resp = _post_webhook(client, _transaction_event())
+        after = datetime.now(timezone.utc)
+
+        assert resp.status_code == 200
+        assert user.plan_tier == "starter"
+        assert user.paddle_customer_id == "ctm_xyz"
+        # Membership: no recurring subscription, but a 1-year window.
+        assert user.paddle_subscription_id is None
+        assert user.current_period_end is not None
+        # period_end should fall within [before+365d, after+365d] (a few-second window).
+        from datetime import timedelta as _td
+        assert before + _td(days=365) <= user.current_period_end <= after + _td(days=365)
+        assert user.credits_used == 0
+        db.commit.assert_called()
+
+    @patch("app.routers.webhook.get_tier_for_price_id", return_value=None)
+    @patch("app.routers.webhook.settings")
+    def test_unknown_price_leaves_tier_unchanged(
+        self, mock_settings, mock_tier
+    ):
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        user = _make_mock_user(plan_tier="free")
+        db = _mock_db_with_user(user)
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client, _transaction_event(price_id="pri_unknown")
+        )
+        assert resp.status_code == 200
+        assert user.plan_tier == "free"
+        db.commit.assert_not_called()
+
+    @patch("app.routers.webhook.settings")
+    def test_missing_user_id_returns_ok(self, mock_settings):
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        db = _mock_db_with_user(None)
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(client, _transaction_event(user_id=None))
+        assert resp.status_code == 200
+        assert resp.json() == {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # Unknown event types
 # ---------------------------------------------------------------------------
 
@@ -425,8 +514,8 @@ class TestUnknownEvents:
             client,
             {
                 "event_id": "evt_1",
-                "event_type": "transaction.completed",
-                "data": {"id": "txn_123"},
+                "event_type": "address.updated",
+                "data": {"id": "addr_123"},
             },
         )
         assert resp.status_code == 200

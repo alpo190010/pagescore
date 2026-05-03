@@ -30,13 +30,19 @@ PLAN_TIERS: dict[str, dict] = {
 def get_tier_for_price_id(price_id: str) -> str | None:
     """Map a Paddle price ID to its plan tier name.
 
-    Both the monthly and annual Starter prices resolve to ``"starter"``. Pro
-    remains defined in :data:`PLAN_TIERS` but has no price mapping until its
-    checkout launches.
+    Three prices currently resolve to ``"starter"``:
+      - the $79 Membership (current paid offer — 1-year access);
+      - the legacy Starter monthly subscription (dormant — no UI);
+      - the legacy Starter annual subscription (dormant — no UI).
+
+    Reusing ``"starter"`` keeps the entitlement gates ("unlimited scans,
+    full recommendations") working unchanged. The user-facing label
+    "Membership" lives on the pricing page; ``plan_tier`` stays semantic.
 
     Returns the tier string or None if the price_id is unknown or empty.
     """
     mapping = {
+        settings.paddle_price_membership: "starter",
         settings.paddle_price_starter_monthly: "starter",
         settings.paddle_price_starter_annual: "starter",
     }

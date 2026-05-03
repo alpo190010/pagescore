@@ -3,7 +3,8 @@ import PricingPlans from "./_components/PricingPlans";
 
 export const metadata = {
   title: "Pricing — alpo.ai",
-  description: "Simple plans: free scoring, unlimited scans on Starter, AI auto-fix on Pro.",
+  description:
+    "Score your product pages free. Become a member for $79/year — unlimited fixes for one store, no auto-renewal.",
 };
 
 export default function PricingPage() {
@@ -32,13 +33,13 @@ export default function PricingPage() {
               Questions?
             </h2>
             <p className="text-[var(--on-surface-variant)] mb-4 text-lg">
-              <strong>What do I get on the free plan?</strong> Three scans per calendar month, full 18-dimension scoring, and revenue leak estimates. Fix recommendations are reserved for Starter and Pro.
+              <strong>What do I get on the free plan?</strong> Three scans per calendar month, full 18-dimension scoring, and revenue leak estimates. Fix recommendations are reserved for Membership.
             </p>
             <p className="text-[var(--on-surface-variant)] mb-4 text-lg">
-              <strong>Can I cancel anytime?</strong> Yes — cancel or change your subscription from the customer portal any time; access stays active until the end of your current billing period.
+              <strong>Is this a subscription?</strong> No — Membership is a $79 yearly purchase. No auto-renewal, no surprise charges. After the year, you re-purchase to keep access.
             </p>
             <p className="text-[var(--on-surface-variant)] text-lg">
-              <strong>When does Pro launch?</strong> Join the waitlist on the Pro card above and we&apos;ll email you the moment AI auto-fix ships.
+              <strong>What if I want fixes for more pages?</strong> Each membership covers one store. Scan unlimited products inside that store. Email us if you need a second store.
             </p>
           </div>
         </section>

@@ -27,6 +27,20 @@ interface UserProfile {
   email_verified: boolean;
 }
 
+type PlanTier = "free" | "starter" | "pro";
+
+interface PlanInfo {
+  plan: PlanTier;
+  currentPeriodEnd: string | null;
+  hasSubscription: boolean;
+}
+
+const PLAN_LABEL: Record<PlanTier, string> = {
+  free: "Free",
+  starter: "Starter",
+  pro: "Pro",
+};
+
 export default function SettingsPage() {
   const { status } = useSession();
   const router = useRouter();
@@ -37,6 +51,11 @@ export default function SettingsPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
+  // Plan state (for the Subscription section)
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -46,7 +65,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Fetch profile once session is authenticated
+  // Fetch profile + plan once session is authenticated
   useEffect(() => {
     if (status === "loading") return;
     if (status === "unauthenticated") {
@@ -74,9 +93,56 @@ export default function SettingsPage() {
       }
     }
 
+    async function fetchPlan() {
+      try {
+        const res = await authFetch(`${API_URL}/user/plan`, { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        setPlan({
+          plan: (data.plan ?? "free") as PlanTier,
+          currentPeriodEnd: data.currentPeriodEnd ?? null,
+          hasSubscription: data.hasSubscription === true,
+        });
+      } catch {
+        // Subscription section silently hides if plan can't load — the rest of
+        // the page is still useful.
+      }
+    }
+
     fetchProfile();
+    fetchPlan();
     return () => controller.abort();
   }, [status, router, retryKey]);
+
+  async function openSubscriptionPortal() {
+    setPortalError(null);
+    setPortalLoading(true);
+    try {
+      const res = await authFetch(`${API_URL}/user/portal-session`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        setPortalError(
+          "Couldn't open the subscription portal. Please try again.",
+        );
+        return;
+      }
+      const data: { url?: string } = await res.json();
+      if (!data.url) {
+        setPortalError(
+          "Couldn't open the subscription portal. Please try again.",
+        );
+        return;
+      }
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      setPortalError(
+        "Couldn't open the subscription portal. Please try again.",
+      );
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   function handlePasswordChange(value: string) {
     setPassword(value);
@@ -241,6 +307,116 @@ export default function SettingsPage() {
                 </div>
               )}
             </section>
+
+            {/* Membership section — paid users without a recurring subscription
+                (i.e. they bought the $79/year Membership). Shows expiration date
+                in plain English. No Manage button — Paddle has no portal for
+                one-time purchases. */}
+            {plan &&
+              plan.plan !== "free" &&
+              !plan.hasSubscription &&
+              plan.currentPeriodEnd && (
+                <section
+                  className="rounded-2xl border-[1.5px] border-[var(--border)] bg-[var(--surface-container)] p-5 space-y-4"
+                  aria-labelledby="membership-heading"
+                >
+                  <h2
+                    id="membership-heading"
+                    className="font-display text-base font-semibold text-[var(--text-primary)]"
+                  >
+                    Membership
+                  </h2>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
+                        Plan
+                      </span>
+                      <span className="text-sm text-[var(--text-primary)]">
+                        Membership
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
+                        Active until
+                      </span>
+                      <span className="text-sm text-[var(--text-primary)]">
+                        {new Date(plan.currentPeriodEnd).toLocaleDateString(
+                          undefined,
+                          { year: "numeric", month: "long", day: "numeric" },
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    After this date you&apos;ll return to the free plan unless you renew.
+                  </p>
+                </section>
+              )}
+
+            {/* Subscription section — only for users with a recurring sub
+                (legacy Starter monthly/annual). Membership buyers see the
+                section above instead. */}
+            {plan && plan.plan !== "free" && plan.hasSubscription && (
+              <section
+                className="rounded-2xl border-[1.5px] border-[var(--border)] bg-[var(--surface-container)] p-5 space-y-4"
+                aria-labelledby="subscription-heading"
+              >
+                <h2
+                  id="subscription-heading"
+                  className="font-display text-base font-semibold text-[var(--text-primary)]"
+                >
+                  Subscription
+                </h2>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
+                      Plan
+                    </span>
+                    <span className="text-sm text-[var(--text-primary)]">
+                      {PLAN_LABEL[plan.plan]}
+                    </span>
+                  </div>
+                  {plan.currentPeriodEnd && (
+                    <div>
+                      <span className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
+                        Current period ends
+                      </span>
+                      <span className="text-sm text-[var(--text-primary)]">
+                        {new Date(plan.currentPeriodEnd).toLocaleDateString(
+                          undefined,
+                          { year: "numeric", month: "long", day: "numeric" },
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  shape="pill"
+                  onClick={openSubscriptionPortal}
+                  disabled={portalLoading}
+                  aria-busy={portalLoading}
+                  className="w-full"
+                >
+                  {portalLoading ? "Opening…" : "Manage subscription"}
+                </Button>
+
+                {portalError && (
+                  <p
+                    className="text-sm text-center text-[var(--error)] font-medium"
+                    role="alert"
+                  >
+                    {portalError}
+                  </p>
+                )}
+              </section>
+            )}
 
             {/* Password section */}
             <section
