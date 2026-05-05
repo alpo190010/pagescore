@@ -193,21 +193,29 @@ FIX_CONTENT: dict[str, dict] = {
 
 # Per-check fields and how the paywall hides them.
 #
+#   remediation — visible to fixes only.
+#       Per-check fix instructions ("Add a money-back guarantee
+#       line above Add to Cart..."). Diagnostic prose lives in
+#       ``detail`` and ships to insights.
 #   code — visible to fixes only.
-#       Copy-paste fix snippet — the most premium content. Stripped
-#       for both free and insights.
+#       Copy-paste fix snippet — the most premium content.
 #
-# Free + insights tiers receive the full check rows minus ``code``
-# so the frontend can compute issue counts and render the skeleton
-# with real shape data, while BlurredPlaceholder keeps premium
-# labels / prose out of the rendered DOM.
-_PREMIUM_CHECK_FIELDS = ("code",)
+# Free + insights tiers receive the full check rows minus these
+# two fields so the frontend can compute issue counts and render
+# the skeleton with real shape data, while BlurredPlaceholder
+# keeps premium prose out of the rendered DOM for free.
+_PREMIUM_CHECK_FIELDS = ("remediation", "code")
 
 
 def _strip_check_fields(
     checks: dict | None, fields: tuple[str, ...]
 ) -> dict | None:
-    """Strip *fields* from every check row.
+    """Strip *fields* from every check row, marking stripped rows.
+
+    Rows that lose any of *fields* gain ``lockedFix: True`` so the
+    client knows this row had premium fix content gated away — used
+    by ``CheckRow`` to render an expandable upgrade-CTA drawer
+    instead of pretending the row has nothing more to show.
 
     Returns a new dict-of-lists; the input is not mutated. Passes
     ``None`` through unchanged.
@@ -223,7 +231,10 @@ def _strip_check_fields(
         for row in rows:
             if isinstance(row, dict) and any(k in row for k in fields):
                 cleaned.append(
-                    {k: v for k, v in row.items() if k not in fields}
+                    {
+                        **{k: v for k, v in row.items() if k not in fields},
+                        "lockedFix": True,
+                    }
                 )
             else:
                 cleaned.append(row)
@@ -241,16 +252,18 @@ def gate_store_analysis(payload, user):
 
     Behavior per tier (``user.plan_tier`` value):
       * ``"fixes"``    — nothing stripped; full content visible.
-      * ``"insights"`` — ``code`` stripped from each check row. All
-        other fields (label, detail, remediation, rules) stay so the
-        diagnostic surface renders fully. ``signals`` pass through.
-      * ``"free"`` / anonymous — same shape as insights (``code``
-        stripped, ``signals`` passed through). The frontend uses the
-        ``detailsLocked`` flag to wrap the rendered diagnostic surface
-        in BlurredPlaceholder, which renders a synthetic skeleton in
-        place of the real children — so labels / prose stay in JS
-        memory but never enter the DOM. Counts and severity totals
-        remain visible.
+      * ``"insights"`` — ``code`` and ``remediation`` stripped from
+        each check row. Diagnostic fields (label, detail, rules,
+        pageSpeedSignals) stay so the diagnostic surface renders
+        fully. ``signals`` pass through. The dedicated FixSteps +
+        FixCodeBlock playbook in StoreHealthDetail handles the
+        upgrade prompt to the fixes tier.
+      * ``"free"`` / anonymous — same shape as insights. The
+        frontend uses the ``detailsLocked`` flag to wrap the
+        rendered diagnostic surface in BlurredPlaceholder, which
+        renders a synthetic skeleton in place of the real children
+        — so labels / prose stay in JS memory but never enter the
+        DOM. Counts and severity totals remain visible.
 
     Wire fields added to every dict payload:
       * ``planTier``: ``"free"`` | ``"insights"`` | ``"fixes"`` | ``None``

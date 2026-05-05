@@ -2,6 +2,7 @@
 
 import { CheckIcon } from "@phosphor-icons/react";
 import type { DimensionCheck } from "@/lib/analysis/types";
+import type { PlanTier } from "@/lib/tier";
 import ChecksGroup from "./ChecksGroup";
 
 /* ══════════════════════════════════════════════════════════════
@@ -24,11 +25,14 @@ interface AllPassingMessage {
 interface ChecksListProps {
   checks: DimensionCheck[] | undefined;
   allPassingMessage?: AllPassingMessage;
+  /** Forwarded to ChecksGroup → CheckRow for locked-fix rendering. */
+  planTier?: PlanTier | null;
 }
 
 export default function ChecksList({
   checks,
   allPassingMessage,
+  planTier,
 }: ChecksListProps) {
   if (!checks || checks.length === 0) return null;
 
@@ -82,6 +86,7 @@ export default function ChecksList({
           count={passing.length}
           tone="pass"
           items={passing}
+          planTier={planTier}
         />
       )}
       {missing.length > 0 && (
@@ -90,6 +95,7 @@ export default function ChecksList({
           count={missing.length}
           tone="fail"
           items={missing}
+          planTier={planTier}
         />
       )}
     </section>

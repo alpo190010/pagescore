@@ -1,6 +1,7 @@
 "use client";
 
 import type { DimensionCheck } from "@/lib/analysis/types";
+import type { PlanTier } from "@/lib/tier";
 import ChecksList from "@/components/checks/ChecksList";
 
 /* ══════════════════════════════════════════════════════════════
@@ -17,8 +18,13 @@ import ChecksList from "@/components/checks/ChecksList";
 
 interface StoreHealthChecksProps {
   checks: DimensionCheck[] | undefined;
+  /** Forwarded so ``CheckRow`` can render the locked-fix CTA. */
+  planTier?: PlanTier | null;
 }
 
-export default function StoreHealthChecks({ checks }: StoreHealthChecksProps) {
-  return <ChecksList checks={checks} />;
+export default function StoreHealthChecks({
+  checks,
+  planTier,
+}: StoreHealthChecksProps) {
+  return <ChecksList checks={checks} planTier={planTier} />;
 }

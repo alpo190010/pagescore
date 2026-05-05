@@ -97,7 +97,11 @@ const AnalysisResults = memo(function AnalysisResults({
   /* ── Product-only leaks ── */
   const { productLeaks } = useMemo(() => splitLeaksByScope(leaks), [leaks]);
 
-  /* ── Per-dimension view (drives the Score breakdown grid) ── */
+  /* ── Per-dimension view (drives the Score breakdown grid) ──
+     `buildProductDimensions` strips per-row fix content and stamps
+     `lockedFix: true` on rows that had fix content for non-fixes
+     tiers, so CheckRow renders an upgrade-CTA blur in its expand
+     drawer. Same UX as the server-gated store-wide checks. */
   const dimensions = useMemo(
     () => buildProductDimensions(result, productLeaks),
     [result, productLeaks],
@@ -367,6 +371,7 @@ const AnalysisResults = memo(function AnalysisResults({
                   count={activeWorking.length}
                   tone="pass"
                   items={activeWorking}
+                  planTier={result.planTier}
                 />
               )}
 
@@ -380,6 +385,7 @@ const AnalysisResults = memo(function AnalysisResults({
                   count={filteredMissing.length}
                   tone="fail"
                   items={filteredMissing}
+                  planTier={result.planTier}
                 />
               ) : (
                 <EmptyFilter />

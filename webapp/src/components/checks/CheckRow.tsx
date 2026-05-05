@@ -8,6 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import type { DimensionCheck } from "@/lib/analysis/types";
 import PageSpeedScorecard from "@/components/analysis/PageSpeedScorecard";
+import BlurredPlaceholder from "@/components/BlurredPlaceholder";
+import type { PlanTier } from "@/lib/tier";
 import InlineCodeSnippet from "./InlineCodeSnippet";
 import { RuleList } from "./RuleList";
 import { SEVERITY_LABEL, severityColors, severityFor } from "./severity";
@@ -17,15 +19,27 @@ import { SEVERITY_LABEL, severityColors, severityFor } from "./severity";
    simple labelled items. Fail rows carry a severity badge and
    become expandable disclosures when remediation, code, rules,
    or a Page Speed scorecard payload is attached.
+
+   When the server strips fix fields for non-fixes tiers it sets
+   ``lockedFix: true`` on the row — this keeps the row expandable
+   and the drawer renders an upgrade-CTA blur where the fix would
+   live, so the user can discover what's gated.
    ══════════════════════════════════════════════════════════════ */
 
 interface CheckRowProps {
   item: DimensionCheck;
   tone: "pass" | "fail";
   isLast: boolean;
+  /** Viewer's plan tier — drives the BlurredPlaceholder lock. */
+  planTier?: PlanTier | null;
 }
 
-export default function CheckRow({ item, tone, isLast }: CheckRowProps) {
+export default function CheckRow({
+  item,
+  tone,
+  isLast,
+  planTier,
+}: CheckRowProps) {
   const iconColor =
     tone === "pass" ? "var(--success-text)" : "var(--error-text)";
   const labelColor = tone === "pass" ? "var(--ink-2)" : "var(--ink)";
@@ -35,13 +49,16 @@ export default function CheckRow({ item, tone, isLast }: CheckRowProps) {
 
   // Failing rows with a remediation, code snippet, rule list, or
   // attached PageSpeed scorecard become expandable disclosures.
+  // ``lockedFix`` keeps the row expandable on non-fixes tiers so
+  // the user can open the drawer and see the upgrade CTA.
   const expandable =
     tone === "fail" &&
     Boolean(
       item.remediation ||
         item.code ||
         (item.rules && item.rules.length) ||
-        item.pageSpeedSignals,
+        item.pageSpeedSignals ||
+        item.lockedFix,
     );
   const [open, setOpen] = useState(false);
 
@@ -142,8 +159,50 @@ export default function CheckRow({ item, tone, isLast }: CheckRowProps) {
             <RuleList rules={item.rules} />
           )}
           {item.code && <InlineCodeSnippet code={item.code} />}
+          {item.lockedFix && (
+            <BlurredPlaceholder
+              requiredTier="fixes"
+              currentTier={planTier ?? null}
+              title="Unlock the fix"
+              subtitle="See exactly what to change to clear this issue."
+              cta="Get Fixes"
+              placeholder={<LockedFixSkeleton />}
+            >
+              {/* No real children — server already stripped them.
+                  This branch is unreachable when locked. */}
+              <></>
+            </BlurredPlaceholder>
+          )}
         </div>
       )}
     </li>
+  );
+}
+
+/* ── LockedFixSkeleton ───────────────────────────────────────────
+   Synthetic blurred-behind hint of what's gated. Generic gray
+   bars only — no real labels or fix prose end up in the DOM,
+   so the server-side strip remains the actual gate.
+   ────────────────────────────────────────────────────────────── */
+function LockedFixSkeleton() {
+  return (
+    <div className="flex flex-col gap-2" aria-hidden>
+      <div
+        className="rounded h-3"
+        style={{ background: "var(--bg)", width: "92%" }}
+      />
+      <div
+        className="rounded h-3"
+        style={{ background: "var(--bg)", width: "78%" }}
+      />
+      <div
+        className="rounded h-3"
+        style={{ background: "var(--bg)", width: "84%" }}
+      />
+      <div
+        className="rounded h-16 mt-1"
+        style={{ background: "var(--bg)", width: "100%" }}
+      />
+    </div>
   );
 }

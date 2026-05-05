@@ -1,6 +1,7 @@
 "use client";
 
 import type { DimensionCheck } from "@/lib/analysis/types";
+import type { PlanTier } from "@/lib/tier";
 import CheckRow from "./CheckRow";
 
 /* ══════════════════════════════════════════════════════════════
@@ -15,6 +16,8 @@ interface ChecksGroupProps {
   count: number;
   tone: "pass" | "fail";
   items: DimensionCheck[];
+  /** Forwarded to CheckRow so locked-fix rows can render the lock CTA. */
+  planTier?: PlanTier | null;
 }
 
 export default function ChecksGroup({
@@ -22,6 +25,7 @@ export default function ChecksGroup({
   count,
   tone,
   items,
+  planTier,
 }: ChecksGroupProps) {
   return (
     <div className="flex flex-col gap-2">
@@ -50,6 +54,7 @@ export default function ChecksGroup({
             item={item}
             tone={tone}
             isLast={i === items.length - 1}
+            planTier={planTier}
           />
         ))}
       </ul>

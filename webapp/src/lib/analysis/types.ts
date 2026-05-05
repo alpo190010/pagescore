@@ -495,6 +495,13 @@ export interface DimensionCheck {
    * inside the flat product-page checks list.
    */
   pageSpeedSignals?: PageSpeedSignals;
+  /**
+   * True when the server stripped per-check fix fields
+   * (``remediation`` / ``code``) before sending. The UI uses this
+   * to keep the row expandable on non-fixes tiers and render an
+   * upgrade-CTA blur in the drawer where the fix would be.
+   */
+  lockedFix?: boolean;
 }
 
 export interface StoreAnalysisData {

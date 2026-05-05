@@ -275,11 +275,13 @@ export default function StoreHealthDetail({
                         signals={storeAnalysis.signals.pageSpeed}
                       />
                     )}
-                  {checks && <StoreHealthChecks checks={checks} />}
+                  {checks && (
+                    <StoreHealthChecks checks={checks} planTier={planTier} />
+                  )}
                 </div>
               </BlurredPlaceholder>
             ) : (
-              <StoreHealthChecks checks={checks} />
+              <StoreHealthChecks checks={checks} planTier={planTier} />
             )}
 
             {/* ── Fix playbook (steps + code snippet) ──

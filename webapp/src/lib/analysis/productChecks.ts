@@ -2548,8 +2548,22 @@ export function buildProductDimensions(
       if (checks.length === 0) continue;
     }
 
+    // For non-fixes tiers, drop per-row fix content and mark the row
+    // with `lockedFix: true` so CheckRow keeps its caret and renders
+    // the upgrade-CTA blur in its expand drawer. Mirrors the
+    // server-side `_strip_check_fields` shape used for store-wide
+    // checks; product checks are built client-side so the strip lives
+    // here.
     const stripped = result.recommendationsLocked
-      ? checks.map((c) => ({ ...c, remediation: undefined, code: undefined }))
+      ? checks.map((c) => {
+          const hadFix = c.remediation !== undefined || c.code !== undefined;
+          return {
+            ...c,
+            remediation: undefined,
+            code: undefined,
+            ...(hadFix ? { lockedFix: true } : {}),
+          };
+        })
       : checks;
 
     const matchingLeak = leakFor(key);
