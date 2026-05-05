@@ -1,27 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, LockKeyIcon } from "@phosphor-icons/react";
+import {
+  ArrowRightIcon,
+  CheckCircleIcon,
+  LockKeyIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react";
 import { meetsRequirement, type PlanTier } from "@/lib/tier";
 
 /**
  * Reusable paywall wrapper for tier-gated content.
  *
- * Behaviour:
+ * DOM-safe gating: locked viewers NEVER see the real ``children`` in the
+ * DOM. Instead, a synthetic ``placeholder`` (or a generic skeleton) is
+ * rendered blurred with the upgrade CTA on top. The strict gate is
+ * server-side stripping; this component just makes sure no smuggled
+ * children leak past it.
+ *
  *   - When the current tier meets the requirement, renders ``children``
  *     unchanged. Zero visual cost.
  *   - When the current tier does NOT meet the requirement, renders the
- *     ``children`` blurred with a centered upgrade CTA layered on top.
- *     The blurred layer is purely visual: a ``placeholder`` prop can
- *     be passed to render different content under the blur (used for
- *     cases where the real content shouldn't be in the DOM at all).
- *
- * Security model: the strict gate is server-side stripping (see
- * ``gate_store_analysis``). Any field stripped by the API will be
- * absent from ``children`` regardless of what this component does. The
- * blur is the *visual* gate over fields that DO ship in the response
- * (e.g. check labels and detail text), so free users can see how many
- * issues exist without being able to read them.
+ *     ``placeholder`` (or default skeleton) blurred with a centered
+ *     upgrade CTA layered on top. ``children`` are not rendered.
  */
 interface BlurredPlaceholderProps {
   /** Tier required to unlock the children — "insights" or "fixes". */
@@ -35,13 +36,12 @@ interface BlurredPlaceholderProps {
   /** CTA button label. */
   cta?: string;
   /**
-   * Optional alternative content rendered blurred when locked. Use this
-   * when the real ``children`` shouldn't appear in the DOM at all —
-   * e.g. when the API doesn't strip the field but we want a stronger
-   * gate. Defaults to rendering ``children`` blurred.
+   * Synthetic content rendered blurred under the overlay when locked.
+   * Should NEVER include real premium data — this is a visual hint of
+   * the locked content's shape. Defaults to a generic skeleton.
    */
   placeholder?: React.ReactNode;
-  /** Real content rendered when unlocked, blurred when locked. */
+  /** Real content rendered when unlocked. NOT rendered when locked. */
   children: React.ReactNode;
 }
 
@@ -78,7 +78,7 @@ export default function BlurredPlaceholder({
         className="select-none pointer-events-none"
         style={{ filter: "blur(8px)", opacity: 0.55 }}
       >
-        {placeholder ?? children}
+        {placeholder ?? <DefaultSkeleton />}
       </div>
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <Link
@@ -131,3 +131,118 @@ export default function BlurredPlaceholder({
   );
 }
 
+/* ── DefaultSkeleton ──────────────────────────────────────────
+   Imitation of the locked diagnostic surface. Renders mock rows
+   in their natural red (failing) / green (passing) colors so the
+   blurred-behind preview makes the value of the unlock visible.
+   No real labels, details, or remediation prose are placed in
+   this DOM — only generic gray text bars.
+   ─────────────────────────────────────────────────────────── */
+function DefaultSkeleton() {
+  // Mix of severities and pass/fail states, tuned to look like a
+  // typical dimension's "what's missing / what's working" pair.
+  const rows: { tone: "fail" | "pass"; severity?: "Critical" | "Major" | "Minor"; widthPct: number }[] = [
+    { tone: "fail", severity: "Critical", widthPct: 78 },
+    { tone: "fail", severity: "Major", widthPct: 64 },
+    { tone: "fail", severity: "Major", widthPct: 71 },
+    { tone: "fail", severity: "Minor", widthPct: 58 },
+    { tone: "pass", widthPct: 66 },
+    { tone: "pass", widthPct: 52 },
+  ];
+
+  return (
+    <div className="flex flex-col gap-3.5" aria-hidden>
+      {/* Severity-chips imitation */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {[
+          { label: "All", n: 8 },
+          { label: "Critical", n: 1 },
+          { label: "Major", n: 4 },
+          { label: "Minor", n: 3 },
+        ].map((chip, i) => (
+          <span
+            key={chip.label}
+            className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
+            style={{
+              background: i === 0 ? "var(--ink)" : "transparent",
+              color: i === 0 ? "var(--paper)" : "var(--ink-2)",
+              border: `1px solid ${i === 0 ? "var(--ink)" : "var(--rule-2)"}`,
+            }}
+          >
+            {chip.label} <span className="tabular-nums opacity-80">{chip.n}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* Check-row imitations */}
+      <ul
+        className="rounded-[14px] border list-none m-0 p-0 overflow-hidden"
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--rule-2)",
+        }}
+      >
+        {rows.map((row, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-3 px-4 py-3"
+            style={{
+              borderBottom:
+                i < rows.length - 1 ? "1px solid var(--rule-2)" : "none",
+            }}
+          >
+            <span className="shrink-0 mt-0.5">
+              {row.tone === "pass" ? (
+                <CheckCircleIcon
+                  size={18}
+                  weight="fill"
+                  color="var(--success-text)"
+                />
+              ) : (
+                <XCircleIcon
+                  size={18}
+                  weight="fill"
+                  color="var(--error-text)"
+                />
+              )}
+            </span>
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+              <div
+                className="rounded h-3.5"
+                style={{
+                  background: "var(--bg-elev)",
+                  width: `${row.widthPct}%`,
+                }}
+              />
+              <div
+                className="rounded h-3"
+                style={{
+                  background: "var(--bg-elev)",
+                  width: `${Math.max(40, row.widthPct - 14)}%`,
+                }}
+              />
+            </div>
+            {row.severity && (
+              <span
+                className="shrink-0 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md"
+                style={{
+                  background:
+                    row.severity === "Critical"
+                      ? "var(--error-text)"
+                      : row.severity === "Major"
+                      ? "var(--warning-text)"
+                      : "var(--ink-3)",
+                  color: "var(--paper)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {row.severity}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

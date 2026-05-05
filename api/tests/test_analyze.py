@@ -357,7 +357,13 @@ def test_analyze_free_tier_recommendations_stripped(mock_fetch, mock_detect, *_)
 @patch("app.routers.analyze.detect_social_proof")
 @patch("app.routers.analyze.render_page", new_callable=AsyncMock)
 def test_analyze_fixes_tier_sees_full_recommendations(mock_fetch, mock_detect, *_):
-    """Starter tier: tips populated, recommendationsLocked=false, creditsRemaining=None (unlimited)."""
+    """Insights tier: diagnostic tips populated and surfaced.
+
+    Insights sees per-dimension diagnostic prose (``tips`` /
+    ``dimensionTips``) so the Issues panel renders fully. Fix
+    recommendations (steps + code) remain gated — that's why
+    ``recommendationsLocked`` is True for everyone except fixes.
+    """
     mock_fetch.return_value = _VALID_HTML
 
     user = _make_user(plan_tier="insights", credits_used=0)
@@ -368,7 +374,10 @@ def test_analyze_fixes_tier_sees_full_recommendations(mock_fetch, mock_detect, *
     assert resp.status_code == 200
     data = resp.json()
     assert data["planTier"] == "insights"
-    assert data["recommendationsLocked"] is False
+    # Insights doesn't see the fix-step playbook — only fixes does.
+    assert data["recommendationsLocked"] is True
+    # Diagnostic prose IS visible to insights.
+    assert data["detailsLocked"] is False
     assert "sp tip" in data["tips"]
     assert data["dimensionTips"]["socialProof"] == ["sp tip"]
     # Unlimited tier: creditsRemaining is null

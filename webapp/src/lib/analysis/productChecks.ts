@@ -2523,9 +2523,13 @@ export function buildProductDimensions(
   result: FreeResult,
   productLeaks: LeakCard[],
 ): ProductDimensionGroup[] {
-  if (!result.signals) return [];
   const leakFor = (key: string) => productLeaks.find((l) => l.key === key);
   const categories = result.categories as Partial<CategoryScores>;
+  // When signals are stripped (free / anonymous), we still want to
+  // surface the per-dimension score breakdown grid. We emit a stub
+  // group for every categorized dimension; the active-dimension
+  // detail surface is then rendered as a BlurredPlaceholder.
+  const isLocked = !result.signals;
   const groups: ProductDimensionGroup[] = [];
 
   for (const [key, build] of Object.entries(DIMENSION_BUILDERS)) {
@@ -2535,8 +2539,14 @@ export function buildProductDimensions(
     // confuse users and dilute the storewide page's purpose.
     if (!PRODUCT_LEVEL_DIMENSIONS.has(key)) continue;
 
-    const checks = build(result, leakFor(key));
-    if (checks.length === 0) continue;
+    let checks: DimensionCheck[];
+    if (isLocked) {
+      if (!(key in categories)) continue;
+      checks = [];
+    } else {
+      checks = build(result, leakFor(key));
+      if (checks.length === 0) continue;
+    }
 
     const stripped = result.recommendationsLocked
       ? checks.map((c) => ({ ...c, remediation: undefined, code: undefined }))

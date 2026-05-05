@@ -1,10 +1,15 @@
 """``GET /fix/{dimension_key}`` — structured fix content for a store-wide dimension.
 
-Tier gating: only the ``fixes`` tier ($149/yr) sees ``steps`` and ``code``;
-``free`` and ``insights`` tiers receive the metadata (label, problem,
-revenue_gain, effort, scope) with ``steps=[]`` and ``code=null`` and
-``locked=True``. Insights pays for diagnostic prose at the per-check level
-(rendered elsewhere) but not for the fix-step playbook.
+Tier gating (DOM-safe — locked fields are never sent):
+
+  * ``fixes`` tier ($149/yr) sees everything: label, problem,
+    revenue_gain, effort, scope, steps, code.
+  * ``insights`` tier ($79/yr) sees the diagnostic prose (problem,
+    scope) but ``steps=[]`` and ``code=null``. ``recommendationsLocked=True``.
+  * ``free`` / anonymous see ``label``, ``revenue_gain``, ``effort`` —
+    these are headline metrics meant to advertise the unlock. Premium
+    diagnostic prose (``problem``, ``scope``) is ``None`` and the
+    fix content (``steps``, ``code``) is empty/null. ``detailsLocked=True``.
 
 When ``?domain=`` is provided and the caller is authenticated, the step
 list is filtered against that store's latest scan signals so only the
@@ -36,7 +41,10 @@ def get_dimension_fix(
         raise HTTPException(status_code=404, detail="Unknown dimension")
 
     plan_tier = current_user.plan_tier if current_user else "free"
-    locked = plan_tier != "fixes"
+    sees_prose = plan_tier in ("insights", "fixes")
+    sees_fixes = plan_tier == "fixes"
+    locked = not sees_fixes
+    details_locked = not sees_prose
 
     # Pull the latest scan signals for this dimension so we can tailor
     # the step list. Requires an authenticated user + domain; silently
@@ -58,16 +66,22 @@ def get_dimension_fix(
 
     steps = get_fix_steps(dimension_key, dim_signals)
 
+    # ``label``, ``revenueGain``, and ``effort`` are headline metrics
+    # that *advertise* the unlock — they're shown unblurred to free
+    # users so the upgrade CTA has tangible numbers next to it. Only
+    # the diagnostic prose (``problem``, ``scope``) and the fix
+    # playbook (``steps``, ``code``) are tier-gated.
     return {
         "dimensionKey": dimension_key,
         "label": fix["label"],
-        "problem": fix["problem"],
         "revenueGain": fix["revenue_gain"],
         "effort": fix["effort"],
-        "scope": fix.get("scope", "All products"),
+        "problem": fix["problem"] if sees_prose else None,
+        "scope": fix.get("scope", "All products") if sees_prose else None,
         "steps": [] if locked else steps,
         "code": None if locked else fix.get("code"),
         "planTier": plan_tier,
         "locked": locked,
+        "detailsLocked": details_locked,
         "stepsTailored": dim_signals is not None,
     }

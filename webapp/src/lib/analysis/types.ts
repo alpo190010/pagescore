@@ -512,8 +512,14 @@ export interface StoreAnalysisData {
    */
   planTier?: PlanTier | null;
   /**
-   * True when free-tier or anonymous — `checks[*].remediation` and `code`
-   * are stripped server-side and the UI should show upgrade affordances.
+   * True for free / anonymous — the diagnostic surface (`checks` and
+   * `signals`) is stripped to null server-side. The UI must render a
+   * BlurredPlaceholder; the real data is never shipped.
+   */
+  detailsLocked?: boolean;
+  /**
+   * True for any tier below `fixes` — fix recommendations and per-check
+   * `code` are stripped server-side. UI shows upgrade affordances.
    */
   recommendationsLocked?: boolean;
 }

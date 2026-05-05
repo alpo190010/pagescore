@@ -193,17 +193,14 @@ FIX_CONTENT: dict[str, dict] = {
 
 # Per-check fields and how the paywall hides them.
 #
-#   label, detail, rules — visible to every tier, including anonymous.
-#       Free users see them blurred via a client-side overlay (see
-#       BlurredPlaceholder); the data is in the response so the UI has
-#       real content to blur, not an empty list. Inspect-element bypass
-#       is acceptable: the strict gate is the fix code below.
-#   remediation         — visible to insights + fixes. Diagnostic prose
-#       ("add a 30-day return policy near Add to Cart"). Free users see
-#       it through the same client-side blur as label/detail.
-#   code                — visible to fixes only. The copy-pasteable
-#       snippet is the premium-content gate; stripping it server-side
-#       guarantees free + insights cannot extract it via dev tools.
+#   code — visible to fixes only.
+#       Copy-paste fix snippet — the most premium content. Stripped
+#       for both free and insights.
+#
+# Free + insights tiers receive the full check rows minus ``code``
+# so the frontend can compute issue counts and render the skeleton
+# with real shape data, while BlurredPlaceholder keeps premium
+# labels / prose out of the rendered DOM.
 _PREMIUM_CHECK_FIELDS = ("code",)
 
 
@@ -235,7 +232,7 @@ def _strip_check_fields(
 
 
 def gate_store_analysis(payload, user):
-    """Apply tier-aware check stripping + paywall metadata to a store-analysis payload.
+    """Apply tier-aware data stripping + paywall metadata to a store-analysis payload.
 
     Used at the API boundary by routes that return a StoreAnalysis-shaped
     dict (``/discover-products``, ``/store/{domain}``, ``/store/{domain}/rescan``)
@@ -243,20 +240,26 @@ def gate_store_analysis(payload, user):
     surface the same plan-tier signals.
 
     Behavior per tier (``user.plan_tier`` value):
-      * ``"fixes"``                — nothing stripped; full content.
-      * ``"insights"`` / ``"free"`` — ``code`` stripped from each check
-        row. All other fields (label, detail, remediation, rules) stay
-        in the response. Free users see the rows blurred client-side
-        via ``detailsLocked``; insights users see them clear.
+      * ``"fixes"``    — nothing stripped; full content visible.
+      * ``"insights"`` — ``code`` stripped from each check row. All
+        other fields (label, detail, remediation, rules) stay so the
+        diagnostic surface renders fully. ``signals`` pass through.
+      * ``"free"`` / anonymous — same shape as insights (``code``
+        stripped, ``signals`` passed through). The frontend uses the
+        ``detailsLocked`` flag to wrap the rendered diagnostic surface
+        in BlurredPlaceholder, which renders a synthetic skeleton in
+        place of the real children — so labels / prose stay in JS
+        memory but never enter the DOM. Counts and severity totals
+        remain visible.
 
     Wire fields added to every dict payload:
       * ``planTier``: ``"free"`` | ``"insights"`` | ``"fixes"`` | ``None``
         (None when anonymous).
-      * ``detailsLocked``: ``True`` unless the tier sees diagnostic prose
-        (``insights`` or ``fixes``). Drives the client-side blur over
-        the entire check list for free + anonymous viewers.
+      * ``detailsLocked``: ``True`` unless the tier sees diagnostic
+        content (``insights`` or ``fixes``). Drives the client-side
+        BlurredPlaceholder for free + anonymous viewers.
       * ``recommendationsLocked``: ``True`` unless the tier sees fix
-        content (``fixes`` only). Drives the fix-step blur.
+        recommendations (``fixes`` only). Drives the fix-step gate.
 
     ``payload=None`` passes through unchanged.
     """
@@ -269,15 +272,17 @@ def gate_store_analysis(payload, user):
     sees_prose = plan_tier in ("insights", "fixes")
     sees_fixes = plan_tier == "fixes"
 
-    gated_checks = (
-        payload.get("checks")
-        if sees_fixes
-        else _strip_check_fields(payload.get("checks"), _PREMIUM_CHECK_FIELDS)
-    )
+    if sees_fixes:
+        gated_checks = payload.get("checks")
+    else:
+        gated_checks = _strip_check_fields(
+            payload.get("checks"), _PREMIUM_CHECK_FIELDS
+        )
 
     return {
         **payload,
         "checks": gated_checks,
+        "signals": payload.get("signals"),
         "planTier": plan_tier,
         "detailsLocked": not sees_prose,
         "recommendationsLocked": not sees_fixes,

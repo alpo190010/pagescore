@@ -26,6 +26,7 @@ import Button from "@/components/ui/Button";
 import ScoreRing from "@/components/analysis/ScoreRing";
 import PluginCTACard from "@/components/analysis/PluginCTACard";
 import CTACard from "@/components/analysis/CTACard";
+import BlurredPlaceholder from "@/components/BlurredPlaceholder";
 import ChecksGroup from "@/components/checks/ChecksGroup";
 import { severityFor, type Severity } from "@/components/checks/severity";
 
@@ -121,7 +122,20 @@ const AnalysisResults = memo(function AnalysisResults({
       ),
     [dimensions],
   );
-  const everythingPassing = dimensions.length > 0 && totalMissing === 0;
+  // Diagnostic content is gated when EITHER the explicit detailsLocked
+  // flag is set OR the server stripped `signals` (free / anon
+  // contract). Both the flag and the strip happen together server-side;
+  // checking both here makes the locked branch resilient to a stale
+  // client cache where one of the two is missing.
+  const isDetailsLocked =
+    result.detailsLocked === true || !result.signals;
+
+  // Don't trigger the all-pass celebration when the data is gated —
+  // free / anon viewers always have totalMissing = 0 because the
+  // checks payload was stripped server-side, not because everything
+  // actually passed.
+  const everythingPassing =
+    !isDetailsLocked && dimensions.length > 0 && totalMissing === 0;
 
   /* ── Active dimension selection ── */
   const [activeDimKey, setActiveDimKey] = useState<string | null>(null);
@@ -260,39 +274,85 @@ const AnalysisResults = memo(function AnalysisResults({
             )}
           </div>
 
-          {/* Active dimension detail */}
-          {activeDim && (
+          {/* Active dimension detail.
+              Three modes:
+                1. detailsLocked (free/anon) — no diagnostic data was
+                   shipped from the server. Render a locked
+                   BlurredPlaceholder; children are unreachable so no
+                   real content sneaks into the DOM.
+                2. severityCounts.all === 0 — no failing checks.
+                   Render the all-pass celebration bare; nothing to
+                   gate.
+                3. Default — render the full panel (header + severity
+                   chips + What's working / What's missing + optional
+                   fix callout). Insights tier sees the panel; the
+                   DimensionFixCallout is hidden by recommendationsLocked
+                   for everyone except fixes tier. */}
+          {activeDim && isDetailsLocked && (
             <div className="space-y-5">
-              {/* Issues found header + severity chips */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-[var(--ink)]">
-                    Issues found{" "}
-                    <span
-                      className="font-mono text-base font-bold tabular-nums"
-                      style={{ color: "var(--ink-3)" }}
-                    >
-                      ({severityCounts.all})
-                    </span>
-                  </h3>
-                  <p className="text-[12.5px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-                    {activeDim.label}
-                    {activeDim.conversionLoss > 0 && (
-                      <> · ~{activeDim.conversionLoss.toFixed(1)}% est. conversion loss</>
-                    )}
-                  </p>
-                </div>
-                <SeverityChips
-                  counts={severityCounts}
-                  active={severityFilter}
-                  onChange={setSeverityFilter}
-                />
+              {/* Headline header — shows the dimension, the count of
+                  failing checks, and the conversion-loss estimate.
+                  All three are derived from scores / numerics (no
+                  premium copy), so they advertise the unlock without
+                  revealing details. */}
+              <div>
+                <h3 className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-[var(--ink)]">
+                  Issues found{" "}
+                  <span
+                    className="font-mono text-base font-bold tabular-nums"
+                    style={{ color: "var(--ink-3)" }}
+                  >
+                    ({severityCounts.all})
+                  </span>
+                </h3>
+                <p
+                  className="text-[12.5px] mt-0.5"
+                  style={{ color: "var(--ink-3)" }}
+                >
+                  {activeDim.label}
+                  {activeDim.conversionLoss > 0 && (
+                    <>
+                      {" · ~"}
+                      {activeDim.conversionLoss.toFixed(1)}% est. conversion loss
+                    </>
+                  )}
+                </p>
               </div>
+              <BlurredPlaceholder
+                requiredTier="insights"
+                currentTier={result.planTier ?? "free"}
+                title="Unlock detailed analysis"
+                subtitle="See exactly what's broken — and why it's losing you sales."
+                cta="Get Insights"
+              >
+                {/* Children unreachable for locked viewers — they see
+                    the red/green DefaultSkeleton blurred under the
+                    CTA. Real data is never shipped server-side. */}
+                <></>
+              </BlurredPlaceholder>
+            </div>
+          )}
+          {activeDim && !isDetailsLocked && severityCounts.all === 0 && (
+            <div className="space-y-5">
+              <ActiveDimensionHeader
+                dimension={activeDim}
+                severityCounts={severityCounts}
+                severityFilter={severityFilter}
+                onSeverityChange={setSeverityFilter}
+              />
+              <AllClearBanner label={activeDim.label} />
+            </div>
+          )}
+          {activeDim && !isDetailsLocked && severityCounts.all > 0 && (
+            <div className="space-y-5">
+              <ActiveDimensionHeader
+                dimension={activeDim}
+                severityCounts={severityCounts}
+                severityFilter={severityFilter}
+                onSeverityChange={setSeverityFilter}
+              />
 
-              {/* Dimension-level fix — shown once instead of repeating
-                  the same `leak.tip` on every failing row's drawer */}
               {activeLeak &&
-                severityCounts.all > 0 &&
                 severityFilter === "all" &&
                 !result.recommendationsLocked && (
                   <DimensionFixCallout
@@ -301,7 +361,6 @@ const AnalysisResults = memo(function AnalysisResults({
                   />
                 )}
 
-              {/* What's working — for the active dimension */}
               {activeWorking.length > 0 && (
                 <ChecksGroup
                   heading="What's working"
@@ -311,7 +370,6 @@ const AnalysisResults = memo(function AnalysisResults({
                 />
               )}
 
-              {/* Missing list — filtered by chip */}
               {filteredMissing.length > 0 ? (
                 <ChecksGroup
                   heading={
@@ -323,13 +381,11 @@ const AnalysisResults = memo(function AnalysisResults({
                   tone="fail"
                   items={filteredMissing}
                 />
-              ) : severityCounts.all === 0 ? (
-                <AllClearBanner label={activeDim.label} />
               ) : (
                 <EmptyFilter />
               )}
 
-              {!isPaid && severityCounts.all > 0 && (
+              {!isPaid && (
                 <CTACard
                   leaksCount={leaks.length}
                   animationDelay={100}
@@ -527,6 +583,51 @@ function SeverityChips({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ActiveDimensionHeader — "Issues found (N)" + dimension label +
+   conversion-loss subtext + severity chips. Extracted because the
+   panel renders both inside and outside a BlurredPlaceholder
+   depending on whether there's any locked content to gate.
+   ══════════════════════════════════════════════════════════════ */
+function ActiveDimensionHeader({
+  dimension,
+  severityCounts,
+  severityFilter,
+  onSeverityChange,
+}: {
+  dimension: ProductDimensionGroup;
+  severityCounts: { all: number; critical: number; major: number; minor: number };
+  severityFilter: SeverityFilter;
+  onSeverityChange: (next: SeverityFilter) => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h3 className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-[var(--ink)]">
+          Issues found{" "}
+          <span
+            className="font-mono text-base font-bold tabular-nums"
+            style={{ color: "var(--ink-3)" }}
+          >
+            ({severityCounts.all})
+          </span>
+        </h3>
+        <p className="text-[12.5px] mt-0.5" style={{ color: "var(--ink-3)" }}>
+          {dimension.label}
+          {dimension.conversionLoss > 0 && (
+            <> · ~{dimension.conversionLoss.toFixed(1)}% est. conversion loss</>
+          )}
+        </p>
+      </div>
+      <SeverityChips
+        counts={severityCounts}
+        active={severityFilter}
+        onChange={onSeverityChange}
+      />
     </div>
   );
 }

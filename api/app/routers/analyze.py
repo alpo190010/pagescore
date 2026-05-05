@@ -843,18 +843,29 @@ async def _do_analyze(
             },
         }
 
-    # --- Free-tier gating: hide fix recommendations on the server (defense in depth) ---
+    # --- Tier gating ---
+    #   * fixes    — sees everything (signals, tips, fix steps, code).
+    #   * insights — sees signals + tips (diagnostic prose) but NOT fix
+    #                steps or per-check code; recommendationsLocked=True
+    #                still flags the fix-step gate for the UI.
+    #   * free / anon — sees scores + signals only. tips/dimensionTips
+    #                   are stripped; the UI's BlurredPlaceholder
+    #                   keeps the diagnostic labels out of the DOM
+    #                   while signals ride along so the UI can compute
+    #                   issue counts in JS memory for the locked-state
+    #                   header.
     plan_tier = current_user.plan_tier if current_user else "free"
-    recs_locked = plan_tier == "free"
+    sees_prose = plan_tier in ("insights", "fixes")
+    sees_fixes = plan_tier == "fixes"
+    details_locked = not sees_prose
+    recs_locked = not sees_fixes
 
     response_data: dict = {
         "score": overall_score,
         "summary": "Analysis complete.",
-        "tips": [] if recs_locked else (all_tips or ["No issues detected."]),
+        "tips": (all_tips or ["No issues detected."]) if sees_prose else [],
         "dimensionTips": (
-            {}
-            if recs_locked
-            else {
+            {
                 "socialProof": sp_tips,
                 "structuredData": sd_tips,
                 "checkout": co_tips,
@@ -874,6 +885,8 @@ async def _do_analyze(
                 "accessibility": ac_tips,
                 "socialCommerce": sc_tips,
             }
+            if sees_prose
+            else {}
         ),
         "categories": categories,
         "productPrice": extract_price(html, sd_price=sd_signals.price_amount) or 0,
@@ -881,6 +894,7 @@ async def _do_analyze(
         "timings": timings,
         "signals": {**_product_signals, **_store_signals},
         "planTier": plan_tier,
+        "detailsLocked": details_locked,
         "recommendationsLocked": recs_locked,
     }
 

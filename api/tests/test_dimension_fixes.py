@@ -380,42 +380,49 @@ class TestGateStoreAnalysis:
             "Install Shop Pay via Shopify Payments."
         )
         assert out["checks"]["checkout"][0]["code"] == "<script>...</script>"
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
         assert out["planTier"] == "fixes"
         assert out["detailsLocked"] is False
         assert out["recommendationsLocked"] is False
 
     def test_insights_tier_strips_code_only(self) -> None:
-        """Middle tier: remediation prose visible, only ``code`` stripped."""
+        """Middle tier: remediation/signals visible, only ``code`` stripped."""
         payload = _payload_with_remediation()
         user = SimpleNamespace(plan_tier="insights")
         out = gate_store_analysis_for_free_tier(payload, user)
         check = out["checks"]["checkout"][0]
-        # Prose unlocked
+        # Diagnostic prose unlocked
         assert check["remediation"] == "Install Shop Pay via Shopify Payments."
-        # Fix code still locked
+        # Signals available for diagnostic widgets (e.g. PageSpeedScorecard)
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
+        # Fix code locked
         assert "code" not in check
         assert out["planTier"] == "insights"
         assert out["detailsLocked"] is False
         assert out["recommendationsLocked"] is True
 
-    def test_free_tier_strips_only_code(self) -> None:
-        """Free tier keeps remediation/detail in the payload — UI blurs them.
+    def test_free_tier_strips_code_only(self) -> None:
+        """Free tier ships the same shape as insights minus the ``code`` field.
 
-        We deliberately leave the diagnostic fields in the response so the
-        frontend has real content to apply the BlurredPlaceholder overlay
-        on top of (visible-as-blurred). Only ``code`` is stripped.
+        The frontend wraps the rendered diagnostic surface in
+        ``BlurredPlaceholder`` so labels / prose stay in JS memory but
+        never reach the DOM (BlurredPlaceholder doesn't render
+        ``children`` when locked). Counts and severity totals remain
+        computable from the still-present check arrays.
         """
         payload = _payload_with_remediation()
         user = SimpleNamespace(plan_tier="free")
         out = gate_store_analysis_for_free_tier(payload, user)
         check = out["checks"]["checkout"][0]
-        # Diagnostic prose stays — client-side blur is the gate.
+        # Diagnostic prose ships so the count is computable
         assert check["remediation"] == "Install Shop Pay via Shopify Payments."
-        # Fix code is the strict gate — stripped.
+        # Fix code locked
         assert "code" not in check
-        # Non-premium fields preserved.
-        assert check["label"] == "Shop Pay"
-        assert check["passed"] is True
+        # Signals ship so the per-product breakdown renders.
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
+        # Score-level data still ships so the breakdown grid renders.
+        assert out["score"] == 72
+        assert out["categories"] == {"checkout": 80}
         assert out["planTier"] == "free"
         assert out["detailsLocked"] is True
         assert out["recommendationsLocked"] is True
@@ -424,9 +431,10 @@ class TestGateStoreAnalysis:
         payload = _payload_with_remediation()
         out = gate_store_analysis_for_free_tier(payload, None)
         check = out["checks"]["checkout"][0]
-        # Same shape as free: remediation stays, code stripped.
+        # Same shape as free: code stripped, everything else present.
         assert check["remediation"] == "Install Shop Pay via Shopify Payments."
         assert "code" not in check
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
         assert out["planTier"] is None
         assert out["detailsLocked"] is True
         assert out["recommendationsLocked"] is True
@@ -445,6 +453,7 @@ class TestGateStoreAnalysis:
             "Install Shop Pay via Shopify Payments."
         )
         assert payload["checks"]["checkout"][0]["code"] == "<script>...</script>"
+        assert payload["signals"] == {"checkout": {"hasShopPay": True}}
         assert "planTier" not in payload
         assert "recommendationsLocked" not in payload
         assert "detailsLocked" not in payload
@@ -454,8 +463,9 @@ class TestGateStoreAnalysis:
         user = SimpleNamespace(plan_tier="")
         out = gate_store_analysis_for_free_tier(payload, user)
         check = out["checks"]["checkout"][0]
-        assert check["remediation"] == "Install Shop Pay via Shopify Payments."
         assert "code" not in check
+        assert check["remediation"] == "Install Shop Pay via Shopify Payments."
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
         assert out["planTier"] == "free"
         assert out["detailsLocked"] is True
         assert out["recommendationsLocked"] is True
@@ -466,9 +476,12 @@ class TestGateStoreAnalysis:
         user = SimpleNamespace(plan_tier="legacy_starter")
         out = gate_store_analysis_for_free_tier(payload, user)
         check = out["checks"]["checkout"][0]
-        # Unknown tier falls through to the gated path: code stripped,
-        # remediation kept (UI will blur). Not a paid tier.
+        # Unknown tier is NOT a paid tier — code stripped, prose still
+        # ships so the BlurredPlaceholder receives real shape data.
         assert "code" not in check
+        assert check["remediation"] == "Install Shop Pay via Shopify Payments."
+        assert out["signals"] == {"checkout": {"hasShopPay": True}}
+        assert out["detailsLocked"] is True
         assert out["recommendationsLocked"] is True
 
 

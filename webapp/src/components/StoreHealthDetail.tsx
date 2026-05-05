@@ -12,6 +12,7 @@ import {
   scoreColorText,
   scoreColorTintBg,
 } from "@/lib/analysis";
+import { meetsRequirement } from "@/lib/tier";
 import { useDimensionFix } from "@/hooks/useDimensionFix";
 import BlurredPlaceholder from "@/components/BlurredPlaceholder";
 import StoreHealthChecks from "@/components/StoreHealthChecks";
@@ -223,13 +224,32 @@ export default function StoreHealthDetail({
               </section>
             )}
 
-            {/* ── Diagnostic zone — problem callout + meta row + (PSI) + checks ──
-                For non-insights viewers, the whole zone is wrapped in
-                ONE blur panel with a single "Get Insights" overlay (the
-                "what's broken" copy AND the failing-check rows are all
-                diagnostic content). At perfect score the problem and
-                meta sections are skipped and the green checklist
-                renders bare — nothing to gate. */}
+            {/* ── Headline metrics ──
+                Est. revenue gain + Effort are SHOWN to every tier.
+                They're advertising for the unlock — concrete numbers
+                that justify the upgrade CTA below. The figures are
+                public-information level (revenue gain is a function
+                of score, effort is a static estimate) so there's no
+                premium content to protect here. */}
+            {!allChecksPass && (
+              <section className="grid grid-cols-2 gap-2.5">
+                <MetaCard
+                  label="Est. revenue gain"
+                  value={`+${calculateConversionLoss(score, dimensionKey)}%`}
+                  accent="gain"
+                />
+                <MetaCard label="Effort" value={fix.effort} />
+              </section>
+            )}
+
+            {/* ── Diagnostic zone — problem callout + (PSI) + checks ──
+                For non-insights viewers, BlurredPlaceholder renders
+                a synthetic red/green check-row imitation under the
+                upgrade CTA. The real ``fix.problem``, signals, and
+                check rows are NEVER rendered for them — children of
+                BlurredPlaceholder are unreachable when locked. At
+                perfect score the diagnostic block is skipped and the
+                green checklist renders bare. */}
             {!allChecksPass ? (
               <BlurredPlaceholder
                 requiredTier="insights"
@@ -249,14 +269,6 @@ export default function StoreHealthDetail({
                   >
                     {fix.problem}
                   </p>
-                  <section className="grid grid-cols-2 gap-2.5">
-                    <MetaCard
-                      label="Est. revenue gain"
-                      value={`+${calculateConversionLoss(score, dimensionKey)}%`}
-                      accent="gain"
-                    />
-                    <MetaCard label="Effort" value={fix.effort} />
-                  </section>
                   {dimensionKey === "pageSpeed" &&
                     storeAnalysis.signals?.pageSpeed && (
                       <PageSpeedScorecard
@@ -270,41 +282,32 @@ export default function StoreHealthDetail({
               <StoreHealthChecks checks={checks} />
             )}
 
-            {/* ── Steps section ──
-                Skipped when the checks list above already owns the fix
-                story (every failing check has its own inline
-                remediation), or when nothing is failing. For
-                non-fixes-tier viewers, wrapped in a "Get Fixes" overlay
-                so the steps are visible-as-blurred. */}
-            {allChecksPass || checksOwnFixStory ? null : (
-              <BlurredPlaceholder
-                requiredTier="fixes"
-                currentTier={planTier}
-                title="Unlock the full fix"
-                subtitle="Step-by-step instructions to repair this dimension."
-                cta="Get Fixes"
-              >
-                <FixSteps steps={fix.steps} />
-              </BlurredPlaceholder>
-            )}
-
-            {/* ── Code snippet ──
-                Hidden when the checks list owns the fix story (each
-                failing check has its own inline snippet) or at perfect
-                score. Wrapped in a "Get Fixes" overlay for non-fixes
-                viewers — the API strips ``code`` server-side, so a
-                placeholder is rendered when locked. */}
-            {!allChecksPass && !checksOwnFixStory && (fix.code || fix.locked) && (
-              <BlurredPlaceholder
-                requiredTier="fixes"
-                currentTier={planTier}
-                title="Unlock the code snippet"
-                subtitle="Copy-paste code to ship the fix."
-                cta="Get Fixes"
-              >
-                {fix.code ? <FixCodeBlock code={fix.code} /> : null}
-              </BlurredPlaceholder>
-            )}
+            {/* ── Fix playbook (steps + code snippet) ──
+                Only rendered for viewers at Insights or higher.
+                Free / anonymous viewers see only the upstream
+                "Get Insights" wrap above; promoting "Get Fixes"
+                before they've bought Insights would skip the
+                logical upgrade ladder. Insights viewers see ONE
+                combined "Get Fixes" overlay covering both the
+                steps and the code snippet. Skipped at perfect
+                score and when the per-check list already owns the
+                fix story. */}
+            {!allChecksPass &&
+              !checksOwnFixStory &&
+              meetsRequirement(planTier, "insights") && (
+                <BlurredPlaceholder
+                  requiredTier="fixes"
+                  currentTier={planTier}
+                  title="Unlock the full fix"
+                  subtitle="Step-by-step instructions and copy-paste code to repair this dimension."
+                  cta="Get Fixes"
+                >
+                  <div className="flex flex-col gap-6">
+                    <FixSteps steps={fix.steps} />
+                    {fix.code && <FixCodeBlock code={fix.code} />}
+                  </div>
+                </BlurredPlaceholder>
+              )}
 
             {/* ── Verify (rescan) card ──
                 Hidden at perfect score — the celebration banner already
