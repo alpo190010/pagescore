@@ -12,6 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import Button from "@/components/ui/Button";
 import Modal, { ModalTitle, ModalDescription } from "@/components/ui/Modal";
+import AdminTierSelect from "@/components/AdminTierSelect";
 import {
   isPaddleConfigured,
   openInsightsCheckout,
@@ -326,19 +327,29 @@ export default function DashboardPage() {
                               <p className="text-sm font-semibold text-[var(--on-surface)] truncate">
                                 {store.name || store.domain}
                               </p>
-                              <span
-                                className="text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
-                                style={{
-                                  background: isPaid
-                                    ? "var(--brand-light)"
-                                    : "var(--surface-container-high)",
-                                  color: isPaid
-                                    ? "var(--brand)"
-                                    : "var(--on-surface-variant)",
-                                }}
-                              >
-                                {store.planTier}
-                              </span>
+                              {session?.user?.role === "admin" &&
+                              session?.user?.id ? (
+                                <AdminTierSelect
+                                  userId={session.user.id}
+                                  storeDomain={store.domain}
+                                  currentTier={store.planTier}
+                                  onSuccess={() => fetchStores()}
+                                />
+                              ) : (
+                                <span
+                                  className="text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                                  style={{
+                                    background: isPaid
+                                      ? "var(--brand-light)"
+                                      : "var(--surface-container-high)",
+                                    color: isPaid
+                                      ? "var(--brand)"
+                                      : "var(--on-surface-variant)",
+                                  }}
+                                >
+                                  {store.planTier}
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-[var(--on-surface-variant)] mt-0.5 truncate">
                               {store.domain}
