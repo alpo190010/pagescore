@@ -18,6 +18,8 @@ Events handled:
     - subscription.updated    — tier change / renewal / past_due
     - subscription.canceled   — scheduled end; keep access until current_period_end
     - subscription.past_due   — leave row, rely on customer to recover
+    - adjustment.created      — refund or chargeback; revokes store subscription
+                                (chargebacks also flag the user for review)
 
 Reference: https://developer.paddle.com/webhooks/overview
 """
@@ -40,6 +42,7 @@ from app.plans import get_tier_for_price_id
 from app.services.store_subscriptions import (
     delete_subscription,
     find_by_paddle_subscription_id,
+    find_by_paddle_transaction_id,
     upsert_subscription,
 )
 
@@ -183,6 +186,8 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
             return _handle_subscription_canceled(data, db)
         if event_type == "subscription.past_due":
             return _handle_subscription_past_due(data, db)
+        if event_type == "adjustment.created":
+            return _handle_adjustment_created(data, db)
 
         return {"ok": True}
 
@@ -363,4 +368,72 @@ def _handle_subscription_past_due(data: dict, db: Session) -> dict:
         "subscription.past_due: user_id=%s domain=%s",
         row.user_id, row.store_domain,
     )
+    return {"ok": True}
+
+
+def _handle_adjustment_created(data: dict, db: Session) -> dict:
+    """Refund or chargeback. Revoke the corresponding store subscription.
+
+    Routes via paddle_subscription_id when present (recurring), falling back
+    to paddle_transaction_id (one-time purchases like FIXES_UPGRADE). Only
+    acts on approved adjustments — pending/rejected/reversed are logged and
+    skipped to avoid premature or unnecessary revocation.
+
+    Policy:
+        - action="refund"    → delete the row (any type — full or partial)
+        - action="chargeback"→ delete the row + flag the user for review
+        - other actions      → log and no-op (credit, chargeback_warning, etc.)
+    """
+    status = data.get("status", "")
+    if status != "approved":
+        logger.info(
+            "adjustment.created skipped: status=%s id=%s",
+            status, data.get("id"),
+        )
+        return {"ok": True}
+
+    action = data.get("action", "")
+    if action not in {"refund", "chargeback"}:
+        logger.info(
+            "adjustment.created skipped: action=%s id=%s",
+            action, data.get("id"),
+        )
+        return {"ok": True}
+
+    sub_id = data.get("subscription_id")
+    txn_id = data.get("transaction_id")
+    row = None
+    if sub_id:
+        row = find_by_paddle_subscription_id(sub_id, db)
+    if row is None and txn_id:
+        row = find_by_paddle_transaction_id(txn_id, db)
+
+    if row is None:
+        logger.warning(
+            "adjustment.created: no store_subscription found for "
+            "subscription_id=%s transaction_id=%s action=%s",
+            sub_id, txn_id, action,
+        )
+        return {"ok": True}
+
+    user_id = row.user_id
+    store_domain = row.store_domain
+    delete_subscription(row, db)
+    logger.info(
+        "adjustment.created(%s): revoked plan for user_id=%s domain=%s "
+        "txn=%s sub=%s",
+        action, user_id, store_domain, txn_id, sub_id,
+    )
+
+    if action == "chargeback":
+        from app.models import User
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is not None:
+            user.flagged_for_review = True
+            db.commit()
+            logger.warning(
+                "adjustment.created(chargeback): flagged user_id=%s",
+                user_id,
+            )
+
     return {"ok": True}

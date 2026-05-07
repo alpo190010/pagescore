@@ -615,6 +615,258 @@ class TestSubscriptionPastDue:
 
 
 # ---------------------------------------------------------------------------
+# adjustment.created (refund / chargeback → revoke store subscription)
+# ---------------------------------------------------------------------------
+
+
+def _adjustment_event(
+    *,
+    adjustment_id: str = "adj_1",
+    action: str = "refund",
+    type_: str = "full",
+    status: str = "approved",
+    transaction_id: str | None = "txn_abc",
+    subscription_id: str | None = None,
+    customer_id: str | None = "ctm_xyz",
+) -> dict:
+    """Build a Paddle ``adjustment.created`` event payload."""
+    data: dict = {
+        "id": adjustment_id,
+        "action": action,
+        "type": type_,
+        "status": status,
+        "customer_id": customer_id,
+    }
+    if transaction_id is not None:
+        data["transaction_id"] = transaction_id
+    if subscription_id is not None:
+        data["subscription_id"] = subscription_id
+    return {
+        "event_id": "evt_adj_1",
+        "event_type": "adjustment.created",
+        "occurred_at": "2026-05-07T20:00:00Z",
+        "data": data,
+    }
+
+
+class TestAdjustmentCreated:
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_full_refund_deletes_row(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """action=refund + type=full + status=approved → delete the matching row."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        existing = _make_subscription(paddle_subscription_id=None)
+        existing.paddle_transaction_id = "txn_abc"
+        mock_find_sub.return_value = None
+        mock_find_txn.return_value = existing
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(
+                action="refund", type_="full", transaction_id="txn_abc"
+            ),
+        )
+
+        assert resp.status_code == 200
+        mock_delete.assert_called_once()
+        assert mock_delete.call_args.args[0] is existing
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_partial_refund_also_deletes_row(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """Partial refunds revoke too — policy is "any refund = revoke"."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        existing = _make_subscription(paddle_subscription_id=None)
+        existing.paddle_transaction_id = "txn_abc"
+        mock_find_sub.return_value = None
+        mock_find_txn.return_value = existing
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(
+                action="refund", type_="partial", transaction_id="txn_abc"
+            ),
+        )
+
+        assert resp.status_code == 200
+        mock_delete.assert_called_once()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_chargeback_deletes_and_flags_user(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """action=chargeback → delete row AND set users.flagged_for_review=True."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        existing = _make_subscription(paddle_subscription_id=None)
+        existing.paddle_transaction_id = "txn_abc"
+        mock_find_sub.return_value = None
+        mock_find_txn.return_value = existing
+
+        # The handler does db.query(User).filter(...).first() to load and
+        # flag the user. Build a mock that returns a user object with the
+        # flag attribute we can inspect.
+        user_mock = MagicMock()
+        user_mock.flagged_for_review = False
+        db = MagicMock()
+
+        # Each call to .query(...).filter(...).first() on this mock returns
+        # the user_mock — the chain mock is shared across all queries which
+        # is fine for this test since we only look up users.
+        chain = MagicMock()
+        chain.filter.return_value.first.return_value = user_mock
+        db.query.return_value = chain
+
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(action="chargeback", transaction_id="txn_abc"),
+        )
+
+        assert resp.status_code == 200
+        mock_delete.assert_called_once()
+        assert user_mock.flagged_for_review is True
+        # Two commits expected: one inside delete_subscription (mocked, no-op
+        # against our db), and one explicit after setting the flag.
+        db.commit.assert_called()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_pending_approval_is_noop(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """status=pending_approval → log and skip; do NOT delete."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(status="pending_approval"),
+        )
+
+        assert resp.status_code == 200
+        mock_find_sub.assert_not_called()
+        mock_find_txn.assert_not_called()
+        mock_delete.assert_not_called()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_rejected_is_noop(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """status=rejected → no deletion."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(status="rejected"),
+        )
+
+        assert resp.status_code == 200
+        mock_delete.assert_not_called()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_credit_action_is_noop(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """action=credit → not a refund/chargeback; skip."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(action="credit"),
+        )
+
+        assert resp.status_code == 200
+        mock_delete.assert_not_called()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id", return_value=None)
+    @patch("app.routers.webhook.find_by_paddle_subscription_id", return_value=None)
+    @patch("app.routers.webhook.settings")
+    def test_unknown_transaction_is_noop(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """No matching row found → log warning, return 200, no exceptions."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(transaction_id="txn_unknown"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {"ok": True}
+        mock_delete.assert_not_called()
+
+    @patch("app.routers.webhook.delete_subscription")
+    @patch("app.routers.webhook.find_by_paddle_transaction_id")
+    @patch("app.routers.webhook.find_by_paddle_subscription_id")
+    @patch("app.routers.webhook.settings")
+    def test_routes_via_subscription_id_first(
+        self, mock_settings, mock_find_sub, mock_find_txn, mock_delete
+    ):
+        """When subscription_id is present, look up by it first; skip txn fallback."""
+        mock_settings.paddle_webhook_secret = WEBHOOK_SECRET
+        existing = _make_subscription()  # has paddle_subscription_id="sub_abc"
+        mock_find_sub.return_value = existing
+        # txn fallback should never be called when sub lookup succeeds
+        mock_find_txn.return_value = None
+        db = _mock_db()
+        app.dependency_overrides[get_db] = _mock_db_factory(db)
+        client = TestClient(app)
+
+        resp = _post_webhook(
+            client,
+            _adjustment_event(
+                subscription_id="sub_abc", transaction_id="txn_abc"
+            ),
+        )
+
+        assert resp.status_code == 200
+        mock_find_sub.assert_called_once()
+        mock_find_txn.assert_not_called()
+        mock_delete.assert_called_once()
+        assert mock_delete.call_args.args[0] is existing
+
+
+# ---------------------------------------------------------------------------
 # Unknown event types
 # ---------------------------------------------------------------------------
 

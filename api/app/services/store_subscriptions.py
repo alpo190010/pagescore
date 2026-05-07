@@ -235,6 +235,25 @@ def find_by_paddle_subscription_id(
     )
 
 
+def find_by_paddle_transaction_id(
+    paddle_transaction_id: str, db: Session
+) -> StoreSubscription | None:
+    """Lookup helper for Paddle ``adjustment.created`` (refunds/chargebacks).
+
+    Returns the matching row regardless of expiry — caller decides what to do.
+    Used to route an adjustment back to the (user, store) it paid for, since
+    one-time purchases (Insights/Fixes upgrades) write ``paddle_transaction_id``
+    rather than ``paddle_subscription_id``.
+    """
+    if not paddle_transaction_id:
+        return None
+    return (
+        db.query(StoreSubscription)
+        .filter(StoreSubscription.paddle_transaction_id == paddle_transaction_id)
+        .first()
+    )
+
+
 def delete_subscription(subscription: StoreSubscription, db: Session) -> None:
     """Delete a subscription row outright (used on full cancellation)."""
     db.delete(subscription)

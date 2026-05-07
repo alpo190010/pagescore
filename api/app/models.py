@@ -276,6 +276,9 @@ class User(Base):
     # --- Waitlist ---
     pro_waitlist = Column(Boolean, nullable=False, server_default=text("false"))
 
+    # --- Trust / fraud ---
+    flagged_for_review = Column(Boolean, nullable=False, server_default=text("false"))
+
 
 class Subscriber(Base):
     __tablename__ = "subscribers"
