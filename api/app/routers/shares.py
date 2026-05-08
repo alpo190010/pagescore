@@ -37,6 +37,7 @@ from app.models import (
     User,
 )
 from app.rate_limit import limiter
+from app.routers.discover_products import _store_analysis_dict
 from app.services.dimension_fixes import gate_store_analysis
 from app.services.shopify_sitemap import total_pages_for
 from app.services.store_subscriptions import (
@@ -339,19 +340,15 @@ def _fetch_share_payload(share: StoreShare, db: Session) -> dict | JSONResponse:
         "canPaginate": share_tier in ("insights", "fixes"),
         "analyses": analyses,
         "storeAnalysis": gate_store_analysis(
-            {
-                "score": store_analysis_row.score,
-                "categories": store_analysis_row.categories,
-                "tips": store_analysis_row.tips,
-                "signals": store_analysis_row.signals,
-                "checks": store_analysis_row.checks,
-                "analyzedUrl": store_analysis_row.analyzed_url,
-                "updatedAt": (
-                    store_analysis_row.updated_at.isoformat()
-                    if store_analysis_row.updated_at
-                    else None
-                ),
-            },
+            # Reuse the canonical serializer from discover_products so
+            # the share-link payload emits the same 11-field shape and
+            # the same 3-way skip set (Shopify / non-Shopify ecommerce /
+            # non-ecommerce) as the owner-side /scan/{domain} view.
+            # Inlining the dict here previously dropped isShopify,
+            # isEcommerce, and skippedDimensions — viewers of share
+            # links for non-ecommerce sites saw "Products" + 18
+            # dimensions instead of "Pages" + 9.
+            _store_analysis_dict(store_analysis_row),
             share_tier,
         )
         if store_analysis_row
